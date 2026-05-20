@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Калькулятор Perfect World: заточка, золоті яйця, шари." />
+  <title>PW Калькулятор — інструменти для Perfect World</title>
+  <link rel="icon" type="image/jpeg" sizes="32x32" href="assets/favicon-32.jpg" />
+  <link rel="icon" type="image/jpeg" sizes="180x180" href="assets/favicon-180.jpg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon-180.jpg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg-glow" aria-hidden="true">
+    <span class="blob blob-a"></span>
+    <span class="blob blob-b"></span>
+    <span class="blob blob-c"></span>
+  </div>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="#refine" class="logo">
+        <span class="logo-mark">PW</span>
+        <span class="logo-text">Калькулятор</span>
+      </a>
+      <a href="https://cyberpw.fun/" target="_blank" rel="noopener" class="partner-logo" title="cyberpw.fun">
+        <img src="assets/logo.webp" alt="CyberPW" />
+      </a>
+      <div class="header-meta">
+        <a href="#settings" class="gold-indicator" id="goldIndicator" data-goto="settings" title="Натисни, щоб уточнити ціну голди в налаштуваннях">
+          <span class="gold-indicator-text">1 <span>голда</span> = —</span>
+          <span class="gold-default-badge" aria-hidden="true">дефолт</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs container" role="tablist" aria-label="Розділи">
+    <button class="tab active" role="tab" data-tab="refine" aria-selected="true">
+      <span class="tab-ico">⚒</span><span>Заточка</span>
+    </button>
+    <button class="tab" role="tab" data-tab="eggs" aria-selected="false">
+      <span class="tab-ico">◎</span><span>Золоті яйця</span>
+    </button>
+    <button class="tab" role="tab" data-tab="compare" aria-selected="false">
+      <span class="tab-ico">⇌</span><span>Порівняння</span>
+    </button>
+    <button class="tab" role="tab" data-tab="craft" aria-selected="false">
+      <span class="tab-ico">✦</span><span>Крафт шарів</span>
+    </button>
+    <button class="tab" role="tab" data-tab="simulator" aria-selected="false">
+      <span class="tab-ico">◈</span><span>Симулятор</span>
+    </button>
+    <button class="tab" role="tab" data-tab="settings" aria-selected="false">
+      <span class="tab-ico">⚙</span><span>Налаштування</span>
+      <span class="tab-attention" aria-hidden="true"><span class="tab-attention-dot"></span>уточни ціни</span>
+    </button>
+  </nav>
+
+  <main class="container">
+    <!-- TAB: REFINE -->
+    <section class="tab-panel active" data-panel="refine" role="tabpanel">
+      <header class="section-head">
+        <span class="eyebrow">Заточка спорядження</span>
+        <h2>Оптимальний план заточки</h2>
+        <p>
+          Алгоритм обирає найдешевший очікуваний шлях на кожному рівні,
+          враховуючи штраф повернення при провалі. Ціни — з
+          <a href="#settings" class="link" data-goto="settings">налаштувань</a>.
+        </p>
+      </header>
+
+      <div class="card calc-card">
+        <form id="refineForm" class="grid-form" autocomplete="off">
+          <div class="field">
+            <label>Тип предмета</label>
+            <div class="segmented" role="radiogroup" aria-label="Тип предмета">
+              <input type="radio" id="typeArmor" name="itemType" value="armor" checked />
+              <label for="typeArmor">Броня</label>
+              <input type="radio" id="typeWeapon" name="itemType" value="weapon" />
+              <label for="typeWeapon">Зброя</label>
+            </div>
+            <small class="hint">Броня — 1 міраж/спробу<br/>Зброя — 2 міражі/спробу</small>
+          </div>
+
+          <div class="field">
+            <label for="startLevel">Поточний рівень</label>
+            <select id="startLevel">
+              <option value="0" selected>+0</option>
+              <option value="1">+1</option>
+              <option value="2">+2</option>
+              <option value="3">+3</option>
+              <option value="4">+4</option>
+              <option value="5">+5</option>
+              <option value="6">+6</option>
+              <option value="7">+7</option>
+              <option value="8">+8</option>
+              <option value="9">+9</option>
+              <option value="10">+10</option>
+              <option value="11">+11</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="targetLevel">Цільовий рівень</label>
+            <select id="targetLevel">
+              <option value="1">+1</option>
+              <option value="2">+2</option>
+              <option value="3">+3</option>
+              <option value="4">+4</option>
+              <option value="5">+5</option>
+              <option value="6">+6</option>
+              <option value="7">+7</option>
+              <option value="8">+8</option>
+              <option value="9">+9</option>
+              <option value="10">+10</option>
+              <option value="11">+11</option>
+              <option value="12" selected>+12</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="stoneStrategy">Метод</label>
+            <select id="stoneStrategy">
+              <option value="auto" selected>Авто — оптимальний</option>
+              <option value="mirage">Лише міражі</option>
+              <option value="under">Лише підземні</option>
+              <option value="sky">Лише небесні</option>
+              <option value="world">Лише світобудови</option>
+            </select>
+          </div>
+        </form>
+
+        <div id="refineResult" class="result" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- TAB: EGGS -->
+    <section class="tab-panel" data-panel="eggs" role="tabpanel">
+      <header class="section-head">
+        <span class="eyebrow">Драконячі шари · ціна</span>
+        <h2>Вартість шарів</h2>
+        <p>
+          Ціна 1 ★1 шара — фіксовані <b>2 голди</b>. Вартість ★N
+          обчислюється з ★1-еквіваленту (за рецептом крафту). Поряд
+          показано ймовірнісну оцінку, скільки треба золотих яєць,
+          щоб набити такий ★1-еквівалент.
+        </p>
+      </header>
+
+      <div class="card calc-card">
+        <form class="grid-form" autocomplete="off" style="margin-bottom:14px">
+          <div class="field">
+            <label for="eggPriceEggs">Ціна 1 яйця (монет)</label>
+            <input type="number" id="eggPriceEggs" class="egg-price-input" min="0" step="1000" />
+            <small class="hint">Дефолт: 2 × ціна голди. Спільне поле з іншими табами.</small>
+          </div>
+        </form>
+        <div id="eggResult" class="result" aria-live="polite"></div>
+      </div>
+
+      <details class="note">
+        <summary>Методика</summary>
+        <p>
+          Вартість: <code>ціна(★N) = ★1-екв(N) × 2 голди</code>, де
+          ★1-екв виводиться з рецепта (★2=4, ★3=10, …, ★12=4645).
+        </p>
+        <p>
+          Яйця: 71% — ★1, 11% — ★2, 8% — ★3, 10% — міраж.
+          Очікувана «вага» яйця в ★1: <code>0.71·1 + 0.11·4 + 0.08·10 = 1.95</code>.
+          Орієнтовна кількість яєць — <code>⌈★1-екв(N) / 1.95⌉</code>.
+        </p>
+      </details>
+    </section>
+
+    <!-- TAB: COMPARE -->
+    <section class="tab-panel" data-panel="compare" role="tabpanel">
+      <header class="section-head">
+        <span class="eyebrow">Порівняння методів</span>
+        <h2>Шари vs Камені</h2>
+        <p>
+          Два шляхи дістати предмет +N: заточувати камінням та міражами або
+          купити/скрафтити шар ★N (миттєво +N). Нижче — вартість обох для
+          кожного рівня, з визначенням переможця.
+        </p>
+      </header>
+
+      <div class="card calc-card">
+        <form id="compareForm" class="grid-form" autocomplete="off">
+          <div class="field">
+            <label>Тип предмета</label>
+            <div class="segmented" role="radiogroup" aria-label="Тип предмета">
+              <input type="radio" id="cmpArmor" name="cmpType" value="armor" checked />
+              <label for="cmpArmor">Броня</label>
+              <input type="radio" id="cmpWeapon" name="cmpType" value="weapon" />
+              <label for="cmpWeapon">Зброя</label>
+            </div>
+          </div>
+          <div class="field">
+            <label for="eggPrice">Ціна 1 яйця (монет)</label>
+            <input type="number" id="eggPrice" class="egg-price-input" min="0" step="1000" />
+            <small class="hint">Дефолт: 2 × ціна голди. Спільне поле з іншими табами. Колонки шарів = <code>яйця × ціна яйця</code>.</small>
+          </div>
+        </form>
+
+        <div id="compareResult" class="result" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- TAB: CRAFT -->
+    <section class="tab-panel" data-panel="craft" role="tabpanel">
+      <header class="section-head">
+        <span class="eyebrow">Крафт шарів · інвентар</span>
+        <h2>Калькулятор крафта шарів дракона</h2>
+        <p>
+          Вкажи, які шари вже є в інвентарі, обери ціль — отримаєш покроковий
+          план крафту з урахуванням залишків. Опційно можна «відкрити» партію
+          золотих яєць і додати випадкові дропи до інвентарю.
+        </p>
+        <div class="banner" style="margin-top:10px">
+          <b>Увага:</b> відкриття яєць — це <b>рандом</b>. Кожне натискання
+          «Розрахувати» з ненульовим полем «Яйця» генерує нові випадкові дропи,
+          тому результати щоразу будуть різні.
+          <br/><br/>
+          Натомість значення в блоках статистики (скільки яєць на ★1, вартість
+          нестачі тощо) — це <b>середнє очікування</b>:
+          <code>0.71·1 + 0.11·4 + 0.08·10 = 1.95</code> ★1-еквівалента з
+          одного яйця (71% дає ★1 = 1, 11% дає ★2 = 4×★1, 8% дає ★3 = 10×★1,
+          10% — камінь, не враховується).
+        </div>
+      </header>
+
+      <div class="card calc-card">
+        <form class="grid-form" autocomplete="off" style="margin-bottom:14px">
+          <div class="field">
+            <label for="eggPriceCraft">Ціна 1 яйця (монет)</label>
+            <input type="number" id="eggPriceCraft" class="egg-price-input" min="0" step="1000" />
+            <small class="hint">Дефолт: 2 × ціна голди. Спільне поле з іншими табами.</small>
+          </div>
+        </form>
+        <div class="craft-grid">
+          <div>
+            <h3 class="craft-h">Інвентар (вже є)</h3>
+            <div id="craftInv" class="craft-inv"></div>
+            <div class="craft-egg-row">
+              <label for="craftEggs"><span class="badge orb">Яйця</span> відкрити</label>
+              <input type="number" id="craftEggs" min="0" max="99999" step="1" value="0" />
+              <small class="hint">Симулює випадковий дроп: 71% ★1, 11% ★2, 8% ★3, 10% камінь.</small>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="craft-h">Що крафтимо</h3>
+            <div class="craft-form">
+              <div class="field">
+                <label for="craftTarget">Рівень цілі</label>
+                <select id="craftTarget">
+                  <option value="1">★1</option>
+                  <option value="2">★2</option>
+                  <option value="3">★3</option>
+                  <option value="4">★4</option>
+                  <option value="5">★5</option>
+                  <option value="6">★6</option>
+                  <option value="7">★7</option>
+                  <option value="8">★8</option>
+                  <option value="9">★9</option>
+                  <option value="10">★10</option>
+                  <option value="11">★11</option>
+                  <option value="12" selected>★12</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="craftQty">Кількість</label>
+                <input type="number" id="craftQty" min="1" max="100" step="1" value="1" />
+              </div>
+              <div class="field craft-actions">
+                <button type="button" id="craftCalc" class="btn btn-primary">Розрахувати</button>
+                <button type="button" id="craftReset" class="btn btn-ghost">Очистити інвентар</button>
+              </div>
+            </div>
+
+            <h3 class="craft-h" style="margin-top:18px">Рецепти</h3>
+            <div class="recipes-grid" id="recipesList"></div>
+          </div>
+        </div>
+
+        <div id="craftResult" class="result" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- TAB: SIMULATOR -->
+    <section class="tab-panel" data-panel="simulator" role="tabpanel">
+      <header class="section-head">
+        <span class="eyebrow">Симулятор заточки</span>
+        <h2>Симулятор камінцями</h2>
+        <p>
+          Інтерактивний симулятор: натискай на камінець, щоб зробити одну спробу,
+          або запусти авто-симуляцію вибраним каменем чи за оптимальним планом.
+          Шанси та поведінка при провалі ідентичні логіці табу «Заточка».
+          Ціни на голду, міражі та камені редагуються в
+          <a href="#settings" class="link" data-goto="settings">налаштуваннях</a>.
+        </p>
+      </header>
+
+      <div class="card calc-card">
+        <form id="simForm" class="grid-form" autocomplete="off" style="margin-bottom:14px">
+          <div class="field">
+            <label>Тип предмета</label>
+            <div class="segmented" role="radiogroup" aria-label="Тип предмета">
+              <input type="radio" id="simArmor" name="simType" value="armor" checked />
+              <label for="simArmor">Броня</label>
+              <input type="radio" id="simWeapon" name="simType" value="weapon" />
+              <label for="simWeapon">Зброя</label>
+            </div>
+            <small class="hint">Броня — 1 міраж/спробу, зброя — 2.</small>
+          </div>
+          <div class="field">
+            <label for="simStart">Стартовий рівень</label>
+            <select id="simStart"></select>
+          </div>
+          <div class="field">
+            <label for="simTarget">Цільовий рівень</label>
+            <select id="simTarget"></select>
+          </div>
+          <div class="field">
+            <label for="simSpeed">Швидкість авто-симуляції</label>
+            <select id="simSpeed">
+              <option value="slow">Повільно (1 спроба / 200мс)</option>
+              <option value="med" selected>Середньо (1 / 16мс)</option>
+              <option value="fast">Швидко (50 / кадр)</option>
+              <option value="turbo">Турбо (5000 / кадр)</option>
+            </select>
+          </div>
+        </form>
+
+        <div class="sim-display">
+          <div class="sim-level">
+            <span class="sim-level-label">Поточний рівень</span>
+            <span class="sim-level-value" id="simCurrentLevel">+0</span>
+          </div>
+          <div class="sim-target-info">
+            <span class="sim-level-target" id="simTargetDisplay">Ціль: +12</span>
+            <div class="sim-progress" aria-hidden="true">
+              <div class="sim-progress-bar" id="simProgressBar"></div>
+            </div>
+          </div>
+          <div class="sim-last" id="simLastResult">Натисни на камінець, щоб зробити спробу, або запусти авто-симуляцію.</div>
+          <div class="sim-best" id="simBestResult" hidden></div>
+        </div>
+
+        <div class="sim-stones-row">
+          <div class="sim-stones" role="radiogroup" aria-label="Вибір камінця">
+            <button type="button" class="stone-btn" data-stone="mirage" role="radio" aria-checked="false">
+              <span class="badge mirage">Лише міраж</span>
+              <span class="stone-rate" id="rateMirage">—</span>
+              <span class="stone-price" id="priceMirage">—</span>
+              <span class="stone-meta">провал → +0</span>
+            </button>
+            <button type="button" class="stone-btn" data-stone="under" role="radio" aria-checked="false">
+              <span class="badge under">+ Підземний</span>
+              <span class="stone-rate" id="rateUnder">—</span>
+              <span class="stone-price" id="priceUnder">—</span>
+              <span class="stone-meta">провал → −1</span>
+            </button>
+            <button type="button" class="stone-btn" data-stone="sky" role="radio" aria-checked="false">
+              <span class="badge sky">+ Небесний</span>
+              <span class="stone-rate" id="rateSky">—</span>
+              <span class="stone-price" id="priceSky">—</span>
+              <span class="stone-meta">провал → +0</span>
+            </button>
+            <button type="button" class="stone-btn" data-stone="world" role="radio" aria-checked="false">
+              <span class="badge world">+ Світобудови</span>
+              <span class="stone-rate" id="rateWorld">—</span>
+              <span class="stone-price" id="priceWorld">—</span>
+              <span class="stone-meta">провал → залиш.</span>
+            </button>
+          </div>
+          <button type="button" id="simStep" class="btn btn-primary sim-step-btn">⚒ Покращити</button>
+        </div>
+
+        <div class="sim-actions">
+          <button type="button" id="simRunSelected" class="btn btn-primary">▶ Симуляція вибраним каменем</button>
+          <button type="button" id="simRunOptimal" class="btn btn-primary">▶ Оптимальна симуляція</button>
+          <button type="button" id="simStop" class="btn btn-ghost" disabled>■ Стоп</button>
+          <button type="button" id="simReset" class="btn btn-ghost">↺ Скинути</button>
+        </div>
+
+        <div class="sim-history">
+          <div class="sim-history-head">
+            <h3 class="craft-h" style="margin:0">Історія симуляції</h3>
+            <span class="muted" id="simHistoryCount">0 спроб</span>
+          </div>
+          <div class="sim-history-list" id="simHistory" aria-live="off">
+            <div class="hist-empty muted">Поки що порожньо. Натисни на камінець або запусти авто-симуляцію.</div>
+          </div>
+        </div>
+
+        <div id="simResult" class="result" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- TAB: SETTINGS -->
+    <section class="tab-panel" data-panel="settings" role="tabpanel">
+      <header class="section-head">
+        <span class="eyebrow">Налаштування</span>
+        <h2>Ціни на сервері</h2>
+        <p>
+          Всі калькулятори використовують ці значення. Зміни тимчасові —
+          скидаються до дефолтів при кожному оновленні сторінки. Ціна
+          1 ★1 шара зафіксована (2 голди) і не редагується.
+        </p>
+      </header>
+
+      <div class="card calc-card">
+        <form id="settingsForm" class="grid-form" autocomplete="off">
+          <div class="field-group">
+            <h3>Основне (монет)</h3>
+            <div class="grid-form inner">
+              <div class="field">
+                <label for="goldPrice">Ціна голди <span class="field-default-badge" id="goldPriceBadge">дефолт</span></label>
+                <input type="number" id="goldPrice" min="1" step="100" value="318400" />
+                <small class="hint">Скільки монет за 1 голду. <b>Уточни актуальну ціну на твоєму сервері</b> — від неї залежать усі розрахунки.</small>
+              </div>
+              <div class="field">
+                <label for="miragePrice">Ціна міража</label>
+                <input type="number" id="miragePrice" min="1" step="100" value="40000" />
+                <small class="hint">Скільки монет за 1 осколок дзеркала.</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <h3>Камені заточки (голд / шт)</h3>
+            <div class="grid-form inner">
+              <div class="field">
+                <label for="underPrice">Підземний <span class="badge under">+3.5%</span></label>
+                <input type="number" id="underPrice" min="0" step="0.01" value="0.9" />
+                <small class="hint">1 шт = 1 г; 10 шт = 9 г (0.9 / шт).</small>
+              </div>
+              <div class="field">
+                <label for="skyPrice">Небесний <span class="badge sky">+15%</span></label>
+                <input type="number" id="skyPrice" min="0" step="0.01" value="0.9" />
+                <small class="hint">1 шт = 1 г; 10 шт = 9 г (0.9 / шт).</small>
+              </div>
+              <div class="field">
+                <label for="worldPrice">Світобудови <span class="badge world">без падіння</span></label>
+                <input type="number" id="worldPrice" min="0" step="0.01" value="0.9" />
+                <small class="hint">10 шт = 4.5 г (0.45); 100 шт = 44 г (0.44).</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost" id="resetSettings">Скинути до дефолтів</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span>© <span id="year"></span> PW Калькулятор · Неофіційний фанатський інструмент · by Тайфорн</span>
+      <span class="muted">Perfect World та пов'язані назви належать їхнім власникам.</span>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

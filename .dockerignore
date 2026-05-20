@@ -1,0 +1,9 @@
+.git
+.gitignore
+.vscode
+.idea
+*.md
+deploy.sh
+Dockerfile
+.dockerignore
+node_modules
