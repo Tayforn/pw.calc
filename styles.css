@@ -982,6 +982,17 @@ small.hint {
   color: #b8efff;
 }
 
+/* Defense (ПА/ПЗ) tab */
+.def-row { cursor: pointer; transition: background 0.15s ease; }
+.def-row:hover { background: rgba(124, 92, 255, 0.08); }
+.def-row:focus { outline: none; background: rgba(124, 92, 255, 0.12); }
+.def-row-attack td:first-child {
+  border-left: 3px solid rgba(255, 94, 108, 0.55);
+}
+.def-row-defense td:first-child {
+  border-left: 3px solid rgba(53, 224, 161, 0.55);
+}
+
 /* Footer */
 .site-footer {
   padding: 28px 0;

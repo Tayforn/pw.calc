@@ -54,6 +54,9 @@
     <button class="tab" role="tab" data-tab="simulator" aria-selected="false">
       <span class="tab-ico">◈</span><span>Симулятор</span>
     </button>
+    <button class="tab" role="tab" data-tab="defense" aria-selected="false">
+      <span class="tab-ico">🛡</span><span>Атака/Захист</span>
+    </button>
     <button class="tab" role="tab" data-tab="settings" aria-selected="false">
       <span class="tab-ico">⚙</span><span>Налаштування</span>
       <span class="tab-attention" aria-hidden="true"><span class="tab-attention-dot"></span>уточни ціни</span>
@@ -400,6 +403,185 @@
 
         <div id="simResult" class="result" aria-live="polite"></div>
       </div>
+    </section>
+
+    <!-- TAB: DEFENSE (ПА / ПЗ / деф / рівень) -->
+    <section class="tab-panel" data-panel="defense" role="tabpanel">
+      <header class="section-head">
+        <span class="eyebrow">Атака, захист, деф і рівень</span>
+        <h2>Калькулятор фінальної шкоди</h2>
+        <p>
+          Фінальна шкода — це добуток трьох незалежних фільтрів:
+          <b>ПА vs ПЗ</b> (різниця рівнів атаки/захисту), <b>фіз/маг деф</b>
+          (нелінійне % зрізання) та <b>різниця рівнів</b> персонажів
+          (PvP-сітка або PvE-співвідношення). Введи показники — отримаєш
+          покроковий розклад і коефіцієнт фінальної шкоди.
+        </p>
+      </header>
+
+      <div class="card calc-card">
+        <form id="defForm" class="grid-form" autocomplete="off">
+          <div class="field">
+            <label>Режим</label>
+            <div class="segmented" role="radiogroup" aria-label="Режим бою">
+              <input type="radio" id="defModePvp" name="defMode" value="pvp" checked />
+              <label for="defModePvp">PvP</label>
+              <input type="radio" id="defModePve" name="defMode" value="pve" />
+              <label for="defModePve">PvE</label>
+            </div>
+            <small class="hint">PvP — гравець vs гравець. PvE — vs моб/бос.</small>
+          </div>
+          <div class="field">
+            <label for="defAtk">ПА нападника</label>
+            <input type="number" id="defAtk" min="0" step="1" value="100" />
+            <small class="hint">Nível de Ataque / Показник атаки.</small>
+          </div>
+          <div class="field">
+            <label for="defDef">ПЗ цілі</label>
+            <input type="number" id="defDef" min="0" step="1" value="100" />
+            <small class="hint">Nível de Defesa / Показник захисту.</small>
+          </div>
+          <div class="field">
+            <label for="defArmor">Фіз / Маг деф цілі</label>
+            <input type="number" id="defArmor" min="0" step="100" value="0" />
+            <small class="hint">Чистий деф у статах. Фіз і маг — однакова формула.</small>
+          </div>
+          <div class="field">
+            <label for="defAtkLevel">Рівень нападника</label>
+            <input type="number" id="defAtkLevel" min="1" max="200" step="1" value="105" />
+            <small class="hint">Рівень персонажа-нападника.</small>
+          </div>
+          <div class="field">
+            <label for="defDefLevel" id="defDefLevelLabel">Рівень цілі</label>
+            <input type="number" id="defDefLevel" min="1" max="200" step="1" value="105" />
+            <small class="hint" id="defDefLevelHint">Рівень цілі — впливає й на формулу дефу.</small>
+          </div>
+          <div class="field">
+            <label for="defBaseDmg">Базова шкода <span class="muted" style="font-weight:400">(опційно)</span></label>
+            <input type="number" id="defBaseDmg" min="0" step="100" placeholder="напр. 10000" />
+            <small class="hint">Якщо ввести — порахуємо фінальний урон.</small>
+          </div>
+          <div class="field">
+            <label>&nbsp;</label>
+            <button type="button" id="defSwap" class="btn btn-ghost" style="padding:10px 14px">⇄ Поміняти нападника ↔ ціль</button>
+          </div>
+        </form>
+
+        <div id="defResult" class="result" aria-live="polite"></div>
+      </div>
+
+      <div class="card calc-card" style="margin-top:22px">
+        <header class="section-head" style="margin-bottom:14px">
+          <span class="eyebrow">Довідкова таблиця · 1</span>
+          <h2 style="font-size:22px">Коефіцієнт ПА/ПЗ за різницею Δ = ПА − ПЗ</h2>
+          <p>
+            Натисни на рядок — значення Δ підставиться у калькулятор вище
+            (через ПА при нинішньому ПЗ). Зелені рядки — деф (Δ &lt; 0),
+            червоні — бонус до шкоди (Δ &gt; 0).
+          </p>
+        </header>
+        <div class="table-wrap">
+          <table class="data-table" id="defTable">
+            <thead>
+              <tr>
+                <th>Δ (ПА − ПЗ)</th>
+                <th class="num">Коефіцієнт</th>
+                <th class="num">Ефект</th>
+                <th>Пояснення</th>
+              </tr>
+            </thead>
+            <tbody id="defTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card calc-card" style="margin-top:22px">
+        <header class="section-head" style="margin-bottom:14px">
+          <span class="eyebrow">Довідкова таблиця · 2</span>
+          <h2 style="font-size:22px">% зрізання від фіз / маг дефу</h2>
+          <p id="defArmorTableCaption">
+            Формула <code>редукція = Деф / (Деф + 40×Рівень − 85)</code>.
+            Таблиця рахується для <b id="defArmorTableLevel">105</b> рівня цілі
+            (з поля вище). Натисни рядок — значення дефу підставиться у калькулятор.
+          </p>
+        </header>
+        <div class="table-wrap">
+          <table class="data-table" id="defArmorTable">
+            <thead>
+              <tr>
+                <th>Деф у статах</th>
+                <th class="num">% зрізання</th>
+                <th class="num">Отримаєш шкоди</th>
+                <th>Пояснення</th>
+              </tr>
+            </thead>
+            <tbody id="defArmorTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card calc-card" style="margin-top:22px">
+        <header class="section-head" style="margin-bottom:14px">
+          <span class="eyebrow">Довідкова таблиця · 3</span>
+          <h2 style="font-size:22px">PvP-штраф за різницю рівнів</h2>
+          <p>
+            Працює дзеркально: і коли нападник нижчий за ціль, і навпаки
+            (щоб хай-левели не вбивали новачків одним ударом). До 2 рівнів
+            різниці — штрафу немає.
+          </p>
+        </header>
+        <div class="table-wrap">
+          <table class="data-table" id="defLevelTable">
+            <thead>
+              <tr>
+                <th>Різниця рівнів</th>
+                <th class="num">Коефіцієнт</th>
+                <th class="num">Шкоди</th>
+              </tr>
+            </thead>
+            <tbody id="defLevelTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <details class="note">
+        <summary>Формули та джерела</summary>
+        <p>
+          Фінальний коефіцієнт =
+          <code>k_ПА/ПЗ × (1 − редукція_дефу) × k_рівня</code>.
+          Три фільтри незалежні й перемножуються.
+        </p>
+        <p>
+          <b>1. ПА/ПЗ.</b> Δ = <code>ПА − ПЗ</code>.
+          Δ ≥ 0: <code>k = 1 + Δ/100</code> (лінійний приріст, +1% урону за
+          одиницю). Δ &lt; 0: <code>k = 1/(1 + |Δ|/100)</code> (гіперболічний
+          деф; перші 100 одиниць ПЗ ріжуть урон удвічі).
+        </p>
+        <p>
+          <b>2. Фіз / маг деф.</b>
+          <code>редукція = Деф / (Деф + 40×Рівень − 85)</code>.
+          Формула <b>однакова</b> для фізичного дефу й усіх 5 стихій маг
+          дефу, тому окремих полів немає — введи будь-який із них.
+          Diminishing returns: на 105 лвл перші 50% дефу коштують ~4 100
+          одиниць, а наступні 25% — ще ~8 000. Деякі теоркрафтери округлюють
+          знаменник до <code>Деф + 40×Рівень</code> (тобто +4200 на 105 лвл).
+        </p>
+        <p>
+          <b>3. Різниця рівнів.</b>
+          PvP — сходинкова сітка (0–2 лвл: 100%, 3–5: 90%, 6–8: 80%,
+          9–11: 70%, 12–15: 60%, 16–20: 50%, далі стрімко до ~20%),
+          дзеркальна для обох сторін.
+          PvE — <code>k = Рівень_гравця / Рівень_моба</code> (якщо моб
+          вищий); якщо гравець ≥ моба, урон не штрафується (k = 1.0).
+        </p>
+        <p>
+          Джерела: PWOnline (RU теоркрафт), офіційні форуми (PvP/PvE level
+          penalty), PWDatabase, TriviaPW / WikiPW (BR-комʼюніті,
+          «Tabela de Multiplicador de Dano» та формула Redução de Dano).
+          Бойовий дух (Espírito), %crit, елементалка зброї тут не
+          враховуються — це чиста механіка ПА/ПЗ, дефу та рівня.
+        </p>
+      </details>
     </section>
 
     <!-- TAB: SETTINGS -->
