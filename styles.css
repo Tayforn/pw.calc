@@ -1594,3 +1594,118 @@ small.hint {
   .guides-layout { grid-template-columns: 1fr; }
   .guides-content { padding: 22px 18px; }
 }
+
+/* =========================================================
+   РБ — рейдові боси (карта)
+   ========================================================= */
+.rb-subtabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.rb-subtab {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.rb-subtab:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
+.rb-subtab.active {
+  color: #fff;
+  background: linear-gradient(180deg, rgba(124, 92, 255, 0.18), rgba(124, 92, 255, 0.05));
+  border-color: rgba(124, 92, 255, 0.45);
+}
+.rb-sub { display: none; }
+.rb-sub.active { display: block; }
+.rb-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.rb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.rb-chip:hover { color: #fff; background: rgba(124, 92, 255, 0.14); border-color: rgba(124, 92, 255, 0.4); }
+.rb-chip-tier {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 800;
+  color: #04110b;
+}
+.rb-map {
+  height: min(66vh, 600px);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--line-2);
+  box-shadow: var(--shadow);
+}
+
+/* мітки на карті */
+.rb-marker { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.rb-pin {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent-2);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.6);
+  flex: none;
+}
+.rb-lbl {
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 2px #000, 0 0 4px #000, 0 0 5px #000;
+}
+.rb-marker.t1 .rb-pin, .rb-chip.t1 .rb-chip-tier, .rb-pop-sub.t1 { background: var(--good); }
+.rb-marker.t2 .rb-pin, .rb-chip.t2 .rb-chip-tier, .rb-pop-sub.t2 { background: var(--accent-3); }
+.rb-marker.t3 .rb-pin, .rb-chip.t3 .rb-chip-tier, .rb-pop-sub.t3 { background: var(--warn); }
+.rb-marker.t4 .rb-pin, .rb-chip.t4 .rb-chip-tier, .rb-pop-sub.t4 { background: var(--bad); }
+
+/* темні попапи Leaflet у стилі сайту */
+.leaflet-container { font-family: inherit; background: var(--bg-2); }
+.leaflet-popup-content-wrapper {
+  background: var(--bg-2);
+  color: var(--text);
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+.leaflet-popup-tip { background: var(--bg-2); border: 1px solid var(--line-2); }
+.leaflet-popup-content { margin: 12px 14px; font-family: inherit; font-size: 14px; }
+.leaflet-container a.leaflet-popup-close-button { color: var(--text-dim); }
+.leaflet-container a.leaflet-popup-close-button:hover { color: var(--text); }
+.rb-pop b { color: #fff; font-size: 15px; }
+.rb-pop-sub {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #04110b;
+  padding: 1px 8px;
+  border-radius: 999px;
+  margin-bottom: 6px;
+}
+.rb-pop-nick { color: var(--text-dim); font-weight: 500; }
+.rb-pop .coord { display: inline-flex; margin-top: 8px; }
+.leaflet-control-attribution {
+  background: rgba(0, 0, 0, 0.6) !important;
+  color: var(--text-mute) !important;
+}
+.leaflet-control-attribution a { color: var(--accent-3) !important; }

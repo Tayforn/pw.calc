@@ -29,6 +29,40 @@
     if (!Number.isFinite(coins) || !goldRate) return '—';
     return nf2.format(coins / goldRate) + ' г';
   };
+  const escHtml = (s) =>
+    String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+  // Копіювання тексту в буфер (з фолбеком для http / старих браузерів).
+  function copyText(t) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(t).catch(() => fallbackCopy(t));
+    } else {
+      fallbackCopy(t);
+    }
+  }
+  function fallbackCopy(t) {
+    const ta = document.createElement('textarea');
+    ta.value = t;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (_) {}
+    document.body.removeChild(ta);
+  }
+  // Делеговане копіювання для будь-якого .coord[data-coord] (гайди + попапи карти).
+  document.addEventListener('click', (e) => {
+    const coord = e.target.closest('.coord[data-coord]');
+    if (!coord) return;
+    copyText(coord.dataset.coord);
+    coord.classList.add('copied');
+    clearTimeout(coord._t);
+    coord._t = setTimeout(() => coord.classList.remove('copied'), 1100);
+  });
 
   // =========================================================
   // НАЛАШТУВАННЯ
@@ -105,7 +139,7 @@
   // =========================================================
   // ТАБИ
   // =========================================================
-  const VALID_TABS = ['refine', 'eggs', 'compare', 'craft', 'simulator', 'defense', 'guides', 'settings'];
+  const VALID_TABS = ['refine', 'eggs', 'compare', 'craft', 'simulator', 'defense', 'guides', 'rb', 'settings'];
   function setTab(name) {
     if (!VALID_TABS.includes(name)) name = 'refine';
     $$('.tab').forEach((t) => {
@@ -119,6 +153,7 @@
     if (location.hash !== '#' + name && !location.hash.startsWith('#' + name + '/'))
       history.replaceState(null, '', '#' + name);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (name === 'rb') rbActivate();
   }
   $$('.tab').forEach((t) => t.addEventListener('click', () => setTab(t.dataset.tab)));
   $$('[data-goto]').forEach((a) =>
@@ -1861,32 +1896,8 @@
         selectGuide(link.dataset.guide);
         return;
       }
-      const coord = e.target.closest('.coord[data-coord]');
-      if (coord) {
-        copyText(coord.dataset.coord);
-        coord.classList.add('copied');
-        clearTimeout(coord._t);
-        coord._t = setTimeout(() => coord.classList.remove('copied'), 1100);
-      }
+      // .coord копіювання обробляється глобальним делегованим слухачем
     });
-
-    function copyText(t) {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(t).catch(() => fallbackCopy(t));
-      } else {
-        fallbackCopy(t);
-      }
-    }
-    function fallbackCopy(t) {
-      const ta = document.createElement('textarea');
-      ta.value = t;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand('copy'); } catch (_) {}
-      document.body.removeChild(ta);
-    }
     if (search)
       search.addEventListener('input', () => {
         query = search.value.trim().toLowerCase();
@@ -1904,6 +1915,188 @@
 
     // дозволяє відкрити конкретний гайд із заголовка вкладки
     window.__openGuide = selectGuide;
+  }
+
+  // =========================================================
+  // РБ — карта рейдових босів (тайли worldmap.pw + власні мітки)
+  // =========================================================
+  const WORLD_BOSSES = [
+    { nick: 'Сніги', name: 'Дух селища', x: 159, y: 975 },
+    { nick: 'Загадка', name: 'Загадка', x: 314, y: 955 },
+    { nick: 'Жестянка', name: 'Енгерранд', x: 235, y: 867 },
+    { nick: 'Огірок', name: 'Примарний вершник', x: 171, y: 787 },
+    { nick: '24', name: 'Шилонос', x: 251, y: 754 },
+    { nick: 'ГМ', name: 'Крилатий воїн', x: 439, y: 752 },
+    { nick: 'ПУО', name: 'Сталевий меч демона', x: 487, y: 570 },
+    { nick: 'Шабля', name: 'Шабля демона', x: 438, y: 471 },
+    { nick: 'Обеан', name: 'Обеан', x: 553, y: 437 },
+    { nick: 'Порт 1', name: 'Златий король', x: 652, y: 389 },
+    { nick: 'Порт 2', name: 'Мисливець за душами', x: 657, y: 434 },
+    { nick: 'Шляпа', name: 'Тінь померлого', x: 659, y: 523 },
+    { nick: 'Альфа', name: 'Альфа', x: 162, y: 427 },
+    { nick: 'НД', name: 'Аптійський щит', x: 151, y: 339 },
+  ];
+  // Координати — точні з pwdatabase (карта a33 «Лабіринт часу»).
+  const CHRONO_BOSSES = [
+    { name: 'Потрошитель', tier: 1, x: 366.63, z: 472.18 },
+    { name: 'Майстер-воїн з сокирою', tier: 1, x: 345.24, z: 457.87 },
+    { name: 'Звір грому', tier: 2, x: 333.83, z: 596.81 },
+    { name: 'Обпалений король скелетів', tier: 2, x: 364.58, z: 610.76 },
+    { name: 'Воїн Гаї', tier: 3, x: 477.29, z: 623.43 },
+    { name: 'Отруєний король скелетів', tier: 3, x: 421.51, z: 570.45 },
+    { name: 'Пекельний гончак', tier: 4, x: 462.73, z: 519.77 },
+    { name: 'Страж морозу', tier: 4, x: 477.17, z: 475.73 },
+  ];
+  CHRONO_BOSSES.forEach((b) => (b.sub = 'Хроно ' + b.tier));
+
+  // Перетворення координат гри PW -> карта worldmap.pw: 1 ігрова одиниця =
+  // 1 метр у проєкції EPSG:3857 (вивірено через головну карту worldmap.pw,
+  // де crs.project відомих локацій дорівнює їхнім ігровим координатам).
+  function pwToLatLng(x, y) {
+    return L.CRS.EPSG3857.unproject(L.point(x, y));
+  }
+
+  const rbMaps = {};
+  let rbSub = 'world';
+  let rbWired = false;
+
+  // Хроно: піксель на зображенні a33 (1024×1024) за формулою pwdatabase
+  // -> latlng у L.CRS.Simple (lat = H - pixelY, lng = pixelX).
+  const CH_SIZE = 1024;
+  function chronoToLatLng(x, z) {
+    const px = 4.82 * x - 1424.06;
+    const py = 3173.18 - 4.82 * z;
+    return [CH_SIZE - py, px];
+  }
+
+  function buildRbMap(kind) {
+    const el = document.getElementById(kind === 'world' ? 'rbMapWorld' : 'rbMapChrono');
+    const listEl = document.getElementById(kind === 'world' ? 'rbListWorld' : 'rbListChrono');
+    if (!el) return null;
+
+    let map, fit, flyZoom;
+    if (kind === 'world') {
+      map = L.map(el, { minZoom: 16, maxZoom: 19, zoomSnap: 0.5, zoomControl: true });
+      const attr = 'Карта © <a href="https://worldmap.pw/" target="_blank" rel="noopener">worldmap.pw</a>';
+      // як на worldmap.pw: satmap-фон для зумів 0-18, артистичний map для 18+
+      L.tileLayer('https://worldmap.pw/tiles/satmap/{z}/{x}/{y}.webp', {
+        minZoom: 0, maxZoom: 18, tileSize: 256, attribution: attr,
+      }).addTo(map);
+      L.tileLayer('https://worldmap.pw/tiles/map/{z}/{x}/{y}.webp', {
+        minZoom: 18, maxZoom: 21, tileSize: 256,
+      }).addTo(map);
+      flyZoom = 18;
+    } else {
+      // інстанс «Лабіринт часу» (Хроно 1-4) — статичне зображення, без карти світу
+      map = L.map(el, { crs: L.CRS.Simple, minZoom: -2, maxZoom: 2, zoomSnap: 0.25, zoomControl: true, attributionControl: false });
+      const bounds = [[0, 0], [CH_SIZE, CH_SIZE]];
+      L.imageOverlay('assets/maps/chrono.webp', bounds).addTo(map);
+      map.setMaxBounds(L.latLngBounds(bounds).pad(0.5));
+      flyZoom = 1;
+    }
+
+    const bosses = kind === 'world' ? WORLD_BOSSES : CHRONO_BOSSES;
+    const lls = [];
+    let listHtml = '';
+    bosses.forEach((b, i) => {
+      const ll = kind === 'world' ? pwToLatLng(b.x, b.y) : chronoToLatLng(b.x, b.z);
+      b._ll = ll;
+      lls.push(ll);
+      const label = b.nick || b.name;
+      const coordStr = kind === 'world' ? b.x + ' ' + b.y : Math.round(b.x) + ' ' + Math.round(b.z);
+      const icon = L.divIcon({
+        className: 'rb-marker' + (b.tier ? ' t' + b.tier : ''),
+        html: '<span class="rb-pin"></span><span class="rb-lbl">' + escHtml(label) + '</span>',
+        iconSize: null,
+        iconAnchor: [8, 8],
+      });
+      const popup =
+        '<div class="rb-pop">' +
+        (b.sub ? '<span class="rb-pop-sub t' + b.tier + '">' + escHtml(b.sub) + '</span>' : '') +
+        '<b>' + escHtml(b.name) + '</b>' +
+        (b.nick && b.nick !== b.name ? ' <span class="rb-pop-nick">(' + escHtml(b.nick) + ')</span>' : '') +
+        '<br><span class="coord" data-coord="' + coordStr + '" title="Натисни, щоб скопіювати">' + coordStr + '</span>' +
+        '</div>';
+      b._marker = L.marker(ll, { icon }).addTo(map).bindPopup(popup);
+      listHtml +=
+        '<button type="button" class="rb-chip' + (b.tier ? ' t' + b.tier : '') + '" data-rb="' + i + '">' +
+        (b.tier ? '<span class="rb-chip-tier">' + b.tier + '</span>' : '') +
+        escHtml(label) +
+        '</button>';
+    });
+
+    // підгонка вигляду: світ — за мітками; хроно — повне зображення 2×2
+    fit = (animate) => {
+      if (kind === 'world') {
+        if (lls.length) map.fitBounds(L.latLngBounds(lls).pad(0.18), { animate: !!animate });
+      } else {
+        map.fitBounds([[0, 0], [CH_SIZE, CH_SIZE]], { animate: !!animate });
+      }
+    };
+
+    if (listEl) {
+      listEl.innerHTML = listHtml;
+      listEl.addEventListener('click', (e) => {
+        const c = e.target.closest('button[data-rb]');
+        if (!c) return;
+        const b = bosses[+c.dataset.rb];
+        map.flyTo(b._ll, flyZoom, { duration: 0.6 });
+        b._marker.openPopup();
+      });
+    }
+    fit(false);
+
+    // надійно синхронізуємо розмір, коли контейнер отримує реальні габарити.
+    if (window.ResizeObserver) {
+      let first = true;
+      const ro = new ResizeObserver(() => {
+        map.invalidateSize(false);
+        if (first) { first = false; fit(false); }
+      });
+      ro.observe(el);
+    }
+    return map;
+  }
+
+  function rbFit(kind) {
+    const m = rbMaps[kind];
+    if (!m) return;
+    m.invalidateSize(false);
+    if (kind === 'world') {
+      const lls = WORLD_BOSSES.map((b) => b._ll).filter(Boolean);
+      if (lls.length) m.fitBounds(L.latLngBounds(lls).pad(0.18), { animate: false });
+    } else {
+      m.fitBounds([[0, 0], [CH_SIZE, CH_SIZE]], { animate: false });
+    }
+  }
+  // Кілька проходів, поки контейнер не отримає фінальний розмір (Leaflet
+  // інакше лишає карту обрізаною, якщо створена в щойно показаному блоці).
+  function rbRefresh(kind) {
+    requestAnimationFrame(() => rbFit(kind));
+    setTimeout(() => rbFit(kind), 200);
+    setTimeout(() => rbFit(kind), 550);
+  }
+
+  function rbShowSub(sub) {
+    rbSub = sub;
+    $$('.rb-subtab').forEach((b) => {
+      const on = b.dataset.sub === sub;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', String(on));
+    });
+    $$('.rb-sub').forEach((p) => p.classList.toggle('active', p.dataset.sub === sub));
+    if (!rbMaps[sub]) rbMaps[sub] = buildRbMap(sub);
+    rbRefresh(sub);
+  }
+
+  function rbActivate() {
+    if (typeof L === 'undefined') return; // Leaflet не завантажився
+    if (!rbMaps.world) rbMaps.world = buildRbMap('world');
+    if (!rbWired) {
+      rbWired = true;
+      $$('.rb-subtab').forEach((btn) => btn.addEventListener('click', () => rbShowSub(btn.dataset.sub)));
+    }
+    rbRefresh(rbSub);
   }
 
   $('#year').textContent = new Date().getFullYear();

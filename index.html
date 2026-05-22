@@ -11,6 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -59,6 +60,9 @@
     </button>
     <button class="tab" role="tab" data-tab="guides" aria-selected="false">
       <span class="tab-ico">📖</span><span>Гайди</span>
+    </button>
+    <button class="tab" role="tab" data-tab="rb" aria-selected="false">
+      <span class="tab-ico">💀</span><span>РБ</span>
     </button>
     <button class="tab tab-settings" role="tab" data-tab="settings" aria-selected="false" title="Налаштування" aria-label="Налаштування">
       <span class="tab-ico">⚙</span>
@@ -587,6 +591,33 @@
       </details>
     </section>
 
+    <!-- TAB: RB (рейдові боси) -->
+    <section class="tab-panel" data-panel="rb" role="tabpanel">
+      <header class="section-head">
+        <span class="eyebrow">Рейдові боси</span>
+        <h2>Світові боси та Хроно</h2>
+        <p>
+          Карта з мітками босів. Натисни мітку (або пункт зі списку) — відкриється
+          назва й координати. Клік по координатах — копіює їх. Карта тайлів
+          <a class="link" href="https://worldmap.pw/" target="_blank" rel="noopener">© worldmap.pw</a>.
+        </p>
+      </header>
+
+      <div class="rb-subtabs" role="tablist" aria-label="Типи босів">
+        <button class="rb-subtab active" role="tab" data-sub="world" aria-selected="true">🌍 Світ</button>
+        <button class="rb-subtab" role="tab" data-sub="chrono" aria-selected="false">⏳ Хроно</button>
+      </div>
+
+      <div class="rb-sub active" data-sub="world">
+        <div class="rb-list" id="rbListWorld"></div>
+        <div class="rb-map" id="rbMapWorld"></div>
+      </div>
+      <div class="rb-sub" data-sub="chrono">
+        <div class="rb-list" id="rbListChrono"></div>
+        <div class="rb-map" id="rbMapChrono"></div>
+      </div>
+    </section>
+
     <!-- TAB: GUIDES -->
     <section class="tab-panel" data-panel="guides" role="tabpanel">
       <header class="section-head">
@@ -684,6 +715,7 @@
     </div>
   </footer>
 
+  <script src="assets/vendor/leaflet/leaflet.js"></script>
   <script src="guides-data.js"></script>
   <script src="app.js"></script>
 </body>
