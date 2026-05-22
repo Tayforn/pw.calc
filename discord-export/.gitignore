@@ -1,0 +1,7 @@
+# Сирий експорт DiscordChatExporter — об'ємний (~36 МБ), не комітимо.
+# Перегенерувати: експорт через DiscordChatExporter -> raw/ -> node build-guides.js
+# (інструкція й токен — поза репозиторієм)
+*
+!.gitignore
+!build-guides.js
+!README.md

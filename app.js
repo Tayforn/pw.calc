@@ -105,7 +105,7 @@
   // =========================================================
   // ТАБИ
   // =========================================================
-  const VALID_TABS = ['refine', 'eggs', 'compare', 'craft', 'simulator', 'defense', 'settings'];
+  const VALID_TABS = ['refine', 'eggs', 'compare', 'craft', 'simulator', 'defense', 'guides', 'settings'];
   function setTab(name) {
     if (!VALID_TABS.includes(name)) name = 'refine';
     $$('.tab').forEach((t) => {
@@ -116,7 +116,8 @@
     $$('.tab-panel').forEach((p) =>
       p.classList.toggle('active', p.dataset.panel === name)
     );
-    if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
+    if (location.hash !== '#' + name && !location.hash.startsWith('#' + name + '/'))
+      history.replaceState(null, '', '#' + name);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   $$('.tab').forEach((t) => t.addEventListener('click', () => setTab(t.dataset.tab)));
@@ -1747,6 +1748,164 @@
     if (tip) tip.classList.toggle('is-open');
   });
 
+  // =========================================================
+  // ГАЙДИ (дані з guides-data.js -> window.PW_GUIDES)
+  // =========================================================
+  function guidesInit() {
+    const data = window.PW_GUIDES;
+    const nav = $('#guidesNav');
+    const content = $('#guidesContent');
+    const search = $('#guideSearch');
+    if (!data || !nav || !content) return;
+
+    const esc = (s) =>
+      String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+
+    const guides = data.guides;
+    const cats = data.categories;
+    let activeId = null;
+    let query = '';
+    let openCat = null; // id єдиної відкритої категорії (класичний акордеон)
+
+    const byCat = {};
+    for (const g of guides) (byCat[g.cat] = byCat[g.cat] || []).push(g);
+
+    const matches = (g) =>
+      !query ||
+      g.title.toLowerCase().includes(query) ||
+      g.html.toLowerCase().includes(query);
+
+    const catOf = (id) => {
+      const g = guides.find((x) => x.id === id);
+      return g ? g.cat : null;
+    };
+
+    function renderNav() {
+      let html = '';
+      for (const c of cats) {
+        const list = (byCat[c.id] || []).filter(matches);
+        if (!list.length) continue;
+        // під час пошуку розкриваємо всі категорії зі збігами,
+        // інакше — лише одну активну (класичний акордеон)
+        const open = query ? true : c.id === openCat;
+        html +=
+          `<div class="guides-cat${open ? ' open' : ''}">` +
+          `<button type="button" class="guides-cat-title" data-cat="${c.id}" aria-expanded="${open}">` +
+          `<span class="guides-cat-ico">${c.emoji}</span>` +
+          `<span class="guides-cat-name">${esc(c.name)}</span>` +
+          `<span class="guides-cat-count">${list.length}</span>` +
+          `<span class="guides-cat-chevron" aria-hidden="true">▸</span>` +
+          `</button><ul>`;
+        for (const g of list) {
+          const on = g.id === activeId ? ' class="active"' : '';
+          html +=
+            `<li><button type="button" data-guide="${g.id}"${on}>` +
+            `${esc(g.title)}${g.images ? ' <span class="guide-cam">📷</span>' : ''}` +
+            `</button></li>`;
+        }
+        html += '</ul></div>';
+      }
+      nav.innerHTML = html || '<div class="guide-empty small">Нічого не знайдено</div>';
+    }
+
+    function renderGuide(id) {
+      const g = guides.find((x) => x.id === id);
+      if (!g) {
+        content.innerHTML = '<div class="guide-empty">Обери гайд зі списку зліва.</div>';
+        return;
+      }
+      activeId = id;
+      const cat = cats.find((c) => c.id === g.cat);
+      content.innerHTML =
+        `<div class="guide-head">` +
+        (cat ? `<span class="guide-crumb">${cat.emoji} ${esc(cat.name)}</span>` : '') +
+        `<h3>${esc(g.title)}</h3>` +
+        (g.updated ? `<span class="guide-date">оновлено ${esc(g.updated)}</span>` : '') +
+        `</div>` +
+        `<div class="guide-body">${g.html}</div>`;
+      content.scrollTop = 0;
+    }
+
+    function selectGuide(id) {
+      const cat = catOf(id);
+      if (cat) openCat = cat; // тримаємо категорію активного гайда відкритою
+      renderGuide(id);
+      renderNav();
+      // після вибору гайда показуємо його з початку (під липкою шапкою)
+      content.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (location.hash !== '#guides/' + id)
+        history.replaceState(null, '', '#guides/' + id);
+    }
+
+    nav.addEventListener('click', (e) => {
+      const head = e.target.closest('button[data-cat]');
+      if (head) {
+        const id = head.dataset.cat;
+        openCat = openCat === id ? null : id; // одна відкрита за раз
+        renderNav();
+        const el = nav.querySelector('.guides-cat.open');
+        if (el && openCat === id) el.scrollIntoView({ block: 'nearest' });
+        return;
+      }
+      const btn = e.target.closest('button[data-guide]');
+      if (btn) selectGuide(btn.dataset.guide);
+    });
+    content.addEventListener('click', (e) => {
+      const link = e.target.closest('.guide-link[data-guide]');
+      if (link) {
+        e.preventDefault();
+        selectGuide(link.dataset.guide);
+        return;
+      }
+      const coord = e.target.closest('.coord[data-coord]');
+      if (coord) {
+        copyText(coord.dataset.coord);
+        coord.classList.add('copied');
+        clearTimeout(coord._t);
+        coord._t = setTimeout(() => coord.classList.remove('copied'), 1100);
+      }
+    });
+
+    function copyText(t) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(t).catch(() => fallbackCopy(t));
+      } else {
+        fallbackCopy(t);
+      }
+    }
+    function fallbackCopy(t) {
+      const ta = document.createElement('textarea');
+      ta.value = t;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (_) {}
+      document.body.removeChild(ta);
+    }
+    if (search)
+      search.addEventListener('input', () => {
+        query = search.value.trim().toLowerCase();
+        renderNav();
+      });
+
+    const hash = (location.hash || '').replace('#', '');
+    let openId = hash.startsWith('guides/') ? hash.slice(7) : null;
+    if (!guides.find((g) => g.id === openId)) openId = guides[0] && guides[0].id;
+    if (openId) {
+      openCat = catOf(openId);
+      renderGuide(openId);
+    }
+    renderNav();
+
+    // дозволяє відкрити конкретний гайд із заголовка вкладки
+    window.__openGuide = selectGuide;
+  }
+
   $('#year').textContent = new Date().getFullYear();
   applySettingsToInputs();
   applyDefaultEggPrice();
@@ -1754,8 +1913,9 @@
   buildRecipesList();
   simInit();
   defInit();
+  guidesInit();
   renderAll();
 
-  const initial = (location.hash || '').replace('#', '');
+  const initial = (location.hash || '').replace('#', '').split('/')[0];
   if (VALID_TABS.includes(initial)) setTab(initial);
 })();
