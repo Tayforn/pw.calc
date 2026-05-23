@@ -139,7 +139,7 @@
   // =========================================================
   // ТАБИ
   // =========================================================
-  const VALID_TABS = ['refine', 'eggs', 'compare', 'craft', 'simulator', 'defense', 'guides', 'rb', 'settings'];
+  const VALID_TABS = ['refine', 'eggs', 'compare', 'craft', 'simulator', 'defense', 'r8', 'guides', 'rb', 'settings'];
   function setTab(name) {
     if (!VALID_TABS.includes(name)) name = 'refine';
     $$('.tab').forEach((t) => {

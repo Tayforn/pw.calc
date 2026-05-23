@@ -58,6 +58,9 @@
     <button class="tab" role="tab" data-tab="defense" aria-selected="false">
       <span class="tab-ico">🛡</span><span>Атака/Захист</span>
     </button>
+    <button class="tab" role="tab" data-tab="r8" aria-selected="false">
+      <span class="tab-ico">🏆</span><span>Р8</span>
+    </button>
     <button class="tab" role="tab" data-tab="guides" aria-selected="false">
       <span class="tab-ico">📖</span><span>Гайди</span>
     </button>
@@ -589,6 +592,50 @@
           враховуються — це чиста механіка ПА/ПЗ, дефу та рівня.
         </p>
       </details>
+    </section>
+
+    <!-- TAB: R8 (Р8) -->
+    <section class="tab-panel" data-panel="r8" role="tabpanel">
+      <header class="section-head">
+        <span class="eyebrow">Спорядження Р8</span>
+        <h2>Бонуси на сетах</h2>
+        <p>
+          Комплект отримує 3 бонуси, які залежать від класу. Втім, за 2 шмотки з
+          набору всім додають здоров'я (змінюється лише значення), а за 4 шмотки
+          — всім по +15 ПА. Тож унікальний лише бонус за 3 речі, та й то, якщо
+          не рахувати повторів. Прибавки активуються, коли вдягнено певну
+          кількість речей, що входять у сет.
+        </p>
+      </header>
+
+      <div class="card calc-card">
+        <div class="table-wrap">
+          <table class="data-table" id="r8SetTable">
+            <thead>
+              <tr>
+                <th>Клас / Шмотки</th>
+                <th>2</th>
+                <th>3</th>
+                <th>4</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Воїн</td>       <td>+1500 ХП</td><td>Зменшення шкоди від стихій +15%</td><td>+15 ПА</td></tr>
+              <tr><td>Маг</td>        <td>+1200 ХП</td><td>спів −6%</td>                       <td>+15 ПА</td></tr>
+              <tr><td>Перевертень</td><td>+1500 ХП</td><td>крит +4%</td>                       <td>+15 ПА</td></tr>
+              <tr><td>Друїд</td>      <td>+1500 ХП</td><td>Зменшення фізичної шкоди +15%</td>  <td>+15 ПА</td></tr>
+              <tr><td>Жрець</td>      <td>+1200 ХП</td><td>+8 ПЗ</td>                          <td>+15 ПА</td></tr>
+              <tr><td>Лучник</td>     <td>+1300 ХП</td><td>−0,1 сек до паузи між атаками</td>  <td>+15 ПА</td></tr>
+              <tr><td>Вбивця</td>     <td>+1300 ХП</td><td>−0,1 сек до паузи між атаками</td>  <td>+15 ПА</td></tr>
+              <tr><td>Шаман</td>      <td>+1200 ХП</td><td>+1500 до Сили Духа</td>             <td>+15 ПА</td></tr>
+              <tr><td>Страж</td>      <td>+1500 ХП</td><td>крит +4%</td>                       <td>+15 ПА</td></tr>
+              <tr><td>Містик</td>     <td>+1200 ХП</td><td>крит +4%</td>                       <td>+15 ПА</td></tr>
+              <tr><td>Привид</td>     <td>+1300 ХП</td><td>−0,1 сек до паузи між атаками</td>  <td>+15 ПА</td></tr>
+              <tr><td>Жнець</td>      <td>+1200 ХП</td><td>+8 ПЗ</td>                          <td>+15 ПА</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <!-- TAB: RB (рейдові боси) -->

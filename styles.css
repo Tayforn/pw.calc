@@ -219,7 +219,7 @@ small.hint {
 /* Tabs */
 .tabs {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   padding: 10px 0 0;
   margin-top: 12px;
   flex-wrap: wrap;
@@ -227,21 +227,21 @@ small.hint {
 .tab {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--line);
   color: var(--text-dim);
-  padding: 10px 16px;
+  padding: 9px 13px;
   border-radius: 12px 12px 0 0;
   font-family: inherit;
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
   border-bottom-color: transparent;
 }
 .tab-ico {
-  font-size: 16px;
+  font-size: 15px;
   opacity: 0.8;
 }
 .tab:hover {
@@ -304,9 +304,11 @@ small.hint {
 }
 .tab.needs-attention.active .tab-ico { color: #ffbf47; }
 
-/* Компактна вкладка налаштувань — лише шестерня (+ дот при needs-attention) */
-.tab-settings { padding: 10px 14px; }
-.tab-settings .tab-ico { font-size: 17px; }
+/* Компактна вкладка налаштувань — лише шестерня (+ дот при needs-attention).
+   margin-left: auto — притискаємо до правого краю; при переносі залишається
+   на дальньому краю наступного рядка, а не зависає самотньо ліворуч. */
+.tab-settings { padding: 9px 12px; margin-left: auto; }
+.tab-settings .tab-ico { font-size: 16px; }
 .tab-settings .tab-attention {
   margin-left: 0;
   padding: 0;
