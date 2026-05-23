@@ -1961,6 +1961,16 @@
   let rbSub = 'world';
   let rbWired = false;
 
+  // === ТУТ РЕДАГУЙ МІН/МАКС ЗУМИ КАРТИ РБ ===========================
+  // windowed   — як виглядає у вкладці (звичайний режим)
+  // fullscreen — коли натиснули кнопку «⛶ На весь екран»
+  // Значення застосовуються в buildRbMap (initial) і в toggleRbFullscreen.
+  const RB_ZOOM = {
+    world:  { windowed: { min: 18, max: 21 }, fullscreen: { min: 18, max: 21 } },
+    chrono: { windowed: { min: 0, max: 2  }, fullscreen: { min: 0, max: 2  } },
+  };
+  // ==================================================================
+
   // Хроно: піксель на зображенні a33 (1024×1024) за формулою pwdatabase
   // -> latlng у L.CRS.Simple (lat = H - pixelY, lng = pixelX).
   const CH_SIZE = 1024;
@@ -1975,9 +1985,11 @@
     const listEl = document.getElementById(kind === 'world' ? 'rbListWorld' : 'rbListChrono');
     if (!el) return null;
 
+    const z0 = RB_ZOOM[kind].windowed;
     let map, fit, flyZoom;
     if (kind === 'world') {
-      map = L.map(el, { minZoom: 16, maxZoom: 19, zoomSnap: 0.5, zoomControl: true });
+      // Ліміти зуму — з RB_ZOOM (див. конфіг-блок вище).
+      map = L.map(el, { minZoom: z0.min, maxZoom: z0.max, zoomSnap: 0.5, zoomControl: true });
       const attr = 'Карта © <a href="https://worldmap.pw/" target="_blank" rel="noopener">worldmap.pw</a>';
       // як на worldmap.pw: satmap-фон для зумів 0-18, артистичний map для 18+
       L.tileLayer('https://worldmap.pw/tiles/satmap/{z}/{x}/{y}.webp', {
@@ -1989,7 +2001,7 @@
       flyZoom = 18;
     } else {
       // інстанс «Лабіринт часу» (Хроно 1-4) — статичне зображення, без карти світу
-      map = L.map(el, { crs: L.CRS.Simple, minZoom: -2, maxZoom: 2, zoomSnap: 0.25, zoomControl: true, attributionControl: false });
+      map = L.map(el, { crs: L.CRS.Simple, minZoom: z0.min, maxZoom: z0.max, zoomSnap: 0.25, zoomControl: true, attributionControl: false });
       const bounds = [[0, 0], [CH_SIZE, CH_SIZE]];
       L.imageOverlay('assets/maps/chrono.webp', bounds).addTo(map);
       map.setMaxBounds(L.latLngBounds(bounds).pad(0.5));
@@ -2026,6 +2038,12 @@
         '</button>';
     });
 
+    // обмежуємо панорамування: для світу — навколо ареалу босів,
+    // щоб мишею не можна було відтягнути карту «у нікуди».
+    if (kind === 'world' && lls.length) {
+      map.setMaxBounds(L.latLngBounds(lls).pad(0.5));
+    }
+
     // підгонка вигляду: світ — за мітками; хроно — повне зображення 2×2
     fit = (animate) => {
       if (kind === 'world') {
@@ -2034,6 +2052,28 @@
         map.fitBounds([[0, 0], [CH_SIZE, CH_SIZE]], { animate: !!animate });
       }
     };
+
+    // кнопка «на весь екран» — Leaflet-контрол у правому верхньому куті.
+    const FsCtrl = L.Control.extend({
+      options: { position: 'topright' },
+      onAdd() {
+        const wrap = L.DomUtil.create('div', 'leaflet-bar rb-fs');
+        const btn = L.DomUtil.create('a', '', wrap);
+        btn.href = '#';
+        btn.role = 'button';
+        btn.title = 'На весь екран (Esc — закрити)';
+        btn.setAttribute('aria-label', 'На весь екран');
+        btn.innerHTML = '⛶';
+        L.DomEvent.disableClickPropagation(wrap);
+        L.DomEvent.on(btn, 'click', (e) => {
+          L.DomEvent.preventDefault(e);
+          L.DomEvent.stop(e);
+          toggleRbFullscreen(kind);
+        });
+        return wrap;
+      },
+    });
+    new FsCtrl().addTo(map);
 
     if (listEl) {
       listEl.innerHTML = listHtml;
@@ -2090,12 +2130,35 @@
     rbRefresh(sub);
   }
 
+  function toggleRbFullscreen(kind) {
+    const el = document.getElementById(kind === 'world' ? 'rbMapWorld' : 'rbMapChrono');
+    if (!el) return;
+    const on = el.classList.toggle('fullscreen');
+    document.body.classList.toggle('rb-fs-active', on);
+    // ліміти зуму перемикаємо за конфігом RB_ZOOM (див. вище).
+    const map = rbMaps[kind];
+    if (map) {
+      const z = RB_ZOOM[kind][on ? 'fullscreen' : 'windowed'];
+      map.setMinZoom(z.min);
+      map.setMaxZoom(z.max);
+    }
+    // після зміни розмірів контейнера Leaflet треба підказати перерахувати тайли
+    // й заново вписати вміст у в'юпорт.
+    rbRefresh(kind);
+  }
+
   function rbActivate() {
     if (typeof L === 'undefined') return; // Leaflet не завантажився
     if (!rbMaps.world) rbMaps.world = buildRbMap('world');
     if (!rbWired) {
       rbWired = true;
       $$('.rb-subtab').forEach((btn) => btn.addEventListener('click', () => rbShowSub(btn.dataset.sub)));
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        const fs = document.querySelector('.rb-map.fullscreen');
+        if (!fs) return;
+        toggleRbFullscreen(fs.id === 'rbMapWorld' ? 'world' : 'chrono');
+      });
     }
     rbRefresh(rbSub);
   }

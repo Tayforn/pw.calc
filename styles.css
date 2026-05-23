@@ -1648,12 +1648,33 @@ small.hint {
   color: #04110b;
 }
 .rb-map {
+  position: relative;
   height: min(66vh, 600px);
   border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid var(--line-2);
   box-shadow: var(--shadow);
 }
+.rb-map.fullscreen {
+  position: fixed;
+  inset: 0;
+  height: auto;
+  width: auto;
+  border: 0;
+  border-radius: 0;
+  z-index: 9999;
+}
+body.rb-fs-active { overflow: hidden; }
+
+/* кнопка «на весь екран» поверх Leaflet */
+.leaflet-bar.rb-fs a {
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--bg-2);
+}
+.leaflet-bar.rb-fs a:hover { color: #fff; background: rgba(124, 92, 255, 0.18); }
 
 /* мітки на карті */
 .rb-marker { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
