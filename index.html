@@ -55,11 +55,17 @@
     <button class="tab" role="tab" data-tab="simulator" aria-selected="false">
       <span class="tab-ico">◈</span><span>Симулятор</span>
     </button>
+    <button class="tab" role="tab" data-tab="chests" aria-selected="false">
+      <span class="tab-ico">🎁</span><span>Симулятор скринь</span>
+    </button>
     <button class="tab" role="tab" data-tab="defense" aria-selected="false">
       <span class="tab-ico">🛡</span><span>Атака/Захист</span>
     </button>
     <button class="tab" role="tab" data-tab="r8" aria-selected="false">
       <span class="tab-ico">🏆</span><span>Р8</span>
+    </button>
+    <button class="tab" role="tab" data-tab="r8sim" aria-selected="false">
+      <span class="tab-ico">⚒</span><span>Симулятор Р8</span>
     </button>
     <button class="tab" role="tab" data-tab="guides" aria-selected="false">
       <span class="tab-ico">📖</span><span>Гайди</span>
@@ -415,6 +421,73 @@
       </div>
     </section>
 
+    <!-- TAB: CHESTS (симулятор скринь) -->
+    <section class="tab-panel" data-panel="chests" role="tabpanel">
+      <header class="section-head">
+        <span class="eyebrow">Симулятор скринь</span>
+        <h2>Відкриття скрині</h2>
+        <p>
+          Налаштуй вміст скрині (шанси та кількість), відкривай її та дивись,
+          що випало. Інвентар збирає все за поточну сесію. Режим «Симулювати»
+          відкриває скриню доти, доки не випаде обраний предмет.
+          Налаштування тимчасові — оновлення сторінки скидає скриню до дефолтної.
+        </p>
+      </header>
+
+      <div class="card calc-card">
+        <div class="chest-toolbar">
+          <button type="button" id="chestSettingsBtn" class="btn btn-ghost">⚙ Налаштування вмісту</button>
+          <span class="muted" id="chestSummary"></span>
+        </div>
+
+        <div class="chest-open-row">
+          <button type="button" id="chestOpen" class="btn btn-primary chest-open-btn">🎁 Відкрити</button>
+          <button type="button" id="chestOpen10" class="btn btn-ghost">Відкрити ×10</button>
+          <div class="chest-bulk">
+            <input type="number" id="chestCount" min="1" step="1" value="100" aria-label="Кількість скринь" />
+            <button type="button" id="chestOpenAll" class="btn btn-ghost">Відкрити всі</button>
+          </div>
+          <button type="button" id="chestClearInv" class="btn btn-ghost">↺ Очистити інвентар</button>
+        </div>
+
+        <div class="chest-drop" id="chestDrop">
+          <div class="hist-empty muted">Натисни «Відкрити», щоб подивитись, що випаде.</div>
+        </div>
+
+        <div class="chest-sim-block">
+          <h3 class="craft-h">Симуляція до бажаного предмета</h3>
+          <p class="muted" style="margin:4px 0 12px">
+            Обери предмет — скриня відкриватиметься, доки він не випаде.
+            Показуємо, скільки відкриттів знадобилось і скільки б це коштувало.
+          </p>
+          <form class="chest-sim-form" id="chestSimForm" autocomplete="off">
+            <div class="field">
+              <label for="chestTarget">Бажаний предмет</label>
+              <select id="chestTarget"></select>
+            </div>
+            <div class="field">
+              <label for="chestKeyPrice">Ціна 1 ключа/скрині, голда</label>
+              <input type="number" id="chestKeyPrice" min="0" step="0.1" value="0" />
+            </div>
+            <div class="field chest-sim-submit">
+              <button type="submit" id="chestSimulate" class="btn btn-primary">▶ Симулювати</button>
+            </div>
+          </form>
+          <div id="chestSimResult" class="result" aria-live="polite"></div>
+        </div>
+
+        <div class="chest-inv-block">
+          <div class="chest-inv-head">
+            <h3 class="craft-h" style="margin:0">Інвентар (за сесію)</h3>
+            <span class="muted" id="chestInvCount">0 відкриттів</span>
+          </div>
+          <div class="chest-inv-list" id="chestInv">
+            <div class="hist-empty muted">Поки що порожньо. Відкрий скриню, щоб щось отримати.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- TAB: DEFENSE (ПА / ПЗ / деф / рівень) -->
     <section class="tab-panel" data-panel="defense" role="tabpanel">
       <header class="section-head">
@@ -638,6 +711,72 @@
       </div>
     </section>
 
+    <!-- TAB: R8SIM (симулятор крафта Р8) -->
+    <section class="tab-panel" data-panel="r8sim" role="tabpanel">
+      <header class="section-head">
+        <span class="eyebrow">Симулятор крафта Р8</span>
+        <h2>Симулятор спорядження 8 рангу</h2>
+        <p>
+          Обери клас і частину спорядження — кожна крутка дає 3 випадкові
+          бонусні стати зі свого пулу (зважено, з можливими повторами).
+          Можна обрати до 3 параметрів, на які «полюєш», і крутити, доки не
+          виб'єш. Дані статів — з відкритих джерел, перекладені українською.
+        </p>
+      </header>
+
+      <div class="card calc-card">
+        <div class="field">
+          <label>Клас</label>
+          <div class="r8s-class-grid" id="r8sClasses" role="radiogroup" aria-label="Клас"></div>
+        </div>
+
+        <div class="field" style="margin-top:16px">
+          <label>Частина спорядження</label>
+          <div class="r8s-piece-grid" id="r8sPieces" role="radiogroup" aria-label="Частина спорядження"></div>
+        </div>
+
+        <div id="r8sBody" hidden>
+          <div class="r8s-layout">
+            <div class="r8s-item" id="r8sItem"></div>
+
+            <div class="r8s-roll">
+              <div class="r8s-roll-actions">
+                <button type="button" id="r8sRoll" class="btn btn-primary r8s-roll-btn">⚒ Крутити</button>
+                <span class="r8s-counter" id="r8sCounter">Круток: 0</span>
+              </div>
+              <div class="r8s-result" id="r8sResult">
+                <div class="hist-empty muted">Натисни «Крутити», щоб отримати 3 випадкові стати.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="r8s-hunt">
+            <h3 class="craft-h">Полювання на стати</h3>
+            <p class="muted" style="margin:4px 0 12px">
+              Обери до <b>3</b> статів (можна один і той самий кілька разів) —
+              крутитимемо, доки всі вони не випадуть в одній крутці. Натисни на
+              стат, щоб додати; натисни на обраний слот нижче, щоб прибрати.
+            </p>
+            <div class="r8s-targets" id="r8sTargets"></div>
+            <div class="r8s-chosen" id="r8sChosen"></div>
+            <div class="r8s-hunt-actions">
+              <button type="button" id="r8sHunt" class="btn btn-primary">🎯 Крутити доки не виб'ю</button>
+              <button type="button" id="r8sClearTargets" class="btn btn-ghost">Скинути вибір</button>
+            </div>
+            <div id="r8sHuntResult" class="result" aria-live="polite"></div>
+          </div>
+
+          <div class="r8s-stats">
+            <div class="r8s-stats-head">
+              <h3 class="craft-h" style="margin:0">Статистика сесії</h3>
+              <button type="button" id="r8sResetStats" class="btn btn-ghost">↺ Скинути</button>
+            </div>
+            <div id="r8sStats"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- TAB: RB (рейдові боси) -->
     <section class="tab-panel" data-panel="rb" role="tabpanel">
       <header class="section-head">
@@ -762,8 +901,39 @@
     </div>
   </footer>
 
+  <!-- MODAL: налаштування вмісту скрині -->
+  <div class="modal-overlay" id="chestModal" hidden>
+    <div class="modal chest-modal" role="dialog" aria-modal="true" aria-labelledby="chestModalTitle">
+      <div class="modal-head">
+        <h3 id="chestModalTitle">Налаштування вмісту скрині</h3>
+        <button type="button" class="modal-close" id="chestModalClose" aria-label="Закрити">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="muted" style="margin-top:0">
+          Шанс — у відсотках. Предмети з шансом &lt;100% утворюють спільний пул:
+          за одне відкриття випадає рівно один з них (пропорційно шансам).
+          Предмети зі шансом <b>100%</b> — гарантований бонус і випадають завжди.
+        </p>
+        <div class="chest-cfg-row chest-cfg-head">
+          <span>Назва</span>
+          <span>Шанс, %</span>
+          <span>К-сть</span>
+          <span></span>
+        </div>
+        <div id="chestCfgList" class="chest-cfg-list"></div>
+        <div class="chest-cfg-summary" id="chestCfgSummary"></div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" id="chestAddItem" class="btn btn-ghost">+ Додати предмет</button>
+        <button type="button" id="chestResetCfg" class="btn btn-ghost">↺ Дефолтна скриня</button>
+        <button type="button" id="chestModalDone" class="btn btn-primary">Готово</button>
+      </div>
+    </div>
+  </div>
+
   <script src="assets/vendor/leaflet/leaflet.js"></script>
   <script src="guides-data.js"></script>
+  <script src="r8-data.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

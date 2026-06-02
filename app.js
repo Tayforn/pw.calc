@@ -139,7 +139,7 @@
   // =========================================================
   // ТАБИ
   // =========================================================
-  const VALID_TABS = ['refine', 'eggs', 'compare', 'craft', 'simulator', 'defense', 'r8', 'guides', 'rb', 'settings'];
+  const VALID_TABS = ['refine', 'eggs', 'compare', 'craft', 'simulator', 'chests', 'defense', 'r8', 'r8sim', 'guides', 'rb', 'settings'];
   function setTab(name) {
     if (!VALID_TABS.includes(name)) name = 'refine';
     $$('.tab').forEach((t) => {
@@ -2164,12 +2164,809 @@
     rbRefresh(rbSub);
   }
 
+  // =========================================================
+  // СИМУЛЯТОР СКРИНЬ
+  // =========================================================
+
+  // Дефолтна скриня — «Куб Долі» (36 нагород). chance — у відсотках,
+  // qty — скільки штук дає за одне випадіння. Предмети з chance >= 100
+  // вважаються гарантованим бонусом (випадають завжди), решта формують
+  // спільний зважений пул (за відкриття випадає рівно один з них).
+  const CHEST_DEFAULT = [
+    { name: 'Ідеальний приз',            chance: 80.69, qty: 15 },
+    { name: 'Бронзова монета',           chance: 9,     qty: 1  },
+    { name: 'Знак перемоги',             chance: 2,     qty: 1  },
+    { name: 'Чудовий приз',              chance: 1.8,   qty: 1  },
+    { name: 'Платиновий ідол',           chance: 1.25,  qty: 1  },
+    { name: 'Платиновий амулет',         chance: 1.25,  qty: 1  },
+    { name: 'Орден з гравіювання',       chance: 0.7,   qty: 1  },
+    { name: 'Золота монета',             chance: 0.35,  qty: 1  },
+    { name: 'Загадкова скринька',        chance: 0.25,  qty: 1  },
+    { name: 'Камінь безмежності',        chance: 0.25,  qty: 1  },
+    { name: 'Камінь морської блакиті',   chance: 0.25,  qty: 1  },
+    { name: 'Камінь Нюйві',              chance: 0.2,   qty: 1  },
+    { name: 'Камінь Сюань Юань',         chance: 0.2,   qty: 1  },
+    { name: 'Скринька таємничого світу', chance: 0.2,   qty: 1  },
+    { name: 'Червоне око',               chance: 0.2,   qty: 1  },
+    { name: 'Камінь Джунглів',           chance: 0.15,  qty: 1  },
+    { name: 'Знак командира',            chance: 0.12,  qty: 1  },
+    { name: 'Печатка Кубу',              chance: 0.12,  qty: 1  },
+    { name: 'Книга долі',                chance: 0.1,   qty: 1  },
+    { name: 'Алмазна броня',             chance: 0.1,   qty: 1  },
+    { name: "Кам'яна броня",             chance: 0.1,   qty: 1  },
+    { name: 'Меч літнього літа',         chance: 0.1,   qty: 1  },
+    { name: 'Крила бога удачі',          chance: 0.09,  qty: 1  },
+    { name: '★Крила Пегаса',             chance: 0.09,  qty: 1  },
+    { name: 'Прикраса·Знак місяця',      chance: 0.08,  qty: 1  },
+    { name: 'Зброя·Знак місяця',         chance: 0.08,  qty: 1  },
+    { name: '★★Повний контроль ситуації',chance: 0.05,  qty: 1  },
+    { name: '★★Долоня, що керує хмарами',chance: 0.05,  qty: 1  },
+    { name: '★★Унікальне крило',         chance: 0.05,  qty: 1  },
+    { name: 'Божественний сувій',        chance: 0.015, qty: 1  },
+    { name: 'Загадкова лампа',           chance: 0.012, qty: 1  },
+    { name: 'Орден слави',               chance: 0.01,  qty: 1  },
+    { name: '★★★Плащ вознесіння',        chance: 0.01,  qty: 1  },
+    { name: 'Сокровенна перлина',        chance: 0.008, qty: 1  },
+    { name: '★★★Шолом героя',            chance: 0.005, qty: 1  },
+    { name: 'Осколок метеорита',         chance: 100,   qty: 1  },
+  ];
+
+  let chestUid = 0;
+  function chestClone(list) {
+    return list.map((it) => ({ uid: ++chestUid, name: it.name, chance: it.chance, qty: it.qty }));
+  }
+
+  const chestState = {
+    items: chestClone(CHEST_DEFAULT),
+    inventory: new Map(), // name -> { name, count, chance }
+    opens: 0,
+    lastDrop: null,       // масив { name, qty, chance }
+  };
+
+  /** Клас рідкості за шансом — для кольорового маркера. */
+  function chestRarity(chance) {
+    if (chance >= 100) return 'gtd';
+    if (chance < 0.02) return 'legendary';
+    if (chance < 0.1) return 'epic';
+    if (chance < 1) return 'rare';
+    return 'common';
+  }
+
+  function chestFmtChance(c) {
+    if (!Number.isFinite(c)) return '—';
+    if (c >= 100) return '100%';
+    // до 4 знаків після коми, без зайвих нулів (0.005, 0.015, 0.2, 9 …)
+    const s = c.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
+    return s.replace('.', ',') + '%';
+  }
+
+  /** Розбиває скриню на гарантовані предмети й зважений пул. */
+  function chestPools() {
+    const guaranteed = [];
+    const roll = [];
+    for (const it of chestState.items) {
+      if (!it.name || !(it.qty > 0)) continue;
+      if (it.chance >= 100) guaranteed.push(it);
+      else if (it.chance > 0) roll.push(it);
+    }
+    const totalWeight = roll.reduce((s, it) => s + it.chance, 0);
+    return { guaranteed, roll, totalWeight };
+  }
+
+  /** Одне відкриття. Повертає масив випавших { name, qty, chance } або null. */
+  function chestRollOnce() {
+    const { guaranteed, roll, totalWeight } = chestPools();
+    const drop = [];
+    for (const it of guaranteed) drop.push({ name: it.name, qty: it.qty, chance: it.chance });
+    if (totalWeight > 0) {
+      let r = Math.random() * totalWeight;
+      let picked = roll[roll.length - 1];
+      for (const it of roll) {
+        r -= it.chance;
+        if (r < 0) { picked = it; break; }
+      }
+      drop.push({ name: picked.name, qty: picked.qty, chance: picked.chance });
+    }
+    return drop.length ? drop : null;
+  }
+
+  function chestAddToInventory(drop) {
+    for (const d of drop) {
+      const cur = chestState.inventory.get(d.name);
+      if (cur) cur.count += d.qty;
+      else chestState.inventory.set(d.name, { name: d.name, count: d.qty, chance: d.chance });
+    }
+  }
+
+  function chestRenderDrop() {
+    const el = $('#chestDrop');
+    if (!el) return;
+    const drop = chestState.lastDrop;
+    if (!drop || !drop.length) {
+      el.innerHTML = '<div class="hist-empty muted">Натисни «Відкрити», щоб подивитись, що випаде.</div>';
+      return;
+    }
+    // Найрідкісніший предмет — головний приз цього відкриття.
+    const sorted = [...drop].sort((a, b) => a.chance - b.chance);
+    el.innerHTML = sorted.map((d) => {
+      const rar = chestRarity(d.chance);
+      const tag = d.chance >= 100 ? 'бонус' : chestFmtChance(d.chance);
+      return (
+        '<div class="chest-drop-item rarity-' + rar + '">' +
+          '<span class="chest-gem">◈</span>' +
+          '<span class="chest-drop-name">' + escHtml(d.name) + '</span>' +
+          '<span class="chest-drop-qty">×' + fmt(d.qty) + '</span>' +
+          '<span class="chest-drop-chance">' + tag + '</span>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  function chestRenderInventory() {
+    const out = $('#chestInv');
+    const cnt = $('#chestInvCount');
+    if (!out) return;
+    if (cnt) cnt.textContent = fmt(chestState.opens) + (chestState.opens === 1 ? ' відкриття' : ' відкриттів');
+    if (chestState.inventory.size === 0) {
+      out.innerHTML = '<div class="hist-empty muted">Поки що порожньо. Відкрий скриню, щоб щось отримати.</div>';
+      return;
+    }
+    const rows = [...chestState.inventory.values()].sort((a, b) => a.chance - b.chance || b.count - a.count);
+    out.innerHTML = rows.map((r) => {
+      const rar = chestRarity(r.chance);
+      return (
+        '<div class="chest-inv-item rarity-' + rar + '">' +
+          '<span class="chest-gem">◈</span>' +
+          '<span class="chest-inv-name">' + escHtml(r.name) + '</span>' +
+          '<span class="chest-inv-num">×' + fmt(r.count) + '</span>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  function chestRenderSummary() {
+    const el = $('#chestSummary');
+    if (!el) return;
+    const { guaranteed, roll, totalWeight } = chestPools();
+    el.textContent =
+      'Предметів: ' + fmt(chestState.items.length) +
+      ' · у пулі: ' + fmt(roll.length) +
+      ' (сума шансів ' + chestFmtChance(totalWeight) + ')' +
+      (guaranteed.length ? ' · гарантованих: ' + fmt(guaranteed.length) : '');
+  }
+
+  function chestRenderTargetOptions() {
+    const sel = $('#chestTarget');
+    if (!sel) return;
+    const prev = sel.value;
+    const names = chestState.items
+      .filter((it) => it.name && it.chance > 0)
+      .sort((a, b) => a.chance - b.chance);
+    sel.innerHTML = names
+      .map((it) => '<option value="' + escHtml(it.name) + '">' +
+        escHtml(it.name) + ' — ' + chestFmtChance(it.chance) + '</option>')
+      .join('');
+    if (prev && names.some((it) => it.name === prev)) sel.value = prev;
+  }
+
+  function chestRenderAll() {
+    chestRenderDrop();
+    chestRenderInventory();
+    chestRenderSummary();
+    chestRenderTargetOptions();
+  }
+
+  function chestOpen(times) {
+    let lastDrop = null;
+    for (let i = 0; i < times; i++) {
+      const drop = chestRollOnce();
+      if (!drop) break;
+      chestAddToInventory(drop);
+      chestState.opens++;
+      lastDrop = drop;
+    }
+    if (lastDrop) chestState.lastDrop = lastDrop;
+    chestRenderAll();
+  }
+
+  function chestClearInventory() {
+    chestState.inventory.clear();
+    chestState.opens = 0;
+    chestState.lastDrop = null;
+    chestRenderAll();
+    const out = $('#chestSimResult');
+    if (out) out.innerHTML = '';
+  }
+
+  // --- Симуляція «до бажаного предмета» ---
+  const CHEST_SIM_CAP = 5000000;
+
+  function chestSimulate() {
+    const out = $('#chestSimResult');
+    if (!out) return;
+    const target = $('#chestTarget').value;
+    if (!target) { out.innerHTML = '<div class="banner">Спершу додай предмети у скриню.</div>'; return; }
+
+    const { roll, totalWeight, guaranteed } = chestPools();
+    const isGuaranteed = guaranteed.some((it) => it.name === target);
+    const targetWeight = roll.filter((it) => it.name === target).reduce((s, it) => s + it.chance, 0);
+
+    if (!isGuaranteed && (targetWeight <= 0 || totalWeight <= 0)) {
+      out.innerHTML = '<div class="banner">У цього предмета шанс 0% — його неможливо отримати.</div>';
+      return;
+    }
+
+    let opens = 0;
+    let got = false;
+    let gotQty = 0;
+    while (opens < CHEST_SIM_CAP) {
+      const drop = chestRollOnce();
+      opens++;
+      chestState.opens++;
+      if (drop) {
+        chestAddToInventory(drop);
+        chestState.lastDrop = drop;
+        const hit = drop.find((d) => d.name === target);
+        if (hit) { got = true; gotQty = hit.qty; break; }
+      }
+    }
+
+    chestRenderAll();
+
+    const prob = isGuaranteed ? 1 : targetWeight / totalWeight;
+    const expected = prob > 0 ? 1 / prob : Infinity;
+    const keyPrice = parseFloat($('#chestKeyPrice').value) || 0;
+    const goldSpent = keyPrice * opens;
+    const coinsSpent = goldSpent * settings.goldPrice;
+
+    const costLine = keyPrice > 0
+      ? '<div class="metric"><span class="metric-label">Витрачено на ключі</span>' +
+        '<span class="metric-value">' + fmt2(goldSpent) + ' г</span>' +
+        '<span class="metric-sub">' + fmt(coinsSpent) + ' монет</span></div>'
+      : '';
+
+    if (!got) {
+      out.innerHTML =
+        '<div class="banner">За ' + fmt(opens) + ' відкриттів предмет «' + escHtml(target) +
+        '» так і не випав (ліміт симуляції). Шанс надто малий.</div>';
+      return;
+    }
+
+    out.innerHTML =
+      '<div class="banner info">Готово! «' + escHtml(target) + '» (×' + fmt(gotQty) +
+        ') випав за <b>' + fmt(opens) + '</b> ' + (opens === 1 ? 'відкриття' : 'відкриттів') + '.</div>' +
+      '<div class="result-summary three-cols">' +
+        '<div class="metric"><span class="metric-label">Відкриттів знадобилось</span>' +
+          '<span class="metric-value">' + fmt(opens) + '</span></div>' +
+        '<div class="metric"><span class="metric-label">Очікувано (в середньому)</span>' +
+          '<span class="metric-value">' + (Number.isFinite(expected) ? fmt2(expected) : '∞') + '</span>' +
+          '<span class="metric-sub">шанс ' + chestFmtChance(prob * 100) + ' за відкриття</span></div>' +
+        costLine +
+      '</div>';
+  }
+
+  // --- Модалка налаштувань вмісту ---
+  function chestRenderCfg() {
+    const list = $('#chestCfgList');
+    if (!list) return;
+    list.innerHTML = chestState.items.map((it) => (
+      '<div class="chest-cfg-row" data-uid="' + it.uid + '">' +
+        '<input type="text" class="chest-cfg-name" value="' + escHtml(it.name) + '" placeholder="Назва предмета" />' +
+        '<input type="number" class="chest-cfg-chance" value="' + it.chance + '" min="0" step="any" />' +
+        '<input type="number" class="chest-cfg-qty" value="' + it.qty + '" min="1" step="1" />' +
+        '<button type="button" class="chest-cfg-del" aria-label="Видалити">✕</button>' +
+      '</div>'
+    )).join('');
+    chestRenderCfgSummary();
+  }
+
+  function chestRenderCfgSummary() {
+    const el = $('#chestCfgSummary');
+    if (!el) return;
+    const { roll, totalWeight, guaranteed } = chestPools();
+    const warn = totalWeight > 0 ? '' : ' <span style="color:var(--warn)">— пул порожній, додай предмети з шансом &lt;100%</span>';
+    el.innerHTML =
+      'У пулі: <b>' + fmt(roll.length) + '</b>, сума шансів: <b>' + chestFmtChance(totalWeight) + '</b>' +
+      (guaranteed.length ? ' · гарантованих: <b>' + fmt(guaranteed.length) + '</b>' : '') + warn;
+  }
+
+  function chestOpenModal() {
+    chestRenderCfg();
+    $('#chestModal').hidden = false;
+    document.body.classList.add('modal-open');
+  }
+  function chestCloseModal() {
+    $('#chestModal').hidden = true;
+    document.body.classList.remove('modal-open');
+    chestRenderAll();
+  }
+
+  function chestInit() {
+    const openBtn = $('#chestOpen');
+    if (!openBtn) return;
+
+    openBtn.addEventListener('click', () => chestOpen(1));
+    $('#chestOpen10').addEventListener('click', () => chestOpen(10));
+    $('#chestOpenAll').addEventListener('click', () => {
+      const n = parseInt($('#chestCount').value, 10);
+      if (!Number.isFinite(n) || n < 1) return;
+      chestOpen(Math.min(n, 5000000));
+    });
+    $('#chestClearInv').addEventListener('click', chestClearInventory);
+    $('#chestSimForm').addEventListener('submit', (e) => { e.preventDefault(); chestSimulate(); });
+
+    // Модалка
+    $('#chestSettingsBtn').addEventListener('click', chestOpenModal);
+    $('#chestModalClose').addEventListener('click', chestCloseModal);
+    $('#chestModalDone').addEventListener('click', chestCloseModal);
+    $('#chestModal').addEventListener('click', (e) => {
+      if (e.target.id === 'chestModal') chestCloseModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !$('#chestModal').hidden) chestCloseModal();
+    });
+
+    $('#chestAddItem').addEventListener('click', () => {
+      chestState.items.push({ uid: ++chestUid, name: 'Новий предмет', chance: 1, qty: 1 });
+      chestRenderCfg();
+    });
+    $('#chestResetCfg').addEventListener('click', () => {
+      chestState.items = chestClone(CHEST_DEFAULT);
+      chestRenderCfg();
+    });
+
+    // Делеговане редагування рядків конфіга.
+    const cfgList = $('#chestCfgList');
+    cfgList.addEventListener('input', (e) => {
+      const row = e.target.closest('.chest-cfg-row');
+      if (!row) return;
+      const it = chestState.items.find((x) => x.uid === Number(row.dataset.uid));
+      if (!it) return;
+      if (e.target.classList.contains('chest-cfg-name')) {
+        it.name = e.target.value;
+      } else if (e.target.classList.contains('chest-cfg-chance')) {
+        const v = parseFloat(e.target.value);
+        it.chance = Number.isFinite(v) && v >= 0 ? v : 0;
+      } else if (e.target.classList.contains('chest-cfg-qty')) {
+        const v = parseInt(e.target.value, 10);
+        it.qty = Number.isFinite(v) && v >= 1 ? v : 1;
+      }
+      chestRenderCfgSummary();
+    });
+    cfgList.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('chest-cfg-del')) return;
+      const row = e.target.closest('.chest-cfg-row');
+      if (!row) return;
+      const uid = Number(row.dataset.uid);
+      chestState.items = chestState.items.filter((x) => x.uid !== uid);
+      chestRenderCfg();
+    });
+
+    chestRenderAll();
+  }
+
+  // =========================================================
+  // СИМУЛЯТОР КРАФТА Р8
+  // =========================================================
+
+  const R8S_HUNT_CAP = 5000000;
+  const r8sState = {
+    cls: null,
+    piece: null,
+    item: null,          // поточний об'єкт даних { name, static_char, chars }
+    rolls: 0,            // круток для поточного предмета
+    totalRolls: 0,       // круток за сесію (всі предмети)
+    targets: [],         // обрані назви статів (макс 3, дублі дозволені)
+    hits: new Map(),     // name -> скільки разів випав (для поточного предмета)
+    lastRoll: null,      // масив { name, value, um }
+  };
+
+  function r8sData() { return window.R8_DATA || null; }
+
+  /** Випадкове значення стата з діапазону [min,max] або [val]. */
+  function r8sRandValue(arr) {
+    if (!arr || arr.length === 0) return 0;
+    if (arr.length === 1) return arr[0];
+    const min = parseFloat(arr[0]);
+    const max = parseFloat(arr[1]);
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return arr[0];
+    // цілі діапазони — цілими, дробові — як є (крок 0.05 тощо не потрібен тут)
+    return String(Math.floor(Math.random() * (max - min + 1)) + min);
+  }
+
+  /** k зважених виборів СТАТІВ з повтором (як у грі — 3 рядки). */
+  function r8sPickStats(chars, k) {
+    const total = chars.reduce((s, c) => s + c.weight, 0);
+    const out = [];
+    for (let i = 0; i < k; i++) {
+      let r = Math.random() * total;
+      let pick = chars[chars.length - 1];
+      for (const c of chars) { r -= c.weight; if (r < 0) { pick = c; break; } }
+      out.push({ name: pick.name, value: r8sRandValue(pick.value), um: pick.um });
+    }
+    return out;
+  }
+
+  /** Унікальні стати поточного предмета з сумарною вагою кожного. */
+  function r8sStatTotals() {
+    const map = new Map();
+    let total = 0;
+    if (r8sState.item) {
+      for (const c of r8sState.item.chars) {
+        total += c.weight;
+        const cur = map.get(c.name);
+        if (cur) cur.weight += c.weight;
+        else map.set(c.name, { name: c.name, weight: c.weight });
+      }
+    }
+    return { map, total };
+  }
+
+  /** Точна ймовірність, що кожен обраний стат трапиться серед 3 кидків
+   *  принаймні стільки разів, скільки його обрано (дублі дозволені).
+   *  Рахуємо прямим перебором усіх трійок назв (n³ ≤ ~2700 — миттєво). */
+  function r8sComboProb(targetNames) {
+    const { map, total } = r8sStatTotals();
+    if (!total || targetNames.length === 0) return 0;
+
+    // потрібна кратність кожної цілі
+    const need = new Map();
+    for (const n of targetNames) need.set(n, (need.get(n) || 0) + 1);
+    for (const n of need.keys()) if (!map.get(n) || map.get(n).weight <= 0) return 0;
+
+    const names = [...map.values()].map((s) => ({ name: s.name, p: s.weight / total }));
+    let prob = 0;
+    for (let i = 0; i < names.length; i++)
+      for (let j = 0; j < names.length; j++)
+        for (let k = 0; k < names.length; k++) {
+          const cnt = new Map();
+          cnt.set(names[i].name, (cnt.get(names[i].name) || 0) + 1);
+          cnt.set(names[j].name, (cnt.get(names[j].name) || 0) + 1);
+          cnt.set(names[k].name, (cnt.get(names[k].name) || 0) + 1);
+          let ok = true;
+          for (const [nm, req] of need) if ((cnt.get(nm) || 0) < req) { ok = false; break; }
+          if (ok) prob += names[i].p * names[j].p * names[k].p;
+        }
+    return Math.max(0, Math.min(1, prob));
+  }
+
+  function r8sPct(p) {
+    if (!Number.isFinite(p) || p <= 0) return '0%';
+    const v = p * 100;
+    if (v >= 1) return fmt2(v) + '%';
+    return v.toFixed(v < 0.01 ? 4 : 3).replace(/0+$/, '').replace(/\.$/, '').replace('.', ',') + '%';
+  }
+
+  function r8sRecordRoll(roll) {
+    r8sState.lastRoll = roll;
+    r8sState.rolls++;
+    r8sState.totalRolls++;
+    // унікальні назви в крутці — щоб не рахувати дубль двічі для «появи»
+    const seen = new Set();
+    for (const r of roll) {
+      if (seen.has(r.name)) continue;
+      seen.add(r.name);
+      r8sState.hits.set(r.name, (r8sState.hits.get(r.name) || 0) + 1);
+    }
+  }
+
+  function r8sRoll(times) {
+    if (!r8sState.item) return;
+    for (let i = 0; i < times; i++) {
+      r8sRecordRoll(r8sPickStats(r8sState.item.chars, 3));
+    }
+    r8sRenderResult();
+    r8sRenderStats();
+    r8sRenderCounter();
+  }
+
+  function r8sHunt() {
+    const out = $('#r8sHuntResult');
+    if (!out || !r8sState.item) return;
+    const targets = [...r8sState.targets];
+    if (targets.length === 0) {
+      out.innerHTML = '<div class="banner">Спершу познач хоча б один стат для полювання.</div>';
+      return;
+    }
+    const prob = r8sComboProb(targets);
+    if (prob <= 0) {
+      out.innerHTML = '<div class="banner">Такий збір неможливий для цього предмета.</div>';
+      return;
+    }
+
+    // потрібна кратність кожної цілі (дублі = має випасти кілька разів)
+    const need = new Map();
+    for (const t of targets) need.set(t, (need.get(t) || 0) + 1);
+
+    let rolls = 0, hitRoll = null, got = false;
+    while (rolls < R8S_HUNT_CAP) {
+      const roll = r8sPickStats(r8sState.item.chars, 3);
+      rolls++;
+      r8sState.rolls++;
+      r8sState.totalRolls++;
+      const cnt = new Map();
+      const seen = new Set();
+      for (const r of roll) {
+        cnt.set(r.name, (cnt.get(r.name) || 0) + 1);
+        if (!seen.has(r.name)) { seen.add(r.name); r8sState.hits.set(r.name, (r8sState.hits.get(r.name) || 0) + 1); }
+      }
+      let all = true;
+      for (const [nm, req] of need) if ((cnt.get(nm) || 0) < req) { all = false; break; }
+      if (all) { got = true; hitRoll = roll; break; }
+    }
+    if (hitRoll) r8sState.lastRoll = hitRoll;
+
+    r8sRenderResult();
+    r8sRenderStats();
+    r8sRenderCounter();
+
+    const expected = prob > 0 ? 1 / prob : Infinity;
+    if (!got) {
+      out.innerHTML = '<div class="banner">За ' + fmt(rolls) +
+        ' круток збір так і не випав (ліміт). Шанс надто малий: ' + r8sPct(prob) + '.</div>';
+      return;
+    }
+    out.innerHTML =
+      '<div class="banner info">Готово! Збір вибито за <b>' + fmt(rolls) + '</b> ' +
+        (rolls === 1 ? 'крутку' : 'круток') + '.</div>' +
+      '<div class="result-summary three-cols">' +
+        '<div class="metric"><span class="metric-label">Круток знадобилось</span>' +
+          '<span class="metric-value">' + fmt(rolls) + '</span></div>' +
+        '<div class="metric"><span class="metric-label">Шанс за крутку</span>' +
+          '<span class="metric-value">' + r8sPct(prob) + '</span></div>' +
+        '<div class="metric"><span class="metric-label">Очікувано (середнє)</span>' +
+          '<span class="metric-value">' + (Number.isFinite(expected) ? fmt2(expected) : '∞') + '</span></div>' +
+      '</div>';
+  }
+
+  // --- Рендер ---
+  function r8sRenderClasses() {
+    const wrap = $('#r8sClasses');
+    const data = r8sData();
+    if (!wrap || !data) return;
+    const armLabel = { light: 'Легка', heavy: 'Важка', int: 'Маг.' };
+    wrap.innerHTML = data.classes.map((c) =>
+      '<button type="button" class="r8s-chip r8s-class" data-cls="' + c.code + '" role="radio" aria-checked="false">' +
+        '<span class="r8s-class-name">' + escHtml(c.ua) + '</span>' +
+        '<span class="r8s-class-arm arm-' + c.arm + '">' + armLabel[c.arm] + '</span>' +
+      '</button>'
+    ).join('');
+  }
+
+  function r8sRenderPieces() {
+    const wrap = $('#r8sPieces');
+    const data = r8sData();
+    if (!wrap || !data) return;
+    wrap.innerHTML = data.pieces.map((p) =>
+      '<button type="button" class="r8s-chip r8s-piece" data-piece="' + p.code + '" role="radio" aria-checked="false">' +
+        escHtml(p.ua) +
+      '</button>'
+    ).join('');
+  }
+
+  function r8sSyncActive() {
+    $$('#r8sClasses .r8s-class').forEach((b) => {
+      const on = b.dataset.cls === r8sState.cls;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-checked', String(on));
+    });
+    $$('#r8sPieces .r8s-piece').forEach((b) => {
+      const on = b.dataset.piece === r8sState.piece;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-checked', String(on));
+    });
+  }
+
+  function r8sLoadItem() {
+    const data = r8sData();
+    if (!data || !r8sState.cls || !r8sState.piece) { r8sState.item = null; return; }
+    const byClass = data.items[r8sState.cls];
+    r8sState.item = byClass ? byClass[r8sState.piece] || null : null;
+    // скидаємо лічильники для нового предмета
+    r8sState.rolls = 0;
+    r8sState.targets = [];
+    r8sState.hits = new Map();
+    r8sState.lastRoll = null;
+  }
+
+  function r8sRenderItem() {
+    const el = $('#r8sItem');
+    if (!el) return;
+    const it = r8sState.item;
+    if (!it) { el.innerHTML = ''; return; }
+    const staticHtml = escHtml(it.static_char).replace(/\n/g, '<br/>');
+    el.innerHTML =
+      '<div class="r8s-item-name">' + escHtml(it.name) + '</div>' +
+      '<div class="r8s-item-static">' + staticHtml + '</div>';
+  }
+
+  function r8sRenderResult() {
+    const el = $('#r8sResult');
+    if (!el) return;
+    const roll = r8sState.lastRoll;
+    if (!roll) {
+      el.innerHTML = '<div class="hist-empty muted">Натисни «Крутити», щоб отримати 3 випадкові стати.</div>';
+      return;
+    }
+    el.innerHTML =
+      '<div class="r8s-roll-title">Випадкові бонуси:</div>' +
+      roll.map((r) => {
+        const on = r8sState.targets.includes(r.name);
+        return '<div class="r8s-roll-line' + (on ? ' is-target' : '') + '">' +
+          '<span class="r8s-roll-stat">' + escHtml(r.name) + '</span>' +
+          '<span class="r8s-roll-val">' + escHtml(String(r.value)) + (r.um ? ' ' + escHtml(r.um) : '') + '</span>' +
+        '</div>';
+      }).join('');
+  }
+
+  function r8sRenderTargets() {
+    const wrap = $('#r8sTargets');
+    if (!wrap) return;
+    if (!r8sState.item) { wrap.innerHTML = ''; return; }
+    const { map, total } = r8sStatTotals();
+    const names = [...map.values()].sort((a, b) => b.weight - a.weight);
+    const atMax = r8sState.targets.length >= 3;
+    wrap.innerHTML = names.map((s) => {
+      const count = r8sState.targets.filter((t) => t === s.name).length;
+      const on = count > 0;
+      const p = total ? (1 - Math.pow((total - s.weight) / total, 3)) : 0; // шанс ≥1 за крутку
+      const dis = atMax ? ' is-disabled' : '';
+      const badge = count > 0 ? '<span class="r8s-target-count">×' + count + '</span>' : '';
+      return '<button type="button" class="r8s-target' + (on ? ' active' : '') + dis + '" data-name="' + escHtml(s.name) + '">' +
+        '<span class="r8s-target-name">' + escHtml(s.name.replace(/\s*[+\-]\s*$/, '')) + '</span>' +
+        '<span class="r8s-target-pct">' + r8sPct(p) + '</span>' +
+        badge +
+      '</button>';
+    }).join('');
+    r8sRenderChosen();
+  }
+
+  function r8sRenderChosen() {
+    const wrap = $('#r8sChosen');
+    if (!wrap) return;
+    if (!r8sState.targets.length) {
+      wrap.innerHTML = '<span class="r8s-chosen-empty muted">Обрано 0 / 3 — натисни на стати вище.</span>';
+      return;
+    }
+    wrap.innerHTML = r8sState.targets.map((name, i) =>
+      '<button type="button" class="r8s-slot" data-idx="' + i + '" title="Прибрати">' +
+        '<span>' + escHtml(name.replace(/\s*[+\-]\s*$/, '')) + '</span>' +
+        '<span class="r8s-slot-x">✕</span>' +
+      '</button>'
+    ).join('') + '<span class="r8s-chosen-empty muted">' + r8sState.targets.length + ' / 3</span>';
+  }
+
+  function r8sRenderCounter() {
+    const c = $('#r8sCounter');
+    if (c) c.textContent = 'Круток: ' + fmt(r8sState.rolls);
+  }
+
+  function r8sRenderStats() {
+    const out = $('#r8sStats');
+    if (!out) return;
+    if (!r8sState.item) { out.innerHTML = ''; return; }
+    const rolls = r8sState.rolls;
+    const summary =
+      '<div class="result-summary three-cols">' +
+        '<div class="metric"><span class="metric-label">Круток (цей предмет)</span>' +
+          '<span class="metric-value">' + fmt(rolls) + '</span></div>' +
+        '<div class="metric"><span class="metric-label">Круток за сесію</span>' +
+          '<span class="metric-value">' + fmt(r8sState.totalRolls) + '</span></div>' +
+        '<div class="metric"><span class="metric-label">Обрано цілей</span>' +
+          '<span class="metric-value">' + fmt(r8sState.targets.length) + ' / 3</span></div>' +
+      '</div>';
+
+    let table = '';
+    if (rolls > 0) {
+      const { map, total } = r8sStatTotals();
+      const rows = [...map.values()].map((s) => {
+        const hits = r8sState.hits.get(s.name) || 0;
+        const real = hits / rolls;
+        const theo = total ? (1 - Math.pow((total - s.weight) / total, 3)) : 0;
+        return { name: s.name, hits, real, theo };
+      }).sort((a, b) => b.hits - a.hits);
+      table =
+        '<div class="table-wrap" style="margin-top:14px"><table class="data-table"><thead><tr>' +
+          '<th>Стат</th><th class="num">Випав</th><th class="num">Факт. %</th><th class="num">Теор. %</th>' +
+        '</tr></thead><tbody>' +
+        rows.map((r) =>
+          '<tr><td>' + escHtml(r.name.replace(/\s*[+\-]\s*$/, '')) + '</td>' +
+          '<td class="num">' + fmt(r.hits) + '</td>' +
+          '<td class="num">' + r8sPct(r.real) + '</td>' +
+          '<td class="num">' + r8sPct(r.theo) + '</td></tr>'
+        ).join('') +
+        '</tbody></table></div>';
+    }
+    out.innerHTML = summary + table;
+  }
+
+  function r8sRenderAll() {
+    r8sSyncActive();
+    const ready = !!r8sState.item;
+    $('#r8sBody').hidden = !ready;
+    if (ready) {
+      r8sRenderItem();
+      r8sRenderResult();
+      r8sRenderTargets();
+      r8sRenderCounter();
+      r8sRenderStats();
+      const hr = $('#r8sHuntResult');
+      if (hr) hr.innerHTML = '';
+    }
+  }
+
+  function r8sInit() {
+    if (!$('#r8sClasses') || !r8sData()) return;
+    r8sRenderClasses();
+    r8sRenderPieces();
+
+    $('#r8sClasses').addEventListener('click', (e) => {
+      const btn = e.target.closest('.r8s-class');
+      if (!btn) return;
+      r8sState.cls = btn.dataset.cls;
+      r8sLoadItem();
+      r8sRenderAll();
+    });
+    $('#r8sPieces').addEventListener('click', (e) => {
+      const btn = e.target.closest('.r8s-piece');
+      if (!btn) return;
+      r8sState.piece = btn.dataset.piece;
+      r8sLoadItem();
+      r8sRenderAll();
+    });
+
+    $('#r8sRoll').addEventListener('click', () => r8sRoll(1));
+
+    // Палітра статів — клік додає один екземпляр (макс 3, дублі дозволені).
+    $('#r8sTargets').addEventListener('click', (e) => {
+      const btn = e.target.closest('.r8s-target');
+      if (!btn) return;
+      if (r8sState.targets.length >= 3) return;
+      r8sState.targets.push(btn.dataset.name);
+      r8sRenderTargets();
+      r8sRenderResult();
+      r8sRenderStats();
+    });
+    // Обрані слоти — клік прибирає саме цей екземпляр.
+    $('#r8sChosen').addEventListener('click', (e) => {
+      const btn = e.target.closest('.r8s-slot');
+      if (!btn) return;
+      const idx = Number(btn.dataset.idx);
+      if (!Number.isInteger(idx)) return;
+      r8sState.targets.splice(idx, 1);
+      r8sRenderTargets();
+      r8sRenderResult();
+      r8sRenderStats();
+    });
+    $('#r8sClearTargets').addEventListener('click', () => {
+      r8sState.targets = [];
+      r8sRenderTargets();
+      r8sRenderResult();
+      r8sRenderStats();
+      $('#r8sHuntResult').innerHTML = '';
+    });
+    $('#r8sHunt').addEventListener('click', r8sHunt);
+
+    $('#r8sResetStats').addEventListener('click', () => {
+      r8sState.rolls = 0;
+      r8sState.totalRolls = 0;
+      r8sState.hits = new Map();
+      r8sState.lastRoll = null;
+      r8sRenderResult();
+      r8sRenderCounter();
+      r8sRenderStats();
+      $('#r8sHuntResult').innerHTML = '';
+    });
+  }
+
   $('#year').textContent = new Date().getFullYear();
   applySettingsToInputs();
   applyDefaultEggPrice();
   buildCraftInventory();
   buildRecipesList();
   simInit();
+  chestInit();
+  r8sInit();
   defInit();
   guidesInit();
   renderAll();
