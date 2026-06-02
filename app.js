@@ -2916,15 +2916,25 @@
 
     $('#r8sRoll').addEventListener('click', () => r8sRoll(1));
 
+    // Зміна цілей = новий «забіг»: обнуляємо лічильник круток і статистику
+    // поточного предмета (загальний лічильник за сесію лишається).
+    const r8sOnTargetsChange = () => {
+      r8sState.rolls = 0;
+      r8sState.hits = new Map();
+      r8sRenderTargets();
+      r8sRenderResult();
+      r8sRenderCounter();
+      r8sRenderStats();
+      $('#r8sHuntResult').innerHTML = '';
+    };
+
     // Палітра статів — клік додає один екземпляр (макс 3, дублі дозволені).
     $('#r8sTargets').addEventListener('click', (e) => {
       const btn = e.target.closest('.r8s-target');
       if (!btn) return;
       if (r8sState.targets.length >= 3) return;
       r8sState.targets.push(btn.dataset.name);
-      r8sRenderTargets();
-      r8sRenderResult();
-      r8sRenderStats();
+      r8sOnTargetsChange();
     });
     // Обрані слоти — клік прибирає саме цей екземпляр.
     $('#r8sChosen').addEventListener('click', (e) => {
@@ -2933,16 +2943,11 @@
       const idx = Number(btn.dataset.idx);
       if (!Number.isInteger(idx)) return;
       r8sState.targets.splice(idx, 1);
-      r8sRenderTargets();
-      r8sRenderResult();
-      r8sRenderStats();
+      r8sOnTargetsChange();
     });
     $('#r8sClearTargets').addEventListener('click', () => {
       r8sState.targets = [];
-      r8sRenderTargets();
-      r8sRenderResult();
-      r8sRenderStats();
-      $('#r8sHuntResult').innerHTML = '';
+      r8sOnTargetsChange();
     });
     $('#r8sHunt').addEventListener('click', r8sHunt);
 
