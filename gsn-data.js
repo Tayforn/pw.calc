@@ -5,8 +5,9 @@
 
    Кожен можливий доп — ОКРЕМИЙ рядок (як на pwdatabase): напр. «Захист від
    металу +157» і «Захист від металу +173» — це два різні чіпи зі своїми
-   шансами. weight — шанс за слот у % з pwdatabase. «Невідомий параметр»
-   добирає залишок до 100% (у базі стоїть як 33.33% — це плейсхолдер).
+   шансами. weight — відносна вага за слот (з % pwdatabase). «Невідомий
+   параметр» з бази НЕ використовуємо: кожен слот дає реальний доп, зважено за
+   weight (тож шанс за слот = weight / сума ваг пулу).
 
    Джерела (pwdatabase.com/ru/items):
      Намисто: 20359 (2★), 20360 (3★), 20361 (Голд)
@@ -155,20 +156,15 @@ window.GSN_DATA = {
   },
 };
 
-/* Збираємо data[item][tier] = { name, static_char, chars:[{name,value,um,weight}] }
-   і додаємо «Невідомий параметр» з вагою-залишком до 100%. */
+/* Збираємо data[item][tier] = { name, static_char, chars:[{name,value,um,weight}] }.
+   «Невідомий параметр» з pwdatabase не додаємо — кожен слот дає реальний доп. */
 (function () {
-  const UNKNOWN = '__unknown__';
-  window.GSN_UNKNOWN = UNKNOWN;
   const G = window.GSN_DATA;
   G.data = {};
   for (const item of Object.keys(G.rows)) {
     G.data[item] = {};
     for (const tier of Object.keys(G.rows[item])) {
       const chars = G.rows[item][tier].map((r) => ({ name: r[0], value: r[1], um: r[2], weight: r[3] }));
-      const known = chars.reduce((s, c) => s + c.weight, 0);
-      const rest = Math.max(0, Math.round((100 - known) * 100) / 100);
-      chars.push({ name: UNKNOWN, value: '?', um: '', weight: rest });
       G.data[item][tier] = {
         name: G.meta[item][tier].name,
         static_char: G.meta[item][tier].static_char,

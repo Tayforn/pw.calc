@@ -3117,17 +3117,20 @@
         if (all) { got = true; break; }
       }
     }
-    gsnRenderResult();
     gsnRenderCounter();
     gsnRenderStats();
 
     const t = gsnTier(tierCode);
     const expected = prob > 0 ? 1 / prob : Infinity;
     if (!got) {
-      out.innerHTML = '<div class="banner">За ' + fmt(rolls) +
-        ' крафтів збір так і не випав (ліміт). Шанс надто малий: ' + r8sPct(prob) + '.</div>';
+      // невдалий (невідповідний) предмет не показуємо
+      gsnState.last = null;
+      gsnRenderResult();
+      out.innerHTML = '<div class="banner">Не пощастило 😔 За ' + fmt(rolls) +
+        ' крафтів потрібний збір так і не випав (ліміт). Шанс надто малий: ' + r8sPct(prob) + '.</div>';
       return;
     }
+    gsnRenderResult();
     out.innerHTML =
       '<div class="banner info">Готово! <b>' + escHtml(t.star + ' ' + t.ua) + '</b>' +
         (targets.length ? ' із потрібними статами' : '') + ' вибито за <b>' + fmt(rolls) + '</b> крафтів.</div>' +
