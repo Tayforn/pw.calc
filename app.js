@@ -2641,11 +2641,9 @@
     r8sState.lastRoll = roll;
     r8sState.rolls++;
     r8sState.totalRolls++;
-    // унікальні назви в крутці — щоб не рахувати дубль двічі для «появи»
-    const seen = new Set();
+    // рахуємо появу в КОЖНОМУ слоті (3 на крутку) — щоб фактичний %
+    // сходився з шансом за слот (як на pwdatabase).
     for (const r of roll) {
-      if (seen.has(r.name)) continue;
-      seen.add(r.name);
       r8sState.hits.set(r.name, (r8sState.hits.get(r.name) || 0) + 1);
     }
   }
@@ -2685,10 +2683,9 @@
       r8sState.rolls++;
       r8sState.totalRolls++;
       const cnt = new Map();
-      const seen = new Set();
       for (const r of roll) {
         cnt.set(r.name, (cnt.get(r.name) || 0) + 1);
-        if (!seen.has(r.name)) { seen.add(r.name); r8sState.hits.set(r.name, (r8sState.hits.get(r.name) || 0) + 1); }
+        r8sState.hits.set(r.name, (r8sState.hits.get(r.name) || 0) + 1);
       }
       let all = true;
       for (const [nm, req] of need) if ((cnt.get(nm) || 0) < req) { all = false; break; }
@@ -2712,8 +2709,9 @@
       '<div class="result-summary three-cols">' +
         '<div class="metric"><span class="metric-label">Круток знадобилось</span>' +
           '<span class="metric-value">' + fmt(rolls) + '</span></div>' +
-        '<div class="metric"><span class="metric-label">Шанс за крутку</span>' +
-          '<span class="metric-value">' + r8sPct(prob) + '</span></div>' +
+        '<div class="metric"><span class="metric-label">Шанс зібрати за крутку</span>' +
+          '<span class="metric-value">' + r8sPct(prob) + '</span>' +
+          '<span class="metric-sub">збіг у будь-якому з 3 слотів</span></div>' +
         '<div class="metric"><span class="metric-label">Очікувано (середнє)</span>' +
           '<span class="metric-value">' + (Number.isFinite(expected) ? fmt2(expected) : '∞') + '</span></div>' +
       '</div>';
@@ -2809,7 +2807,7 @@
     wrap.innerHTML = names.map((s) => {
       const count = r8sState.targets.filter((t) => t === s.name).length;
       const on = count > 0;
-      const p = total ? (1 - Math.pow((total - s.weight) / total, 3)) : 0; // шанс ≥1 за крутку
+      const p = total ? s.weight / total : 0; // шанс за слот (як на pwdatabase)
       const dis = atMax ? ' is-disabled' : '';
       const badge = count > 0 ? '<span class="r8s-target-count">×' + count + '</span>' : '';
       return '<button type="button" class="r8s-target' + (on ? ' active' : '') + dis + '" data-name="' + escHtml(s.name) + '">' +
@@ -2859,15 +2857,16 @@
     let table = '';
     if (rolls > 0) {
       const { map, total } = r8sStatTotals();
+      const slots = rolls * 3;
       const rows = [...map.values()].map((s) => {
         const hits = r8sState.hits.get(s.name) || 0;
-        const real = hits / rolls;
-        const theo = total ? (1 - Math.pow((total - s.weight) / total, 3)) : 0;
+        const real = slots > 0 ? hits / slots : 0; // частка зайнятих слотів
+        const theo = total ? s.weight / total : 0;  // шанс за слот (pwdatabase)
         return { name: s.name, hits, real, theo };
       }).sort((a, b) => b.hits - a.hits);
       table =
         '<div class="table-wrap" style="margin-top:14px"><table class="data-table"><thead><tr>' +
-          '<th>Стат</th><th class="num">Випав</th><th class="num">Факт. %</th><th class="num">Теор. %</th>' +
+          '<th>Стат</th><th class="num">Разів</th><th class="num">Факт. за слот</th><th class="num">Шанс за слот</th>' +
         '</tr></thead><tbody>' +
         rows.map((r) =>
           '<tr><td>' + escHtml(r.name.replace(/\s*[+\-]\s*$/, '')) + '</td>' +
