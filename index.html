@@ -67,6 +67,9 @@
     <button class="tab" role="tab" data-tab="r8sim" aria-selected="false">
       <span class="tab-ico">⚒</span><span>Симулятор Р8</span>
     </button>
+    <button class="tab" role="tab" data-tab="gsn" aria-selected="false">
+      <span class="tab-ico">📿</span><span>ГСН</span>
+    </button>
     <button class="tab" role="tab" data-tab="guides" aria-selected="false">
       <span class="tab-ico">📖</span><span>Гайди</span>
     </button>
@@ -777,6 +780,71 @@
       </div>
     </section>
 
+    <!-- TAB: GSN (ГСН / Хроно біжутерія) -->
+    <section class="tab-panel" data-panel="gsn" role="tabpanel">
+      <header class="section-head">
+        <span class="eyebrow">Симулятор крафта ГСН</span>
+        <h2>Хроно-біжутерія: Намисто та Пояс</h2>
+        <p>
+          Обери предмет і «крафти». Спершу визначається якість речі
+          (<b>2★ Синь ≈ 89%</b>, <b>3★ Фіолет ≈ 10%</b>, <b>Голд ≈ 1%</b>), а
+          від неї залежить кількість випадкових допів: <b>2★</b> — 1–3
+          (зазвичай 1–2), <b>3★</b> — 2–3, <b>Голд</b> — 4. Можна полювати на
+          конкретну якість і стати. Дані — з відкритих джерел (pwdatabase),
+          перекладені українською.
+        </p>
+      </header>
+
+      <div class="card calc-card">
+        <div class="field">
+          <label>Предмет</label>
+          <div class="gsn-item-grid" id="gsnItems" role="radiogroup" aria-label="Предмет"></div>
+        </div>
+
+        <div id="gsnBody" hidden>
+          <div class="gsn-odds" id="gsnOdds"></div>
+
+          <div class="r8s-layout">
+            <div class="r8s-item" id="gsnItem"></div>
+
+            <div class="r8s-roll">
+              <div class="r8s-roll-actions">
+                <button type="button" id="gsnRoll" class="btn btn-primary r8s-roll-btn">🎲 Крафтити</button>
+                <span class="r8s-counter" id="gsnCounter">Крафтів: 0</span>
+              </div>
+              <div class="r8s-result" id="gsnResult">
+                <div class="hist-empty muted">Натисни «Крафтити», щоб скрафтити річ.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="r8s-hunt">
+            <h3 class="craft-h">Полювання</h3>
+            <p class="muted" style="margin:4px 0 12px">
+              Обери, яку якість полюєш, і (за бажанням) до <b>3</b> статів, які
+              мають бути на речі. Крафтитимемо, доки не виб'ємо.
+            </p>
+            <div class="gsn-tier-pick" id="gsnTierPick" role="radiogroup" aria-label="Цільова якість"></div>
+            <div class="r8s-targets" id="gsnTargets"></div>
+            <div class="r8s-chosen" id="gsnChosen"></div>
+            <div class="r8s-hunt-actions">
+              <button type="button" id="gsnHunt" class="btn btn-primary">🎯 Крафтити доки не виб'ю</button>
+              <button type="button" id="gsnClearTargets" class="btn btn-ghost">Скинути стати</button>
+            </div>
+            <div id="gsnHuntResult" class="result" aria-live="polite"></div>
+          </div>
+
+          <div class="r8s-stats">
+            <div class="r8s-stats-head">
+              <h3 class="craft-h" style="margin:0">Статистика сесії</h3>
+              <button type="button" id="gsnResetStats" class="btn btn-ghost">↺ Скинути</button>
+            </div>
+            <div id="gsnStats"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- TAB: RB (рейдові боси) -->
     <section class="tab-panel" data-panel="rb" role="tabpanel">
       <header class="section-head">
@@ -934,6 +1002,7 @@
   <script src="assets/vendor/leaflet/leaflet.js"></script>
   <script src="guides-data.js"></script>
   <script src="r8-data.js"></script>
+  <script src="gsn-data.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
