@@ -8,7 +8,7 @@ WORKDIR /usr/share/nginx/html
 
 # Чистимо дефолтний контент і копіюємо сайт
 RUN rm -rf ./*
-COPY index.html styles.css app.js guides-data.js ./
+COPY index.html styles.css app.js guides-data.js r8-data.js ./
 COPY assets/ ./assets/
 
 # Шаблон конфіга nginx (порт підставиться через envsubst)
