@@ -1435,7 +1435,27 @@ small.hint {
   flex-direction: column;
   gap: 1px;
 }
-.guides-cat.open ul { display: flex; }
+.guides-cat.open ul {
+  display: flex;
+  max-height: 500px;
+  overflow-y: auto;
+}
+.guides-cat.open ul::-webkit-scrollbar { width: 8px; }
+.guides-cat.open ul::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+.guides-cat.open ul::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+.guides-cat.open ul::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 92, 255, 0.45);
+}
+.guides-cat.open ul {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
 .guides-cat li button {
   display: flex;
   align-items: center;
