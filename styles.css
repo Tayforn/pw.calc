@@ -566,6 +566,61 @@ small.hint {
 .metric.bad { border-color: rgba(255, 94, 108, 0.35); background: rgba(255, 94, 108, 0.06); }
 .metric.bad .metric-value { color: var(--bad); }
 
+/* Monte Carlo (розподіл вартості заточки) */
+.mc-card, .rev-card { margin-top: 22px; }
+.mc-head h3 { margin: 0 0 6px; font-size: 17px; }
+.mc-head .muted { margin: 0 0 16px; }
+.mc-form { display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+.mc-form .field { flex: 1 1 220px; margin: 0; }
+/* поле-обгортка кнопки: порожній label-спейсер вирівнює кнопку з інпутами
+   (підказки під інпутами не зсувають кнопку по висоті) */
+.mc-form .field.mc-submit { flex: 0 0 auto; }
+.mc-form .field.mc-submit .btn { height: 46px; }
+.mc-bar-mark { opacity: 1; outline: 2px solid var(--good); outline-offset: -1px; }
+.rev-delta { font-size: 12px; font-weight: 500; color: var(--text-dim); }
+.rev-delta.rev-ok { color: var(--good); }
+.mc-hist {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 130px;
+  margin-top: 16px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.mc-bar {
+  flex: 1;
+  min-height: 2px;
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  border-radius: 3px 3px 0 0;
+  opacity: 0.85;
+  transition: opacity 0.12s;
+}
+.mc-bar:hover { opacity: 1; }
+.mc-hist-axis {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+.result-summary.mc-summary {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+.mc-h {
+  margin: 22px 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+tr.mc-good td { color: var(--good); }
+tr.mc-bad td { color: var(--bad); }
+tr.mc-mid { background: rgba(124, 92, 255, 0.08); }
+tr.mc-mid td { font-weight: 700; color: #fff; }
+
 /* Tables */
 .table-wrap {
   overflow-x: auto;
@@ -1644,8 +1699,7 @@ small.hint {
 .rb-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 .rb-chip {
   display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  align-items: stretch;
   font-family: inherit;
   font-size: 12.5px;
   font-weight: 600;
@@ -1653,11 +1707,53 @@ small.hint {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 5px 12px;
+  overflow: hidden;
+  transition: background 0.12s, color 0.12s, border-color 0.12s, opacity 0.12s;
+}
+.rb-chip:hover { border-color: rgba(124, 92, 255, 0.4); }
+.rb-chip-go, .rb-chip-kill {
+  font: inherit;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.12s, color 0.12s;
+}
+.rb-chip-go { padding: 5px 8px 5px 12px; }
+.rb-chip-go:hover { color: #fff; background: rgba(124, 92, 255, 0.14); }
+.rb-chip-kill {
+  padding: 5px 10px;
+  border-left: 1px solid var(--line);
+  color: var(--text-dim);
+  font-weight: 800;
+  line-height: 1;
+}
+.rb-chip-kill:hover { color: var(--good); background: rgba(53, 224, 161, 0.14); }
+.rb-chip.killed { opacity: 0.5; }
+.rb-chip.killed .rb-chip-go { text-decoration: line-through; }
+.rb-chip.killed .rb-chip-kill { color: var(--good); background: rgba(53, 224, 161, 0.16); }
+.rb-marker.killed { opacity: 0.4; filter: grayscale(1); }
+
+/* панель чеклиста над списком босів */
+.rb-killbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.rb-killcount { font-weight: 700; font-size: 13.5px; color: var(--text); }
+.rb-reset {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  padding: 4px 14px;
   cursor: pointer;
   transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
-.rb-chip:hover { color: #fff; background: rgba(124, 92, 255, 0.14); border-color: rgba(124, 92, 255, 0.4); }
+.rb-reset:hover { color: var(--bad); border-color: rgba(255, 94, 108, 0.45); background: rgba(255, 94, 108, 0.08); }
+.rb-killhint { font-size: 12px; color: var(--text-dim); }
 .rb-chip-tier {
   display: inline-flex;
   align-items: center;

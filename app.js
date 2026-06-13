@@ -86,10 +86,17 @@
   let goldPriceTouched = false;
   let eggPriceTouched = false;
 
+  // Цілочислові монетні поля — на них вішається маска з розрядкою тисяч.
+  // Ціни каменів (десяткові, у голді) НЕ маскуються — дріб був би зламаний.
+  const MASKED_PRICE_FIELDS = ['goldPrice', 'miragePrice'];
+
   function applySettingsToInputs() {
     for (const key of Object.keys(DEFAULTS)) {
       const el = document.getElementById(key);
-      if (el) el.value = settings[key];
+      if (!el) continue;
+      el.value = MASKED_PRICE_FIELDS.includes(key)
+        ? groupDigits(String(settings[key]))
+        : settings[key];
     }
     updateGoldIndicator();
     updateDefaultIndicators();
@@ -116,7 +123,7 @@
   $('#settingsForm').addEventListener('input', (e) => {
     const id = e.target.id;
     if (!(id in settings)) return;
-    const v = parseFloat(e.target.value);
+    const v = parseFloat(String(e.target.value).replace(/\s/g, ''));
     if (!Number.isFinite(v) || v < 0) return;
     if (id === 'goldPrice') {
       goldPriceTouched = true;
@@ -136,6 +143,9 @@
     applyDefaultEggPrice();
     renderAll();
   });
+
+  // Маска з розрядкою тисяч на цілочислові монетні поля налаштувань.
+  MASKED_PRICE_FIELDS.forEach((id) => maskNumericInput(document.getElementById(id)));
   // =========================================================
   // ТАБИ
   // =========================================================
@@ -356,6 +366,565 @@
       </p>
     `;
   }
+
+  // =========================================================
+  // ЗАТОЧКА — MONTE CARLO (розподіл вартості)
+  // =========================================================
+
+  // Межа спроб на один прогін. Захист від методів зі скиданням у +0 на
+  // високих рівнях (mirage/sky), де очікувана к-сть спроб астрономічна і
+  // прогін фактично не завершується. 150k — із запасом над найдовшим
+  // реальним прогоном (+0→+12 авто ≈ 66k спроб у хвості), тож коректні
+  // прогони не обрізаються, а безнадійні — відсікаються швидко.
+  const MC_CAP_ATTEMPTS = 150000;
+  // Стеля к-сті прогонів (поле «кількість прогонів»), щоб важка ціль не
+  // підвісила вкладку надовго навіть за бажання користувача.
+  const MC_MAX_RUNS = 50000;
+  let mcToken = 0;
+
+  // Юані = монети (внутрішня одиниця всіх розрахунків вартості). Голд —
+  // похідне відображення через курс із налаштувань.
+  function fmtYuan(coins) { return fmt(coins) + ' юані'; }
+
+  // Групує цифри по 3 пробілами (1000000 -> "1 000 000"); прибирає
+  // нецифри й провідні нулі. Для маски числових інпутів.
+  function groupDigits(str) {
+    const d = String(str).replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+    return d.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  }
+
+  // Числове значення з маскованого інпута (пробіли ігноруються).
+  function mcNum(el) {
+    if (!el) return NaN;
+    const v = parseFloat(String(el.value).replace(/\s/g, ''));
+    return Number.isFinite(v) ? v : NaN;
+  }
+
+  // Маска «розрядка тисяч» з відновленням позиції каретки.
+  function maskNumericInput(el) {
+    if (!el) return;
+    el.addEventListener('input', () => {
+      const raw = el.value;
+      const caret = el.selectionStart;
+      const digitsBefore = raw.slice(0, caret).replace(/\D/g, '').length;
+      const formatted = groupDigits(raw);
+      el.value = formatted;
+      let pos = 0, seen = 0;
+      while (pos < formatted.length && seen < digitsBefore) {
+        if (formatted.charCodeAt(pos) >= 48 && formatted.charCodeAt(pos) <= 57) seen++;
+        pos++;
+      }
+      try { el.setSelectionRange(pos, pos); } catch (_) {}
+    });
+  }
+
+  // Підказка під полем бюджету: курс голди (з налаштувань) + скільки голди
+  // становить уведена сума. Оновлюється при вводі та зміні курсу.
+  function updateBudgetHint(inpId, hintId) {
+    const hint = document.getElementById(hintId);
+    if (!hint) return;
+    const gp = settings.goldPrice;
+    let txt = 'Юані = монети · 1 голда = ' + fmt(gp) + ' юані';
+    const bud = mcNum(document.getElementById(inpId));
+    if (Number.isFinite(bud) && bud > 0 && gp > 0) {
+      txt += ' · уведено ≈ ' + fmtGold(bud, gp);
+    }
+    hint.textContent = txt;
+  }
+  function updateAllBudgetHints() {
+    updateBudgetHint('mcBudget', 'mcBudgetHint');
+    updateBudgetHint('revBudget', 'revBudgetHint');
+  }
+
+  // Один прогін +start→+target з реальною поведінкою провалу:
+  //   world → рівень лишається, under → -1, mirage/sky → скид у +0.
+  // На скиданні підйом назад іде тим самим планом (як у живому симуляторі),
+  // тому середнє цих прогонів збігається з аналітичним cumCost[t]-cumCost[s].
+  // Попутно рахуємо середні витрати ресурсів (спроби, міражі, камені).
+  function mcSamples(itemType, start, target, methodSel, plan, runs) {
+    const costs = [];
+    let capped = 0, attSum = 0, mirSum = 0;
+    const stoneSum = { sky: 0, under: 0, world: 0 };
+    const mirPer = miragesPerAttempt(itemType);
+    for (let r = 0; r < runs; r++) {
+      let level = start, cost = 0, att = 0, mir = 0, hitCap = false;
+      const st = { sky: 0, under: 0, world: 0 };
+      while (level < target) {
+        const lv = level + 1;
+        const m = methodSel === 'auto' ? plan[lv - 1].method : methodSel;
+        const p = RATES[m][lv];
+        cost += attemptCost(m, itemType);
+        mir += mirPer;
+        if (m !== 'mirage') st[m]++;
+        if (++att > MC_CAP_ATTEMPTS) { hitCap = true; break; }
+        if (Math.random() < p) level = lv;
+        else if (m === 'world') { /* рівень зберігається */ }
+        else if (m === 'under') level = Math.max(0, level - 1);
+        else level = 0; // mirage / sky
+      }
+      if (hitCap) { capped++; }
+      else {
+        costs.push(cost);
+        attSum += att; mirSum += mir;
+        stoneSum.sky += st.sky; stoneSum.under += st.under; stoneSum.world += st.world;
+      }
+    }
+    return { costs, capped, attSum, mirSum, stoneSum };
+  }
+
+  // Перцентиль для вже відсортованого масиву (q у [0..1]).
+  function mcPctl(sorted, q) {
+    if (!sorted.length) return NaN;
+    const idx = Math.min(sorted.length - 1, Math.max(0, Math.round(q * (sorted.length - 1))));
+    return sorted[idx];
+  }
+
+  // Кількість елементів <= x у відсортованому масиві (бінарний пошук).
+  function mcCountLE(sorted, x) {
+    let lo = 0, hi = sorted.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (sorted[mid] <= x) lo = mid + 1; else hi = mid; }
+    return lo;
+  }
+
+  function mcHistogram(sorted) {
+    const lo = sorted[0];
+    const hi = mcPctl(sorted, 0.99); // обрізаємо довгий правий хвіст
+    if (!(hi > lo)) return '';
+    const BINS = 24;
+    const w = (hi - lo) / BINS;
+    const counts = new Array(BINS).fill(0);
+    for (const c of sorted) {
+      let b = Math.floor((c - lo) / w);
+      if (b < 0) b = 0; else if (b >= BINS) b = BINS - 1;
+      counts[b]++;
+    }
+    const max = Math.max(...counts);
+    const bars = counts.map((cnt, i) => {
+      const h = max ? (cnt / max) * 100 : 0;
+      const from = lo + i * w;
+      const title = fmtGold(from, settings.goldPrice) + ' · ' + cnt + ' прогонів';
+      return '<div class="mc-bar" style="height:' + h.toFixed(1) + '%" title="' + escHtml(title) + '"></div>';
+    }).join('');
+    return (
+      '<div class="mc-hist">' + bars + '</div>' +
+      '<div class="mc-hist-axis">' +
+        '<span>' + fmtGold(lo, settings.goldPrice) + '</span>' +
+        '<span>дешевше ←&nbsp;розподіл&nbsp;→ дорожче</span>' +
+        '<span>' + fmtGold(hi, settings.goldPrice) + '+</span>' +
+      '</div>'
+    );
+  }
+
+  // Картка-метрика для вартості: голд великим, юані дрібним.
+  function mcMetric(label, coins, cls) {
+    return (
+      '<div class="metric' + (cls ? ' ' + cls : '') + '">' +
+        '<span class="metric-label">' + label + '</span>' +
+        '<span class="metric-value">' + fmtGold(coins, settings.goldPrice) + '</span>' +
+        '<span class="metric-sub">' + fmtYuan(coins) + '</span>' +
+      '</div>'
+    );
+  }
+
+  // Картка-метрика для довільного значення (не вартість).
+  function mcMetricRaw(label, value, sub) {
+    return (
+      '<div class="metric">' +
+        '<span class="metric-label">' + label + '</span>' +
+        '<span class="metric-value">' + value + '</span>' +
+        '<span class="metric-sub">' + sub + '</span>' +
+      '</div>'
+    );
+  }
+
+  function mcCostRow(label, coins, cls) {
+    return (
+      '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' +
+        '<td>' + label + '</td>' +
+        '<td class="num">' + fmtGold(coins, settings.goldPrice) + '</td>' +
+        '<td class="num">' + fmt(coins) + '</td>' +
+      '</tr>'
+    );
+  }
+
+  function mcRenderStats(costs, capped, runs, mean, start, target, agg) {
+    const resEl = $('#mcResult');
+    const cappedPct = runs ? capped / runs : 1;
+    if (!costs.length || cappedPct > 0.5) {
+      resEl.innerHTML =
+        '<div class="banner">Розкид надто великий для симуляції: на високих рівнях ' +
+        'обраний метод скидає заточку у +0, і прогони майже не завершуються. ' +
+        'Орієнтуйся на аналітичне середнє — <b>' + fmtGold(mean, settings.goldPrice) +
+        '</b> (' + fmtYuan(mean) + ').</div>';
+      return;
+    }
+
+    const sorted = costs.slice().sort((a, b) => a - b);
+    const n = sorted.length;
+    const sampMean = sorted.reduce((s, x) => s + x, 0) / n;
+    const std = Math.sqrt(sorted.reduce((s, x) => s + (x - sampMean) * (x - sampMean), 0) / n);
+    const p10 = mcPctl(sorted, 0.10);
+    const p50 = mcPctl(sorted, 0.50);
+    const p90 = mcPctl(sorted, 0.90);
+    const per = (v) => v / n;
+
+    // ── заголовкові метрики ─────────────────────────────────
+    const headline =
+      '<div class="result-summary mc-summary">' +
+        mcMetric('Середнє', sampMean, 'accent') +
+        mcMetric('Медіана', p50) +
+        mcMetric('Щастить (краще 10%)', p10, 'good') +
+        mcMetric('Не щастить (гірше 10%)', p90, 'bad') +
+        mcMetric('Розкид (σ)', std) +
+        mcMetricRaw('Спроб (сер.)', fmt2(per(agg.attSum)), 'на 1 заточку') +
+      '</div>';
+
+    // ── таблиця перцентилів ─────────────────────────────────
+    const pctlTable =
+      '<h4 class="mc-h">Розподіл вартості по перцентилях</h4>' +
+      '<div class="table-wrap"><table class="data-table"><thead><tr>' +
+        '<th>Перцентиль</th><th class="num">Голд</th><th class="num">Юані</th>' +
+      '</tr></thead><tbody>' +
+        mcCostRow('Мінімум', sorted[0]) +
+        mcCostRow('10% — щастить', p10, 'mc-good') +
+        mcCostRow('25%', mcPctl(sorted, 0.25)) +
+        mcCostRow('Медіана (50%)', p50, 'mc-mid') +
+        mcCostRow('75%', mcPctl(sorted, 0.75)) +
+        mcCostRow('90% — не щастить', p90, 'mc-bad') +
+        mcCostRow('95%', mcPctl(sorted, 0.95)) +
+        mcCostRow('99%', mcPctl(sorted, 0.99)) +
+        mcCostRow('Максимум', sorted[n - 1]) +
+      '</tbody></table></div>';
+
+    // ── шанс уложитися в бюджет (ладдер + кастомний бюджет) ──
+    const budYuan = mcNum($('#mcBudget'));
+    const hasBud = Number.isFinite(budYuan) && budYuan > 0;
+    const thresholds = [
+      ['½ середнього', sampMean * 0.5, false],
+      ['¾ середнього', sampMean * 0.75, false],
+      ['Середнє', sampMean, false],
+      ['×1.25 середнього', sampMean * 1.25, false],
+      ['×1.5 середнього', sampMean * 1.5, false],
+      ['×2 середнього', sampMean * 2, false],
+    ];
+    if (hasBud) thresholds.push(['Ваш бюджет', budYuan, true]);
+    thresholds.sort((a, b) => a[1] - b[1]);
+    const budRows = thresholds.map((t) => {
+      const within = mcCountLE(sorted, t[1]) / n;
+      return (
+        '<tr' + (t[2] ? ' class="mc-mid"' : '') + '>' +
+          '<td>' + t[0] + '</td>' +
+          '<td class="num">' + fmtGold(t[1], settings.goldPrice) + '</td>' +
+          '<td class="num">' + fmt(t[1]) + '</td>' +
+          '<td class="num"><b>' + (within * 100).toFixed(0) + '%</b></td>' +
+        '</tr>'
+      );
+    }).join('');
+    const budTable =
+      '<h4 class="mc-h">Шанс уложитися в бюджет</h4>' +
+      '<div class="table-wrap"><table class="data-table"><thead><tr>' +
+        '<th>Поріг</th><th class="num">Голд</th><th class="num">Юані</th><th class="num">Шанс ≤</th>' +
+      '</tr></thead><tbody>' + budRows + '</tbody></table></div>';
+
+    let budgetBanner = '';
+    if (hasBud) {
+      const within = mcCountLE(sorted, budYuan) / n;
+      budgetBanner =
+        '<div class="banner info" style="margin-top:14px"><b>' + (within * 100).toFixed(0) +
+        '%</b> шансів заточити +' + start + ' → +' + target + ' дешевше ніж за <b>' +
+        fmt(budYuan) + ' юані</b> (≈ ' + fmtGold(budYuan, settings.goldPrice) + ').</div>';
+    }
+
+    // ── середні витрати ресурсів ────────────────────────────
+    const resRows = [['Спроб', fmt2(per(agg.attSum))], ['Міражів', fmt2(per(agg.mirSum))]];
+    if (agg.stoneSum.sky > 0) resRows.push(['Небесних каменів', fmt2(per(agg.stoneSum.sky))]);
+    if (agg.stoneSum.under > 0) resRows.push(['Підземних каменів', fmt2(per(agg.stoneSum.under))]);
+    if (agg.stoneSum.world > 0) resRows.push(['Каменів світобудови', fmt2(per(agg.stoneSum.world))]);
+    const resTable =
+      '<h4 class="mc-h">Середні витрати на 1 заточку (+' + start + ' → +' + target + ')</h4>' +
+      '<div class="table-wrap"><table class="data-table"><tbody>' +
+        resRows.map((r) => '<tr><td>' + r[0] + '</td><td class="num">' + r[1] + '</td></tr>').join('') +
+      '</tbody></table></div>';
+
+    const cappedNote = capped > 0
+      ? '<p class="muted" style="margin-top:10px;font-size:12.5px">' +
+        capped + ' з ' + runs + ' прогонів обрізано за межею спроб — їх не враховано в розподілі.</p>'
+      : '';
+
+    resEl.innerHTML =
+      '<div class="banner info">Симуляція: <b>' + fmt(n) + '</b> прогонів (+' + start + ' → +' + target +
+      '). Середнє MC <b>' + fmtGold(sampMean, settings.goldPrice) + '</b> ≈ аналітичне <b>' +
+      fmtGold(mean, settings.goldPrice) + '</b>.</div>' +
+      headline +
+      mcHistogram(sorted) +
+      budgetBanner +
+      pctlTable +
+      budTable +
+      resTable +
+      cappedNote;
+  }
+
+  function runMonteCarlo() {
+    const resEl = $('#mcResult');
+    if (!resEl) return;
+    const itemType = $('input[name="itemType"]:checked').value;
+    const start = parseInt($('#startLevel').value, 10);
+    const target = parseInt($('#targetLevel').value, 10);
+    const methodSel = $('#stoneStrategy').value;
+
+    if (start >= target) {
+      resEl.innerHTML = '<div class="banner">Цільовий рівень має бути вищим за поточний.</div>';
+      return;
+    }
+
+    // к-сть прогонів — з поля (із обмеженням), інакше дефолт
+    let RUNS = Math.floor(mcNum($('#mcRuns')));
+    if (!Number.isFinite(RUNS) || RUNS < 100) RUNS = 10000;
+    if (RUNS > MC_MAX_RUNS) RUNS = MC_MAX_RUNS;
+    if ($('#mcRuns')) $('#mcRuns').value = groupDigits(String(RUNS));
+
+    const { plan, cumCost } = buildPlan(itemType, methodSel === 'auto' ? 'auto' : methodSel);
+    const mean = cumCost[target] - cumCost[start];
+    const CHUNK = 300;
+
+    const token = ++mcToken;
+    const costs = [];
+    const agg = { attSum: 0, mirSum: 0, stoneSum: { sky: 0, under: 0, world: 0 } };
+    let capped = 0, done = 0;
+    resEl.innerHTML = '<div class="banner info">Симуляція… <b id="mcProg">0%</b></div>';
+
+    (function chunk() {
+      if (token !== mcToken) return; // запущено новий — цей скасовано
+      const part = mcSamples(itemType, start, target, methodSel, plan, Math.min(CHUNK, RUNS - done));
+      for (const c of part.costs) costs.push(c);
+      capped += part.capped;
+      agg.attSum += part.attSum; agg.mirSum += part.mirSum;
+      agg.stoneSum.sky += part.stoneSum.sky;
+      agg.stoneSum.under += part.stoneSum.under;
+      agg.stoneSum.world += part.stoneSum.world;
+      done += CHUNK;
+      // Безнадійний випадок (метод зі скиданням на високих рівнях): більшість
+      // прогонів б'ється об межу спроб — не маємо сенсу крутити далі.
+      if (capped / done > 0.5) {
+        mcRenderStats(costs, capped, done, mean, start, target, agg);
+      } else if (done >= RUNS) {
+        mcRenderStats(costs, capped, RUNS, mean, start, target, agg);
+      } else {
+        const pe = document.getElementById('mcProg');
+        if (pe) pe.textContent = Math.round((done / RUNS) * 100) + '%';
+        setTimeout(chunk, 0);
+      }
+    })();
+  }
+
+  (function wireMonteCarlo() {
+    const form = $('#mcForm');
+    if (form) form.addEventListener('submit', (e) => { e.preventDefault(); runMonteCarlo(); });
+    maskNumericInput($('#mcRuns'));
+    maskNumericInput($('#mcBudget'));
+    const bud = $('#mcBudget');
+    if (bud) bud.addEventListener('input', () => updateBudgetHint('mcBudget', 'mcBudgetHint'));
+    updateBudgetHint('mcBudget', 'mcBudgetHint');
+  })();
+
+  // =========================================================
+  // ЗАТОЧКА — ЗВОРОТНИЙ РОЗРАХУНОК (бюджет → ризик)
+  // =========================================================
+
+  // Бюджетний DP по стану (рівень, залишок бюджету). Кожна спроба коштує
+  // attemptCost(m) і строго зменшує бюджет, тож стани утворюють DAG за
+  // бюджетом — рахуємо V знизу вгору. V(lv,b) = шанс дійти до target з
+  // рівня lv, маючи бюджет b, за оптимального вибору з allowedAt(lv).
+  // allowedAt — для фіксованої стратегії повертає один метод, для
+  // адаптивної — усі чотири (DP сам обирає найкращий на кожному стані).
+  const MC_DP_BUCKETS = 80000;
+  function solveBudgetDP(itemType, start, target, budgetCoins, allowedAt, maxBuckets, openingBudgetCoins) {
+    const all = ['mirage', 'sky', 'under', 'world'];
+    const cost = {};
+    for (const m of all) cost[m] = attemptCost(m, itemType);
+    const cheapest = Math.min.apply(null, all.map((m) => cost[m]));
+    // дискретизація: найдешевша спроба ≈ 2 бакети (з обмеженням зверху).
+    // Точність порогів вимагає дрібного бакета (≈ масштаб спроби).
+    let N = Math.ceil(budgetCoins / (cheapest / 2));
+    N = Math.max(200, Math.min(N, maxBuckets || MC_DP_BUCKETS));
+    const bucket = budgetCoins / N;
+    const costB = {};
+    for (const m of all) costB[m] = Math.max(1, Math.round(cost[m] / bucket));
+    const failLevel = (m, lv) => (m === 'world' ? lv : m === 'under' ? Math.max(0, lv - 1) : 0);
+    // на якому бакеті фіксуємо «перший крок» (за замовч. — повний бюджет)
+    const openB = openingBudgetCoins != null
+      ? Math.max(0, Math.min(N, Math.round(openingBudgetCoins / bucket))) : N;
+
+    const V = [];
+    for (let lv = 0; lv <= target; lv++) V.push(new Float32Array(N + 1));
+    for (let b = 0; b <= N; b++) V[target][b] = 1;
+
+    let opening = null;
+    for (let b = 0; b <= N; b++) {
+      for (let lv = target - 1; lv >= 0; lv--) {
+        let best = 0, bestM = null;
+        const allowed = allowedAt(lv);
+        for (let k = 0; k < allowed.length; k++) {
+          const m = allowed[k];
+          const c = costB[m];
+          if (c > b) continue;                 // не по кишені
+          const p = RATES[m][lv + 1] || 0;
+          if (p <= 0) continue;
+          const fl = failLevel(m, lv);
+          const val = p * V[lv + 1][b - c] + (1 - p) * V[fl][b - c];
+          if (bestM === null || val > best) { best = val; bestM = m; }
+        }
+        V[lv][b] = best;
+        if (b === openB && lv === start) opening = bestM;
+      }
+    }
+    return { curve: V[start], N, bucket, opening, p: V[start][N] };
+  }
+
+  // Найменший бюджет (монет), за якого шанс ≥ q; null якщо недосяжно.
+  function budgetForProb(curve, bucket, N, q) {
+    for (let b = 0; b <= N; b++) if (curve[b] >= q) return b * bucket;
+    return null;
+  }
+
+  // Крива «шанс vs бюджет». markBudget (монет) підсвічує стовпчик біля
+  // введеного бюджету.
+  function reverseCurve(curve, N, bucket, markBudget) {
+    const BARS = 28;
+    const markBar = (Number.isFinite(markBudget) && markBudget > 0)
+      ? Math.round((Math.min(markBudget, N * bucket) / (N * bucket)) * BARS) : -1;
+    let bars = '';
+    for (let i = 1; i <= BARS; i++) {
+      const b = Math.round((i / BARS) * N);
+      const p = curve[b] || 0;
+      const title = fmtGold(b * bucket, settings.goldPrice) + ' → ' + (p * 100).toFixed(0) + '%';
+      bars += '<div class="mc-bar' + (i === markBar ? ' mc-bar-mark' : '') +
+        '" style="height:' + Math.max(1, p * 100).toFixed(1) + '%" title="' + escHtml(title) + '"></div>';
+    }
+    return (
+      '<h4 class="mc-h">Шанс успіху залежно від бюджету</h4>' +
+      '<div class="mc-hist">' + bars + '</div>' +
+      '<div class="mc-hist-axis"><span>0</span>' +
+      (markBar > 0 ? '<span>▮ твій бюджет</span>' : '<span>бюджет →</span>') +
+      '<span>' + fmtGold(N * bucket, settings.goldPrice) + '</span></div>'
+    );
+  }
+
+  function runReverse() {
+    const resEl = $('#revResult');
+    if (!resEl) return;
+    const itemType = $('input[name="itemType"]:checked').value;
+    const start = parseInt($('#startLevel').value, 10);
+    const target = parseInt($('#targetLevel').value, 10);
+    if (start >= target) {
+      resEl.innerHTML = '<div class="banner">Цільовий рівень має бути вищим за поточний.</div>';
+      return;
+    }
+    const budget = mcNum($('#revBudget'));
+    if (!Number.isFinite(budget) || budget <= 0) {
+      resEl.innerHTML = '<div class="banner">Введи бюджет у юанях.</div>';
+      return;
+    }
+
+    // DP важкий (~0.4 с у найгіршому разі) — показуємо банер і даємо
+    // браузеру перемалювати, перш ніж рахувати.
+    resEl.innerHTML = '<div class="banner info">Рахую оптимальну стратегію…</div>';
+    setTimeout(() => reverseCompute(resEl, itemType, start, target, budget), 0);
+  }
+
+  function reverseCompute(resEl, itemType, start, target, budget) {
+    const { plan, cumCost } = buildPlan(itemType, 'auto');
+    const mean = Math.max(1, cumCost[target] - cumCost[start]);
+    const allMethods = () => ['mirage', 'sky', 'under', 'world'];
+    const CAP_WIDE = 500000;   // дрібний бакет для точних порогів
+    const CAP_FIXED = 80000;
+
+    // Один широкий DP оптимальної (адаптивної) стратегії: діапазон покриває і
+    // бюджет, і високі перцентилі. З нього беремо P на бюджеті, перший крок,
+    // криву та пороги — усе консистентно (та сама дискретизація).
+    let range = Math.max(budget, mean * 5), tries = 0, optWide;
+    do {
+      optWide = solveBudgetDP(itemType, start, target, range, allMethods, CAP_WIDE, budget);
+      if (optWide.curve[optWide.N] >= 0.991) break;
+      range *= 2; tries++;
+    } while (tries < 4);
+    const idxEntered = Math.max(0, Math.min(optWide.N, Math.round(budget / optWide.bucket)));
+    const pOpt = optWide.curve[idxEntered] || 0;
+
+    // Фіксовані стратегії — шанс на введеному бюджеті.
+    const fixedDefs = [
+      { key: 'ev',     label: 'EV-оптимальна',    allowed: (lv) => [plan[lv].method] },
+      { key: 'world',  label: 'Лише світобудови', allowed: () => ['world'] },
+      { key: 'sky',    label: 'Лише небесні',     allowed: () => ['sky'] },
+      { key: 'under',  label: 'Лише підземні',    allowed: () => ['under'] },
+      { key: 'mirage', label: 'Лише міражі',      allowed: () => ['mirage'] },
+    ];
+    const fixed = fixedDefs.map((s) => {
+      const dp = solveBudgetDP(itemType, start, target, budget, s.allowed, CAP_FIXED);
+      return { key: s.key, label: s.label, p: dp.p, opening: dp.opening };
+    });
+
+    const pct = (p) => (p * 100).toFixed(p > 0 && p < 0.1 ? 1 : 0) + '%';
+    const openLabel = optWide.opening ? STONE_META[optWide.opening].label : '—';
+    const nonBinding = pOpt > 0.999;
+    const headline =
+      '<div class="banner info">За бюджет <b>' + fmt(budget) + ' юані</b> (≈ ' +
+      fmtGold(budget, settings.goldPrice) + ') оптимальна стратегія дає <b>' +
+      pct(pOpt) + '</b> шансів дійти +' + start + ' → +' + target + '.' +
+      (pOpt <= 0 ? ' Бюджету замало навіть для оптимальної стратегії.'
+        : nonBinding ? ' Бюджету з запасом — будь-яка розумна стратегія дійде; раціональний перший крок: <b>' + openLabel + '</b>.'
+        : ' Раціональний перший крок: <b>' + openLabel + '</b>.') +
+      '</div>';
+
+    // таблиця стратегій: оптимальна зверху (підсвічена), решта за шансом ↓
+    const optRow = { key: 'opt', label: 'Оптимальна (адаптивна)', p: pOpt, opening: optWide.opening };
+    const rest = fixed.slice().sort((a, b) => b.p - a.p);
+    const stratRows = [optRow].concat(rest).map((r) => {
+      const open = r.opening ? STONE_META[r.opening].label : '—';
+      return '<tr' + (r.key === 'opt' ? ' class="mc-mid"' : '') + '>' +
+        '<td>' + r.label + '</td>' +
+        '<td class="num"><b>' + pct(r.p) + '</b></td>' +
+        '<td>' + open + '</td></tr>';
+    }).join('');
+    const stratTable =
+      '<h4 class="mc-h">Шанс дійти за бюджет — за стратегіями</h4>' +
+      '<div class="table-wrap"><table class="data-table"><thead><tr>' +
+      '<th>Стратегія</th><th class="num">Шанс</th><th>Перший крок</th>' +
+      '</tr></thead><tbody>' + stratRows + '</tbody></table></div>';
+
+    // скільки бюджету на який шанс (за оптимальною стратегією, широка крива)
+    const thrRows = [0.5, 0.8, 0.95, 0.99].map((q) => {
+      const b = budgetForProb(optWide.curve, optWide.bucket, optWide.N, q);
+      const delta = (b != null && b > budget)
+        ? ' <span class="rev-delta">(+' + fmtGold(b - budget, settings.goldPrice) + ' до бюджету)</span>'
+        : (b != null ? ' <span class="rev-delta rev-ok">(у межах бюджету)</span>' : '');
+      return '<tr><td>' + (q * 100) + '%</td>' +
+        (b != null
+          ? '<td class="num">' + fmtGold(b, settings.goldPrice) + '</td><td class="num">' + fmt(b) + delta + '</td>'
+          : '<td class="num" colspan="2">понад розрахований діапазон</td>') + '</tr>';
+    }).join('');
+    const thrTable =
+      '<h4 class="mc-h">Скільки бюджету на який шанс (оптимальна стратегія)</h4>' +
+      '<div class="table-wrap"><table class="data-table"><thead><tr>' +
+      '<th>Ціль шансу</th><th class="num">Голд</th><th class="num">Юані</th>' +
+      '</tr></thead><tbody>' + thrRows + '</tbody></table></div>';
+
+    resEl.innerHTML =
+      headline +
+      reverseCurve(optWide.curve, optWide.N, optWide.bucket, budget) +
+      stratTable +
+      thrTable +
+      '<p class="muted" style="margin-top:10px;font-size:12.5px">«Оптимальна» обирає камінь на кожному кроці залежно від рівня та залишку бюджету (максимізує шанс уложитися), тож вона ніколи не гірша за будь-яку фіксовану. Модель провалу: світобудови — без падіння, підземний −1, міраж/небесний — скид у +0.</p>';
+  }
+
+  (function wireReverse() {
+    const form = $('#revForm');
+    if (form) form.addEventListener('submit', (e) => { e.preventDefault(); runReverse(); });
+    maskNumericInput($('#revBudget'));
+    const b = $('#revBudget');
+    if (b) b.addEventListener('input', () => updateBudgetHint('revBudget', 'revBudgetHint'));
+    updateBudgetHint('revBudget', 'revBudgetHint');
+  })();
 
   // =========================================================
   // ЯЙЦЯ ТА КРАФТ — ДАНІ
@@ -1773,6 +2342,7 @@
     renderEggs();
     renderCompare();
     simRender();
+    updateAllBudgetHints();
   }
 
   document.addEventListener('click', (e) => {
@@ -1958,6 +2528,96 @@
     return L.CRS.EPSG3857.unproject(L.point(x, y));
   }
 
+  // --- Чеклист «кого вже вбив» -----------------------------------
+  // РБ респавняться щотижня: вівторок 20:00 і четвер 21:00 (локальний
+  // час). Чеклист тримається в localStorage і авто-скидається на кожному
+  // респавні (зберігаємо мітку «циклу» = час останнього спавну).
+  const RB_SPAWNS = [
+    { day: 2, hour: 20, min: 0 }, // вівторок 20:00
+    { day: 4, hour: 21, min: 0 }, // четвер  21:00
+  ];
+  const RB_LS_KEY = 'pwcalc.rbKills';
+
+  // Час (мс) останнього респавну, що настав не пізніше за `now`.
+  function rbCurrentCycle() {
+    const now = new Date();
+    let best = 0;
+    for (let back = 0; back < 8; back++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - back);
+      for (const s of RB_SPAWNS) {
+        if (d.getDay() !== s.day) continue;
+        const cand = new Date(d);
+        cand.setHours(s.hour, s.min, 0, 0);
+        const t = cand.getTime();
+        if (t <= now.getTime() && t > best) best = t;
+      }
+    }
+    return best;
+  }
+
+  const rbKills = { world: new Set(), chrono: new Set() };
+  let rbKillCycle = 0;
+
+  function rbLoadKills() {
+    rbKillCycle = rbCurrentCycle();
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(RB_LS_KEY)); } catch (_) {}
+    if (saved && saved.cycle === rbKillCycle) {
+      rbKills.world = new Set(Array.isArray(saved.world) ? saved.world : []);
+      rbKills.chrono = new Set(Array.isArray(saved.chrono) ? saved.chrono : []);
+    } else {
+      // інший респавн (або порожньо/сміття) → новий чистий цикл
+      rbKills.world.clear();
+      rbKills.chrono.clear();
+      rbSaveKills();
+    }
+  }
+
+  function rbSaveKills() {
+    try {
+      localStorage.setItem(RB_LS_KEY, JSON.stringify({
+        cycle: rbKillCycle,
+        world: [...rbKills.world],
+        chrono: [...rbKills.chrono],
+      }));
+    } catch (_) {}
+  }
+
+  // Світові боси мають унікальні ніки, хроно — унікальні назви.
+  const rbBossKey = (kind, b) => (kind === 'world' ? b.nick : b.name);
+  const rbIsKilled = (kind, b) => rbKills[kind].has(rbBossKey(kind, b));
+  function rbSetKilled(kind, b, killed) {
+    const key = rbBossKey(kind, b);
+    if (killed) rbKills[kind].add(key);
+    else rbKills[kind].delete(key);
+    rbSaveKills();
+  }
+
+  // Синхронізує вигляд (чіпи + мітки на карті + лічильник) зі станом.
+  function rbUpdateKillUI(kind) {
+    const bosses = kind === 'world' ? WORLD_BOSSES : CHRONO_BOSSES;
+    const listEl = document.getElementById(kind === 'world' ? 'rbListWorld' : 'rbListChrono');
+    let killed = 0;
+    bosses.forEach((b, i) => {
+      const on = rbIsKilled(kind, b);
+      if (on) killed++;
+      if (listEl) {
+        const chip = listEl.querySelector('.rb-chip[data-rb="' + i + '"]');
+        if (chip) {
+          chip.classList.toggle('killed', on);
+          const kb = chip.querySelector('.rb-chip-kill');
+          if (kb) kb.setAttribute('aria-pressed', String(on));
+        }
+      }
+      if (b._marker && b._marker._icon) b._marker._icon.classList.toggle('killed', on);
+    });
+    const countEl = document.getElementById(kind === 'world' ? 'rbKillCountWorld' : 'rbKillCountChrono');
+    if (countEl) countEl.textContent = 'Вбито: ' + killed + ' / ' + bosses.length;
+  }
+
+  rbLoadKills();
+
   const rbMaps = {};
   let rbSub = 'world';
   let rbWired = false;
@@ -2033,10 +2693,13 @@
         '</div>';
       b._marker = L.marker(ll, { icon }).addTo(map).bindPopup(popup);
       listHtml +=
-        '<button type="button" class="rb-chip' + (b.tier ? ' t' + b.tier : '') + '" data-rb="' + i + '">' +
-        (b.tier ? '<span class="rb-chip-tier">' + b.tier + '</span>' : '') +
-        escHtml(label) +
-        '</button>';
+        '<span class="rb-chip' + (b.tier ? ' t' + b.tier : '') + '" data-rb="' + i + '">' +
+          '<button type="button" class="rb-chip-go" title="Показати на карті">' +
+            (b.tier ? '<span class="rb-chip-tier">' + b.tier + '</span>' : '') +
+            escHtml(label) +
+          '</button>' +
+          '<button type="button" class="rb-chip-kill" title="Позначити вбитим / живим" aria-pressed="false">✓</button>' +
+        '</span>';
     });
 
     // обмежуємо панорамування: для світу — навколо ареалу босів,
@@ -2079,13 +2742,30 @@
     if (listEl) {
       listEl.innerHTML = listHtml;
       listEl.addEventListener('click', (e) => {
-        const c = e.target.closest('button[data-rb]');
-        if (!c) return;
-        const b = bosses[+c.dataset.rb];
+        const chip = e.target.closest('.rb-chip[data-rb]');
+        if (!chip) return;
+        const b = bosses[+chip.dataset.rb];
+        if (e.target.closest('.rb-chip-kill')) {
+          rbSetKilled(kind, b, !rbIsKilled(kind, b));
+          rbUpdateKillUI(kind);
+          return;
+        }
         map.flyTo(b._ll, flyZoom, { duration: 0.6 });
         b._marker.openPopup();
       });
     }
+
+    const resetBtn = document.getElementById(kind === 'world' ? 'rbResetWorld' : 'rbResetChrono');
+    if (resetBtn && !resetBtn._wired) {
+      resetBtn._wired = true;
+      resetBtn.addEventListener('click', () => {
+        rbKills[kind].clear();
+        rbSaveKills();
+        rbUpdateKillUI(kind);
+      });
+    }
+    rbUpdateKillUI(kind);
+
     fit(false);
 
     // надійно синхронізуємо розмір, коли контейнер отримує реальні габарити.
@@ -2150,6 +2830,12 @@
 
   function rbActivate() {
     if (typeof L === 'undefined') return; // Leaflet не завантажився
+    // якщо вкладку відкрили після респавну (без перезавантаження сторінки) —
+    // перевіримо цикл і за потреби скинемо чеклист.
+    if (rbCurrentCycle() !== rbKillCycle) {
+      rbLoadKills();
+      Object.keys(rbMaps).forEach((k) => rbMaps[k] && rbUpdateKillUI(k));
+    }
     if (!rbMaps.world) rbMaps.world = buildRbMap('world');
     if (!rbWired) {
       rbWired = true;
