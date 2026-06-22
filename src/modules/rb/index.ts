@@ -211,7 +211,8 @@ function buildRbMap(kind: Kind): any {
       [0, 0],
       [CH_SIZE, CH_SIZE],
     ];
-    L.imageOverlay('/assets/maps/chrono.webp', bounds).addTo(map);
+    // base-relative — працює і з кореня (Firebase), і з підпапки (GitHub Pages)
+    L.imageOverlay(import.meta.env.BASE_URL + 'assets/maps/chrono.webp', bounds).addTo(map);
     map.setMaxBounds(L.latLngBounds(bounds).pad(0.5));
     flyZoom = 1;
   }
