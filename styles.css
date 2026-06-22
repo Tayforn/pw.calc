@@ -36,9 +36,7 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   background:
-    radial-gradient(1200px 600px at 10% -10%, rgba(124, 92, 255, 0.18), transparent 60%),
-    radial-gradient(900px 500px at 110% 10%, rgba(255, 94, 196, 0.12), transparent 60%),
-    radial-gradient(800px 400px at 50% 120%, rgba(34, 211, 238, 0.10), transparent 60%),
+    radial-gradient(1100px 560px at 12% -12%, rgba(124, 92, 255, 0.10), transparent 62%),
     var(--bg-0);
 }
 
@@ -67,6 +65,23 @@ small.hint {
   margin-inline: auto;
 }
 
+/* ── App shell: ліва навігація + контент ─────────────────────────── */
+:root { --sidebar-w: 212px; }
+.app-shell {
+  width: min(1320px, 96vw);
+  display: grid;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  gap: 26px;
+  align-items: start;
+  padding-top: 22px;
+}
+.sidebar {
+  position: sticky;
+  top: 78px;
+  align-self: start;
+}
+.content { min-width: 0; }
+
 /* Background blobs */
 .bg-glow {
   position: fixed;
@@ -80,12 +95,12 @@ small.hint {
   width: 520px;
   height: 520px;
   border-radius: 50%;
-  filter: blur(100px);
-  opacity: 0.55;
+  filter: blur(120px);
+  opacity: 0.18;
 }
-.blob-a { background: #7c5cff; top: -150px; left: -120px; }
-.blob-b { background: #ff5ec4; top: 30%; right: -180px; }
-.blob-c { background: #22d3ee; bottom: -220px; left: 25%; }
+.blob-a { background: #7c5cff; top: -180px; left: -140px; }
+.blob-b { background: #ff5ec4; top: 30%; right: -240px; opacity: 0.10; }
+.blob-c { display: none; }
 
 /* Header */
 .site-header {
@@ -365,9 +380,103 @@ small.hint {
 }
 .subtab.active .subtab-ico { opacity: 1; color: var(--accent-3); }
 
+/* ── Sidebar vertical nav (overrides horizontal .tab styling) ─────── */
+.sidebar .nav-primary {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px;
+  margin: 0;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  min-height: calc(100vh - 120px);
+}
+.sidebar .nav-primary .tab {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 11px;
+  padding: 10px 13px;
+  border-radius: 11px;
+  border-color: transparent;
+  border-bottom-color: transparent;
+  background: transparent;
+  position: relative;
+  box-shadow: none;
+}
+.sidebar .nav-primary .tab .tab-ico {
+  display: inline-block;
+  width: 18px;
+  text-align: center;
+  font-size: 15px;
+}
+.sidebar .nav-primary .tab:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.sidebar .nav-primary .tab.active {
+  background: linear-gradient(90deg, rgba(124, 92, 255, 0.16), rgba(124, 92, 255, 0.04));
+  border-color: rgba(124, 92, 255, 0.28);
+  border-bottom-color: rgba(124, 92, 255, 0.28);
+  box-shadow: none;
+}
+/* left accent bar on active item */
+.sidebar .nav-primary .tab.active::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 7px;
+  bottom: 7px;
+  width: 3px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+}
+/* group chevron pushed to the right edge */
+.sidebar .nav-primary .tab[data-group]::after { margin-left: auto; }
+
+/* settings tab → pinned to bottom, full-width with label */
+.sidebar .nav-primary .tab-settings {
+  margin-left: 0;
+  margin-top: auto;
+  padding: 10px 13px;
+}
+.sidebar .nav-primary .tab-settings .tab-ico { font-size: 16px; }
+.tab-settings-label { display: inline; }
+.sidebar .nav-primary .tab-settings .tab-attention { margin-left: auto; }
+
+/* subtabs bar sits at top of the content column */
+.content .nav-secondary { padding: 0 0 4px; }
+
+/* collapse sidebar → horizontal scroll row on narrow screens */
+@media (max-width: 880px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+    gap: 0;
+    width: min(1160px, 94vw);
+    padding-top: 10px;
+  }
+  .sidebar { position: static; top: auto; }
+  .sidebar .nav-primary {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 4px;
+    min-height: 0;
+    padding: 6px;
+    border-radius: var(--radius);
+  }
+  .sidebar .nav-primary .tab { width: auto; flex: 0 0 auto; }
+  .sidebar .nav-primary .tab.active::before {
+    left: 7px; right: 7px; top: auto; bottom: -2px;
+    width: auto; height: 3px;
+  }
+  .sidebar .nav-primary .tab[data-group]::after { margin-left: 2px; }
+  .sidebar .nav-primary .tab-settings { margin-top: 0; margin-left: 0; }
+  .tab-settings-label { display: none; }
+}
+
 .tab-panel {
   display: none;
-  padding: 30px 0 60px;
+  padding: 14px 0 60px;
   animation: fadeIn 0.25s ease-out;
 }
 .tab-panel.active { display: block; }

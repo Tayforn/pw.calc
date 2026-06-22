@@ -39,7 +39,9 @@
     </div>
   </header>
 
-  <nav class="nav-primary tabs container" role="tablist" aria-label="Розділи">
+  <div class="app-shell container">
+  <aside class="sidebar">
+  <nav class="nav-primary" role="tablist" aria-label="Розділи">
     <button class="tab active" role="tab" data-tab="refine" data-group="refine" aria-selected="true">
       <span class="tab-ico">⚒</span><span>Заточка</span>
     </button>
@@ -62,13 +64,15 @@
       <span class="tab-ico">📖</span><span>Гайди</span>
     </button>
     <button class="tab tab-settings" role="tab" data-tab="settings" aria-selected="false" title="Налаштування" aria-label="Налаштування">
-      <span class="tab-ico">⚙</span>
+      <span class="tab-ico">⚙</span><span class="tab-settings-label">Налаштування</span>
       <span class="tab-attention" aria-hidden="true"><span class="tab-attention-dot"></span></span>
     </button>
   </nav>
-  <nav class="nav-secondary container" id="subtabsBar" role="tablist" aria-label="Підрозділи" hidden></nav>
+  </aside>
+  <div class="content">
+  <nav class="nav-secondary" id="subtabsBar" role="tablist" aria-label="Підрозділи" hidden></nav>
 
-  <main class="container">
+  <main>
     <!-- TAB: REFINE -->
     <section class="tab-panel active" data-panel="refine" role="tabpanel">
       <header class="section-head">
@@ -1009,6 +1013,8 @@
       </div>
     </section>
   </main>
+  </div>
+  </div>
 
   <footer class="site-footer">
     <div class="container footer-inner">
