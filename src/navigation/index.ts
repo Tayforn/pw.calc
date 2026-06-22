@@ -28,7 +28,7 @@ const TAB_GROUPS: Record<string, TabGroup> = {
   },
   shards: {
     tabs: [
-      { id: 'eggs', label: 'Вартість яєць', ico: '◎' },
+      { id: 'eggs', label: 'Вартість шарів', ico: '◎' },
       { id: 'compare', label: 'Порівняння', ico: '⇌' },
       { id: 'craft', label: 'Крафт шарів', ico: '✦' },
     ],
@@ -50,7 +50,7 @@ for (const [g, gv] of Object.entries(TAB_GROUPS)) {
 
 let onRbActivateCb: () => void = () => {};
 
-export function setTab(name: string): void {
+export function setTab(name: string, pushHistory = true): void {
   if (!VALID_TABS.includes(name)) name = 'refine';
   const activeGroup = PANEL_GROUP[name];
 
@@ -90,11 +90,16 @@ export function setTab(name: string): void {
     p.classList.toggle('active', p.dataset.panel === name),
   );
 
+  // Записуємо хеш лише якщо він реально змінився. pushState — щоб кнопки
+  // «назад/вперед» перемикали таби; replaceState — для початкового завантаження
+  // (не плодимо зайвий запис історії). При синхронізації з hashchange хеш уже
+  // збігається, тож нічого не пишемо й циклу нема.
   if (
     location.hash !== '#' + name &&
     !location.hash.startsWith('#' + name + '/')
   ) {
-    history.replaceState(null, '', '#' + name);
+    if (pushHistory) history.pushState(null, '', '#' + name);
+    else history.replaceState(null, '', '#' + name);
   }
   window.scrollTo({ top: 0, behavior: 'smooth' });
   if (name === 'rb') onRbActivateCb();
@@ -123,7 +128,14 @@ export function initNavigation(onRbActivate: () => void): void {
     }),
   );
 
-  // Початковий таб із хеша.
+  // Кнопки браузера «назад/вперед»: синхронізуємо таб із хешем.
+  // setTab не викликає replaceState, коли хеш уже збігається, тож циклу нема.
+  window.addEventListener('hashchange', () => {
+    const name = (location.hash || '').replace('#', '').split('/')[0];
+    if (VALID_TABS.includes(name)) setTab(name);
+  });
+
+  // Початковий таб із хеша — replaceState, без зайвого запису в історії.
   const initial = (location.hash || '').replace('#', '').split('/')[0];
-  setTab(VALID_TABS.includes(initial) ? initial : 'refine');
+  setTab(VALID_TABS.includes(initial) ? initial : 'refine', false);
 }
