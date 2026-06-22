@@ -1,1 +1,3 @@
 discord-export/
+node_modules/
+dist/
