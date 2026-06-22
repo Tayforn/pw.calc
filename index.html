@@ -39,48 +39,34 @@
     </div>
   </header>
 
-  <nav class="tabs container" role="tablist" aria-label="Розділи">
-    <button class="tab active" role="tab" data-tab="refine" aria-selected="true">
+  <nav class="nav-primary tabs container" role="tablist" aria-label="Розділи">
+    <button class="tab active" role="tab" data-tab="refine" data-group="refine" aria-selected="true">
       <span class="tab-ico">⚒</span><span>Заточка</span>
     </button>
-    <button class="tab" role="tab" data-tab="eggs" aria-selected="false">
-      <span class="tab-ico">◎</span><span>Золоті яйця</span>
+    <button class="tab" role="tab" data-tab="eggs" data-group="shards" aria-selected="false">
+      <span class="tab-ico">★</span><span>Шари</span>
     </button>
-    <button class="tab" role="tab" data-tab="compare" aria-selected="false">
-      <span class="tab-ico">⇌</span><span>Порівняння</span>
-    </button>
-    <button class="tab" role="tab" data-tab="craft" aria-selected="false">
-      <span class="tab-ico">✦</span><span>Крафт шарів</span>
-    </button>
-    <button class="tab" role="tab" data-tab="simulator" aria-selected="false">
-      <span class="tab-ico">◈</span><span>Симулятор точки</span>
+    <button class="tab" role="tab" data-tab="r8" data-group="gear" aria-selected="false">
+      <span class="tab-ico">🏆</span><span>Спорядження</span>
     </button>
     <button class="tab" role="tab" data-tab="chests" aria-selected="false">
-      <span class="tab-ico">🎁</span><span>Симулятор скринь</span>
+      <span class="tab-ico">🎁</span><span>Скрині</span>
     </button>
     <button class="tab" role="tab" data-tab="defense" aria-selected="false">
-      <span class="tab-ico">🛡</span><span>Атака/Захист</span>
-    </button>
-    <button class="tab" role="tab" data-tab="r8" aria-selected="false">
-      <span class="tab-ico">🏆</span><span>Р8</span>
-    </button>
-    <button class="tab" role="tab" data-tab="r8sim" aria-selected="false">
-      <span class="tab-ico">⚒</span><span>Симулятор Р8</span>
-    </button>
-    <button class="tab" role="tab" data-tab="gsn" aria-selected="false">
-      <span class="tab-ico">📿</span><span>ГСН</span>
-    </button>
-    <button class="tab" role="tab" data-tab="guides" aria-selected="false">
-      <span class="tab-ico">📖</span><span>Гайди</span>
+      <span class="tab-ico">🛡</span><span>Бій</span>
     </button>
     <button class="tab" role="tab" data-tab="rb" aria-selected="false">
       <span class="tab-ico">💀</span><span>РБ</span>
+    </button>
+    <button class="tab" role="tab" data-tab="guides" aria-selected="false">
+      <span class="tab-ico">📖</span><span>Гайди</span>
     </button>
     <button class="tab tab-settings" role="tab" data-tab="settings" aria-selected="false" title="Налаштування" aria-label="Налаштування">
       <span class="tab-ico">⚙</span>
       <span class="tab-attention" aria-hidden="true"><span class="tab-attention-dot"></span></span>
     </button>
   </nav>
+  <nav class="nav-secondary container" id="subtabsBar" role="tablist" aria-label="Підрозділи" hidden></nav>
 
   <main class="container">
     <!-- TAB: REFINE -->
