@@ -2656,3 +2656,396 @@ body.modal-open { overflow: hidden; }
   .gsn-item-grid { max-width: none; }
   .gsn-odd { flex-basis: 100%; }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   ТЕМИ: dark (оригінал, дефолтний :root вище) + light (нижче).
+   Світла «пергаментна» тема активується через html[data-theme="light"].
+   Перемикач — кнопка .theme-toggle у хедері (стан у localStorage).
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── Перемикач тем (працює в обох темах: хедер темний завжди) ──────── */
+.theme-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  margin-left: 12px;
+  border: 1px solid rgba(206, 166, 88, 0.5);
+  border-radius: 11px;
+  background: linear-gradient(180deg, rgba(206, 166, 88, 0.2), rgba(206, 166, 88, 0.06));
+  color: #f3e4c1;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.theme-toggle:hover {
+  background: linear-gradient(180deg, rgba(206, 166, 88, 0.32), rgba(206, 166, 88, 0.12));
+  border-color: rgba(206, 166, 88, 0.72);
+  transform: translateY(-1px);
+}
+.theme-toggle:active { transform: translateY(0); }
+.theme-ico-sun, .theme-ico-moon { display: none; }
+html[data-theme="dark"]  .theme-ico-sun  { display: inline; }
+html[data-theme="light"] .theme-ico-moon { display: inline; }
+@media (max-width: 720px) { .theme-toggle { margin-left: 8px; } }
+
+/* ════════════════════════════════════════════════════════════════════
+   LIGHT THEME — пергамент + золото/бронза + нефрит
+   ════════════════════════════════════════════════════════════════════ */
+html[data-theme="light"] {
+  --bg-0: #b59873;
+  --bg-1: #efe3c6;       /* мобільний drawer */
+  --bg-2: #f5ecd5;
+  --bg-3: #fbf4e2;
+  --line:   rgba(120, 84, 38, 0.24);
+  --line-2: rgba(120, 84, 38, 0.40);
+  --text:     #2f2410;       /* темніше для контрасту */
+  --text-dim: #574325;       /* темніше для контрасту */
+  --text-mute:#7a6540;       /* темніше для контрасту */
+  --accent:   #b07f23;       /* золото */
+  --accent-2: #8f4f1d;       /* бронза */
+  --accent-3: #3f6f46;       /* нефрит */
+  --good: #36794c;
+  --warn: #a8701a;
+  --bad:  #ad352e;
+  --shadow: 0 18px 50px -22px rgba(80, 52, 20, 0.45),
+            0 8px 22px -14px rgba(80, 52, 20, 0.38);
+  --display: 'Cinzel', 'Marcellus', Georgia, serif;
+}
+
+/* ── Сторінка ─────────────────────────────────────────────────────── */
+html[data-theme="light"] body {
+  color: var(--text);
+  background:
+    radial-gradient(1200px 720px at 50% -12%, #e0caa0, transparent 60%),
+    radial-gradient(900px 620px at 100% 0%, #cab488, transparent 55%),
+    radial-gradient(800px 600px at 0% 12%, #cdb78c, transparent 55%),
+    linear-gradient(180deg, #c6ae84 0%, #b79b6c 60%, #ad8f5f 100%);
+  background-attachment: fixed;
+}
+html[data-theme="light"] .bg-glow { display: none; }
+html[data-theme="light"] .link { color: #8f4f1d; border-bottom-color: rgba(143, 79, 29, 0.45); }
+html[data-theme="light"] .link:hover { color: #b07f23; border-color: #b07f23; }
+html[data-theme="light"] code { background: rgba(120, 84, 38, 0.12); color: var(--text); }
+
+/* ── Хедер: темний «дерев'яний» брус (як на форумі) ───────────────── */
+html[data-theme="light"] .site-header {
+  background: linear-gradient(180deg, rgba(60, 42, 22, 0.94), rgba(44, 30, 15, 0.92));
+  border-bottom: 1px solid rgba(206, 166, 88, 0.45);
+  box-shadow: 0 1px 0 rgba(206, 166, 88, 0.25), 0 10px 28px -14px rgba(30, 18, 6, 0.7);
+}
+html[data-theme="light"] .logo-text { color: #f3e4c1; font-family: var(--display); font-weight: 600; letter-spacing: 0.04em; }
+html[data-theme="light"] .logo-mark {
+  background: linear-gradient(135deg, #e7c873, #a9742a);
+  color: #2f2410;
+  border: 1px solid rgba(255, 235, 180, 0.5);
+  box-shadow: 0 8px 20px -10px rgba(150, 100, 30, 0.85);
+}
+html[data-theme="light"] .nav-toggle {
+  border-color: rgba(206, 166, 88, 0.5);
+  background: linear-gradient(180deg, rgba(206, 166, 88, 0.24), rgba(206, 166, 88, 0.08));
+  color: #f3e4c1;
+  box-shadow: 0 6px 16px -8px rgba(20, 12, 4, 0.6);
+}
+html[data-theme="light"] .nav-toggle:hover {
+  background: linear-gradient(180deg, rgba(206, 166, 88, 0.34), rgba(206, 166, 88, 0.12));
+  border-color: rgba(206, 166, 88, 0.72);
+}
+html[data-theme="light"] .partner-logo { background: rgba(255, 255, 255, 0.05); border-color: rgba(206, 166, 88, 0.3); }
+html[data-theme="light"] .partner-logo:hover { background: rgba(206, 166, 88, 0.14); border-color: rgba(206, 166, 88, 0.6); }
+
+/* ── Заголовки секцій ─────────────────────────────────────────────── */
+html[data-theme="light"] .eyebrow { color: #9c6b1e; }
+html[data-theme="light"] .section-head h2 { font-family: var(--display); font-weight: 600; letter-spacing: 0.01em; color: var(--text); }
+html[data-theme="light"] .section-head p { color: var(--text-dim); }
+html[data-theme="light"] .mc-head h3 { font-family: var(--display); font-weight: 600; }
+
+/* ── Ліве меню ────────────────────────────────────────────────────── */
+html[data-theme="light"] .sidebar .nav-primary .tab { color: var(--text-dim); }
+html[data-theme="light"] .sidebar .nav-primary .tab:hover { background: rgba(120, 84, 38, 0.08); color: var(--text); }
+html[data-theme="light"] .sidebar .nav-primary .tab.active {
+  background: linear-gradient(90deg, rgba(176, 127, 35, 0.22), rgba(176, 127, 35, 0.05));
+  border-color: rgba(176, 127, 35, 0.45);
+  border-bottom-color: rgba(176, 127, 35, 0.45);
+  color: var(--text);
+}
+html[data-theme="light"] .sidebar .nav-primary .tab.active::before { background: linear-gradient(180deg, #d6ab47, #a9742a); }
+html[data-theme="light"] .sidebar .nav-primary .tab.active .tab-ico { color: #a9742a; }
+
+html[data-theme="light"] .tab.active {
+  background: linear-gradient(180deg, rgba(176, 127, 35, 0.2), rgba(176, 127, 35, 0.05));
+  border-color: rgba(176, 127, 35, 0.45);
+  box-shadow: 0 -8px 20px -8px rgba(176, 127, 35, 0.4);
+}
+html[data-theme="light"] .tab.active .tab-ico { color: var(--accent-2); }
+
+html[data-theme="light"] .subtab { color: var(--text-dim); background: rgba(120, 84, 38, 0.04); }
+html[data-theme="light"] .subtab.active {
+  background: linear-gradient(180deg, rgba(63, 111, 70, 0.18), rgba(63, 111, 70, 0.05));
+  border-color: rgba(63, 111, 70, 0.4);
+  box-shadow: 0 -5px 14px -5px rgba(63, 111, 70, 0.25);
+}
+html[data-theme="light"] .subtab.active .subtab-ico { color: var(--accent-3); }
+
+/* ── Картки ───────────────────────────────────────────────────────── */
+html[data-theme="light"] .card {
+  background: linear-gradient(180deg, #f7eed7, #efe2c2);
+  border: 1px solid rgba(150, 108, 50, 0.4);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 250, 235, 0.6);
+}
+html[data-theme="light"] .calc-card::before { background: radial-gradient(600px 220px at 0% 0%, rgba(200, 160, 80, 0.18), transparent 60%); }
+
+/* ── Кнопки ───────────────────────────────────────────────────────── */
+html[data-theme="light"] .btn-primary {
+  background: linear-gradient(135deg, #cf9f3a, #a9651f);
+  color: #fff7e6;
+  box-shadow: 0 14px 30px -14px rgba(160, 100, 30, 0.75);
+}
+html[data-theme="light"] .btn-primary:hover { box-shadow: 0 18px 38px -14px rgba(160, 100, 30, 0.6); }
+html[data-theme="light"] .btn-ghost { background: rgba(120, 84, 38, 0.06); color: var(--text); border-color: var(--line-2); }
+html[data-theme="light"] .btn-ghost:hover { background: rgba(120, 84, 38, 0.12); border-color: var(--text-dim); }
+
+/* ── Форми ────────────────────────────────────────────────────────── */
+html[data-theme="light"] .field input[type='number'],
+html[data-theme="light"] .field input[type='search'],
+html[data-theme="light"] .field input[type='text'],
+html[data-theme="light"] .field select,
+html[data-theme="light"] .search-form input[type='search'],
+html[data-theme="light"] .guides-search input {
+  background-color: #fffdf4;
+  border-color: rgba(120, 84, 38, 0.36);
+  color: var(--text);
+}
+html[data-theme="light"] .field input:focus,
+html[data-theme="light"] .field select:focus,
+html[data-theme="light"] .search-form input:focus,
+html[data-theme="light"] .guides-search input:focus {
+  border-color: var(--accent);
+  background-color: #fffef9;
+  box-shadow: 0 0 0 4px rgba(176, 127, 35, 0.18);
+}
+html[data-theme="light"] .field select {
+  color-scheme: light;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'><path d='M1 1.5L6 6.5L11 1.5' stroke='%23574325' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+}
+html[data-theme="light"] .field select option { background: #fffdf4; color: var(--text); }
+html[data-theme="light"] .segmented { background: rgba(120, 84, 38, 0.06); border-color: var(--line-2); }
+html[data-theme="light"] .segmented label { color: var(--text-dim); }
+html[data-theme="light"] .segmented input:checked + label {
+  background: linear-gradient(135deg, #cf9f3a, #a9651f);
+  color: #fff7e6;
+  box-shadow: 0 8px 18px -10px rgba(160, 100, 30, 0.8);
+}
+html[data-theme="light"] .field-group { border-color: var(--line-2); background: rgba(120, 84, 38, 0.04); }
+
+/* ── Метрики ──────────────────────────────────────────────────────── */
+html[data-theme="light"] .metric { background: #f8efda; border-color: var(--line); }
+html[data-theme="light"] .metric.accent .metric-value {
+  background: linear-gradient(90deg, #b07f23, #8f4f1d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ── Monte Carlo ──────────────────────────────────────────────────── */
+html[data-theme="light"] .mc-bar { background: linear-gradient(180deg, #cf9f3a, #8f4f1d); }
+html[data-theme="light"] .mc-hist { background: rgba(120, 84, 38, 0.05); border-color: var(--line); }
+html[data-theme="light"] tr.mc-mid { background: rgba(176, 127, 35, 0.14); }
+html[data-theme="light"] tr.mc-mid td { color: var(--text); }
+
+/* ── Таблиці ──────────────────────────────────────────────────────── */
+html[data-theme="light"] .table-wrap { border-color: rgba(150, 108, 50, 0.34); }
+html[data-theme="light"] .data-table th { background: #ebdab7; color: var(--text-dim); }
+html[data-theme="light"] .data-table tbody tr:hover { background: rgba(176, 127, 35, 0.1); }
+html[data-theme="light"] .data-table tr.winner td { background: rgba(120, 170, 90, 0.18); }
+
+/* ── Бейджі / нотатки / банери / тултіпи ──────────────────────────── */
+html[data-theme="light"] .badge { background: rgba(176, 127, 35, 0.2); color: #6e4f17; border-color: rgba(176, 127, 35, 0.45); }
+html[data-theme="light"] .note { background: rgba(120, 84, 38, 0.04); border-color: var(--line); color: var(--text-dim); }
+html[data-theme="light"] .note summary { color: var(--text); }
+html[data-theme="light"] .note summary::before { color: var(--accent); }
+html[data-theme="light"] .note code { background: rgba(176, 127, 35, 0.18); color: #6e4f17; }
+html[data-theme="light"] .banner { background: rgba(176, 127, 35, 0.12); border-color: rgba(176, 127, 35, 0.35); color: #6e4f17; }
+html[data-theme="light"] .has-tip .tip-body {
+  background: #fbf3df;
+  border-color: rgba(150, 108, 50, 0.45);
+  color: var(--text);
+  box-shadow: 0 18px 36px rgba(80, 52, 20, 0.3);
+}
+html[data-theme="light"] .has-tip { border-bottom-color: rgba(120, 84, 38, 0.42); }
+
+/* ── Defense рядки ────────────────────────────────────────────────── */
+html[data-theme="light"] .def-row:hover { background: rgba(176, 127, 35, 0.1); }
+html[data-theme="light"] .def-row:focus { background: rgba(176, 127, 35, 0.16); }
+
+/* ════════════════════════════════════════════════════════════════════
+   КОНТРАСТ: прибрати білі/яскраві написи, що погано читались на пергаменті
+   ════════════════════════════════════════════════════════════════════ */
+/* Гайди */
+html[data-theme="light"] .guides-cat { background: rgba(255, 252, 244, 0.55); }
+html[data-theme="light"] .guides-cat.open { background: #f5ecd2; border-color: var(--line-2); }
+html[data-theme="light"] .guides-cat-count { background: rgba(120, 84, 38, 0.1); color: var(--text-mute); }
+html[data-theme="light"] .guides-cat li button { color: var(--text-dim); }
+html[data-theme="light"] .guides-cat li button:hover { color: var(--text); background: rgba(120, 84, 38, 0.07); }
+html[data-theme="light"] .guides-cat li button.active {
+  color: var(--text);
+  background: rgba(176, 127, 35, 0.16);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+html[data-theme="light"] .guide-body strong { color: var(--text); }
+html[data-theme="light"] .guide-crumb { color: var(--accent-2); }
+html[data-theme="light"] .guide-link { color: #8f4f1d; border-bottom-color: rgba(143, 79, 29, 0.5); }
+html[data-theme="light"] .guide-link:hover { color: #b07f23; border-color: #b07f23; }
+html[data-theme="light"] .coord { color: #6e4f17; background: rgba(176, 127, 35, 0.12); border-color: rgba(176, 127, 35, 0.38); }
+/* ГСН якості — приглушити для читабельності на світлому */
+html[data-theme="light"] .gsn-metric-blue   { color: #2f6fae; }
+html[data-theme="light"] .gsn-metric-purple { color: #7a48ae; }
+html[data-theme="light"] .gsn-metric-gold   { color: #8f6716; }
+html[data-theme="light"] .gsn-tier-gold   { --gsn-c: #8f6716; }
+/* Симулятор бейдж */
+html[data-theme="light"] .sim-running { color: var(--accent-3); background: rgba(63, 111, 70, 0.12); border-color: rgba(63, 111, 70, 0.35); }
+
+/* ════════════════════════════════════════════════════════════════════
+   ПОЛИШ ДИЗАЙНУ (раунд 2): монохромні іконки, рамки карток, фактура фону,
+   роздільники секцій, zebra-таблиці, скролбари, виділення.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── Іконки меню: SVG-лінійні, успадковують колір (обидві теми) ────── */
+.tab-ico svg { width: 18px; height: 18px; display: block; }
+.sidebar .nav-primary .tab .tab-ico { display: inline-flex; align-items: center; justify-content: center; }
+
+/* ════════ LIGHT THEME — декор і полиш ════════ */
+
+/* ── Глибина фону: легка віньєтка + паперова зернистість ──────────── */
+html[data-theme="light"] .bg-glow {
+  display: block;
+  opacity: 1;
+  background-image:
+    radial-gradient(130% 100% at 50% -5%, rgba(255, 248, 230, 0.18), transparent 45%),
+    radial-gradient(120% 95% at 50% 105%, rgba(60, 40, 18, 0.20), transparent 55%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+  background-size: cover, cover, 200px 200px;
+  mix-blend-mode: multiply;
+}
+html[data-theme="light"] .bg-glow .blob { display: none; }
+
+/* ── Картки: подвійна золота рамка (сувій) ────────────────────────── */
+html[data-theme="light"] .card {
+  background: linear-gradient(180deg, #f7eed7, #efe2c2);
+  border: 1px solid rgba(150, 108, 50, 0.46);
+  box-shadow:
+    var(--shadow),
+    inset 0 0 0 4px #f3e8cd,
+    inset 0 0 0 5px rgba(176, 127, 35, 0.34),
+    inset 0 1px 0 rgba(255, 252, 240, 0.7);
+}
+
+/* ── Роздільник під заголовком секції: лінія + центральний самоцвіт ─ */
+html[data-theme="light"] .section-head::after {
+  content: '';
+  display: block;
+  margin-top: 16px;
+  height: 10px;
+  background:
+    radial-gradient(circle at center, #b07f23 0 2.4px, rgba(176, 127, 35, 0) 3px) center/10px 10px no-repeat,
+    linear-gradient(90deg,
+      rgba(176, 127, 35, 0) 0,
+      rgba(176, 127, 35, 0.5) 8%,
+      rgba(176, 127, 35, 0.5) 43%,
+      rgba(176, 127, 35, 0) 47%,
+      rgba(176, 127, 35, 0) 53%,
+      rgba(176, 127, 35, 0.5) 57%,
+      rgba(176, 127, 35, 0.5) 92%,
+      rgba(176, 127, 35, 0) 100%) center/100% 1.5px no-repeat;
+}
+
+/* ── Таблиці: zebra + золота лінія під шапкою ─────────────────────── */
+html[data-theme="light"] .data-table th {
+  background: #ecdcb9;
+  color: var(--text-dim);
+  border-bottom: 1px solid rgba(176, 127, 35, 0.42);
+}
+html[data-theme="light"] .data-table tbody tr:nth-child(even) { background: rgba(120, 84, 38, 0.05); }
+html[data-theme="light"] .data-table tbody tr:hover { background: rgba(176, 127, 35, 0.13); }
+html[data-theme="light"] .data-table tr.winner td { background: rgba(120, 170, 90, 0.2); }
+
+/* ── Ghost-кнопки: чіткіша рамка на пергаменті ────────────────────── */
+html[data-theme="light"] .btn-ghost { background: rgba(120, 84, 38, 0.09); border-color: rgba(143, 79, 29, 0.42); }
+html[data-theme="light"] .btn-ghost:hover { background: rgba(120, 84, 38, 0.15); border-color: rgba(143, 79, 29, 0.62); }
+
+/* ── Скролбари та виділення під тему ──────────────────────────────── */
+html[data-theme="light"] { scrollbar-color: rgba(140, 100, 45, 0.6) rgba(120, 84, 38, 0.06); }
+html[data-theme="light"] ::-webkit-scrollbar { width: 12px; height: 12px; }
+html[data-theme="light"] ::-webkit-scrollbar-track { background: rgba(120, 84, 38, 0.06); }
+html[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(140, 100, 45, 0.55);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(140, 100, 45, 0.78); background-clip: padding-box; }
+html[data-theme="light"] ::selection { background: rgba(176, 127, 35, 0.32); color: #2f2410; }
+
+/* ════════════════════════════════════════════════════════════════════
+   ХЕДЕР / ЛОГО — декор (light): дерев'яний брус, золота філігрань,
+   лого-мітка у формі геральдичного щита, рамка партнерського лого.
+   ──────────────────────────────────────────────────────────────────── */
+html[data-theme="light"] .site-header {
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 2px, rgba(255, 240, 210, 0.018) 2px 6px),
+    linear-gradient(180deg, rgba(66, 46, 25, 0.96), rgba(42, 28, 14, 0.95));
+  border-bottom: none;
+  box-shadow:
+    0 1px 0 rgba(214, 174, 96, 0.6),
+    0 3px 0 rgba(214, 174, 96, 0.22),
+    0 13px 30px -14px rgba(30, 18, 6, 0.72);
+}
+
+html[data-theme="light"] .logo-text {
+  color: #f3e4c1;
+  font-family: var(--display);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.38);
+}
+
+/* Лого-мітка «PW» → геральдичний щит */
+html[data-theme="light"] .logo-mark {
+  width: 32px;
+  height: 37px;
+  border-radius: 0;
+  clip-path: polygon(8% 0, 92% 0, 100% 14%, 100% 52%, 50% 100%, 0 52%, 0 14%);
+  background: linear-gradient(160deg, #f3d98e 0%, #d8aa4e 46%, #a9742a 100%);
+  color: #2f2410;
+  border: none;
+  box-shadow: none;
+  filter: drop-shadow(0 5px 9px rgba(120, 80, 20, 0.55));
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  padding-bottom: 7px;
+}
+
+/* Партнерське лого: темна підкладка + золота рамка, щоб не губилось */
+html[data-theme="light"] .partner-logo {
+  background: rgba(18, 11, 3, 0.4);
+  border: 1px solid rgba(214, 174, 96, 0.42);
+  box-shadow: inset 0 0 0 1px rgba(255, 235, 180, 0.08), inset 0 1px 6px rgba(0, 0, 0, 0.45);
+}
+html[data-theme="light"] .partner-logo:hover {
+  background: rgba(30, 18, 6, 0.5);
+  border-color: rgba(214, 174, 96, 0.7);
+}
+
+/* Золота рамка-кант навколо мітки голди в хедері */
+html[data-theme="light"] .gold-indicator {
+  background: rgba(214, 174, 96, 0.12);
+  border-color: rgba(214, 174, 96, 0.4);
+  color: #ffe7b8;
+}
+html[data-theme="light"] .gold-indicator:hover {
+  background: rgba(214, 174, 96, 0.2);
+  border-color: rgba(214, 174, 96, 0.62);
+}
