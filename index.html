@@ -11,7 +11,7 @@
     // Тема до рендеру (без FOUC): light — дефолт, dark — оригінальна.
     document.documentElement.setAttribute(
       'data-theme',
-      localStorage.getItem('pw-theme') === 'dark' ? 'dark' : 'light'
+      localStorage.getItem('pw-theme') === 'light' ? 'light' : 'dark'
     );
   </script>
   <link rel="icon" type="image/jpeg" sizes="32x32" href="assets/favicon-32.jpg" />
@@ -36,7 +36,23 @@
         <span class="nav-toggle-bars"></span>
       </button>
       <a href="#refine" class="logo">
-        <span class="logo-mark">PW</span>
+        <span class="logo-crest" aria-hidden="true">
+          <svg viewBox="0 0 64 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="lgGold" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#f7e09a"/>
+                <stop offset="0.5" stop-color="#dcae52"/>
+                <stop offset="1" stop-color="#a9742a"/>
+              </linearGradient>
+            </defs>
+            <g fill="url(#lgGold)">
+              <path opacity="0.85" d="M24 14C16 10 9 10 3 13c5 .5 7 1.5 9 3-4 0-6 .5-8 2 5 0 7.5 .5 10 2-3 0-4.5 .5-6 2 6 0 11-3 16-6Z"/>
+              <path opacity="0.85" d="M40 14c8-4 15-4 21-1-5 .5-7 1.5-9 3 4 0 6 .5 8 2-5 0-7.5 .5-10 2 3 0 4.5 .5 6 2-6 0-11-3-16-6Z"/>
+            </g>
+            <path d="M24 9h16c1.7 0 3 1.3 3 3v11c0 5-11 11-11 11S21 28 21 23V12c0-1.7 1.3-3 3-3Z" fill="url(#lgGold)" stroke="#7a5212" stroke-width="0.8"/>
+            <text x="32" y="24.5" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="800" fill="#2f2410" letter-spacing="0.3">PW</text>
+          </svg>
+        </span>
         <span class="logo-text">Хелпер</span>
       </a>
       <a href="https://cyberpw.fun/" target="_blank" rel="noopener" class="partner-logo" title="cyberpw.fun">

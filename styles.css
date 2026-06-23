@@ -3049,3 +3049,87 @@ html[data-theme="light"] .gold-indicator:hover {
   background: rgba(214, 174, 96, 0.2);
   border-color: rgba(214, 174, 96, 0.62);
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   РАУНД 3: темна тема — дефолт; роздільники й у темній (інший колір,
+   та сама геометрія → без стрибка контенту); уніфікація лого в стилі
+   CyberPW (золото на темній плашці) — однаково в обох темах.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* ── Роздільник секцій: базова (темна) версія, та сама геометрія ──── */
+.section-head::after {
+  content: '';
+  display: block;
+  margin-top: 16px;
+  height: 10px;
+  background:
+    radial-gradient(circle at center, #9182ff 0 2.4px, rgba(145, 130, 255, 0) 3px) center/10px 10px no-repeat,
+    linear-gradient(90deg,
+      rgba(124, 92, 255, 0) 0,
+      rgba(124, 92, 255, 0.42) 8%,
+      rgba(124, 92, 255, 0.42) 43%,
+      rgba(124, 92, 255, 0) 47%,
+      rgba(124, 92, 255, 0) 53%,
+      rgba(124, 92, 255, 0.42) 57%,
+      rgba(124, 92, 255, 0.42) 92%,
+      rgba(124, 92, 255, 0) 100%) center/100% 1.5px no-repeat;
+}
+/* світла версія (золото) визначена раніше з вищою специфічністю — лишається */
+
+/* ════════════════════════════════════════════════════════════════════
+   ЛОГО — єдиний формат: золотий напис + щит «PW» на темній плашці
+   (як CyberPW Arena). Однаково в темній і світлій темах.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Плашка-основа для нашого лого та партнерського — однаковий «формат» */
+.logo,
+.partner-logo,
+html[data-theme="light"] .partner-logo {
+  background: linear-gradient(180deg, rgba(28, 19, 9, 0.94), rgba(12, 8, 4, 0.94));
+  border: 1px solid rgba(214, 174, 96, 0.45);
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 222, 158, 0.12), 0 7px 18px -10px rgba(0, 0, 0, 0.7);
+}
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  height: 42px;
+  padding: 0 14px 0 9px;
+}
+.partner-logo,
+html[data-theme="light"] .partner-logo {
+  height: 42px;
+  padding: 4px 13px;
+  margin-left: auto;
+  margin-right: 12px;
+}
+.logo:hover,
+.partner-logo:hover,
+html[data-theme="light"] .partner-logo:hover {
+  border-color: rgba(214, 174, 96, 0.72);
+  background: linear-gradient(180deg, rgba(36, 25, 12, 0.96), rgba(16, 10, 5, 0.96));
+}
+
+/* Крилатий щит «PW» — SVG-крест (золотий градієнт), у обох темах */
+.logo-crest { display: inline-flex; align-items: center; }
+.logo-crest svg {
+  height: 32px;
+  width: auto;
+  display: block;
+  filter: drop-shadow(0 3px 5px rgba(120, 80, 20, 0.5));
+}
+
+/* Напис «Хелпер» — золотий градієнт (Cinzel) у обох темах */
+.logo-text,
+html[data-theme="light"] .logo-text {
+  font-family: var(--display);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  background: linear-gradient(180deg, #ffeab4 0%, #e3b95e 55%, #b07f23 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.45));
+  text-shadow: none;
+}
