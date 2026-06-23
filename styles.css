@@ -3120,11 +3120,11 @@ html[data-theme="light"] .partner-logo:hover {
   filter: drop-shadow(0 3px 5px rgba(120, 80, 20, 0.5));
 }
 
-/* Напис «Хелпер» — золотий градієнт (Cinzel) у обох темах */
+/* Напис «Хелпер» — золотий градієнт; шрифт однаковий у обох темах (Inter) */
 .logo-text,
 html[data-theme="light"] .logo-text {
-  font-family: var(--display);
-  font-weight: 600;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-weight: 700;
   letter-spacing: 0.06em;
   background: linear-gradient(180deg, #ffeab4 0%, #e3b95e 55%, #b07f23 100%);
   -webkit-background-clip: text;
