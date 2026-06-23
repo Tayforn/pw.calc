@@ -105,8 +105,39 @@ export function setTab(name: string, pushHistory = true): void {
   if (name === 'rb') onRbActivateCb();
 }
 
+// Чи зараз вузький екран (drawer-режим). Має збігатися з CSS-брейкпоінтом 880px.
+function isMobile(): boolean {
+  return window.matchMedia('(max-width: 880px)').matches;
+}
+
+/** Тогл згортання меню: працює на всіх ширинах (десктоп — push, мобілка — drawer). */
+function initNavToggle(): void {
+  const root = document.documentElement;
+  const btn = document.getElementById('navToggle');
+  const backdrop = document.getElementById('navBackdrop');
+
+  const sync = () => btn?.setAttribute('aria-expanded', String(root.classList.contains('nav-open')));
+  const setOpen = (on: boolean) => { root.classList.toggle('nav-open', on); sync(); };
+
+  sync(); // початковий стан виставляє inline-скрипт у <head>
+
+  btn?.addEventListener('click', () => setOpen(!root.classList.contains('nav-open')));
+  backdrop?.addEventListener('click', () => setOpen(false));
+
+  // На мобільному вибір розділу закриває drawer, щоб показати контент.
+  document.getElementById('appSidebar')?.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('.tab') && isMobile()) setOpen(false);
+  });
+  // Esc закриває drawer на мобільному.
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isMobile() && root.classList.contains('nav-open')) setOpen(false);
+  });
+}
+
 export function initNavigation(onRbActivate: () => void): void {
   onRbActivateCb = onRbActivate;
+
+  initNavToggle();
 
   $$<HTMLElement>('.nav-primary .tab').forEach((t) =>
     t.addEventListener('click', () => {

@@ -3,8 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Калькулятор Perfect World: заточка, золоті яйця, шари." />
-  <title>PW Калькулятор — інструменти для Perfect World</title>
+  <meta name="description" content="PW Хелпер: заточка, шари, спорядження, бій, РБ для Perfect World." />
+  <title>PW Хелпер — інструменти для Perfect World</title>
+  <script>
+    // Стан меню до рендеру (без FOUC): відкрите на десктопі, сховане на вузьких.
+    document.documentElement.classList.toggle('nav-open', window.innerWidth > 880);
+  </script>
   <link rel="icon" type="image/jpeg" sizes="32x32" href="assets/favicon-32.jpg" />
   <link rel="icon" type="image/jpeg" sizes="180x180" href="assets/favicon-180.jpg" />
   <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon-180.jpg" />
@@ -23,9 +27,12 @@
 
   <header class="site-header">
     <div class="container header-inner">
+      <button type="button" id="navToggle" class="nav-toggle" aria-label="Показати або сховати меню" aria-expanded="true" aria-controls="appSidebar" title="Меню">
+        <span class="nav-toggle-bars"></span>
+      </button>
       <a href="#refine" class="logo">
         <span class="logo-mark">PW</span>
-        <span class="logo-text">Калькулятор</span>
+        <span class="logo-text">Хелпер</span>
       </a>
       <a href="https://cyberpw.fun/" target="_blank" rel="noopener" class="partner-logo" title="cyberpw.fun">
         <img src="assets/logo.webp" alt="CyberPW" />
@@ -39,8 +46,9 @@
     </div>
   </header>
 
+  <div class="nav-backdrop" id="navBackdrop" aria-hidden="true"></div>
   <div class="app-shell container">
-  <aside class="sidebar">
+  <aside class="sidebar" id="appSidebar">
   <nav class="nav-primary" role="tablist" aria-label="Розділи">
     <button class="tab active" role="tab" data-tab="refine" data-group="refine" aria-selected="true">
       <span class="tab-ico">⚒</span><span>Заточка</span>
@@ -1018,7 +1026,7 @@
 
   <footer class="site-footer">
     <div class="container footer-inner">
-      <span>© <span id="year"></span> PW Калькулятор · Неофіційний фанатський інструмент · by Тайфорн</span>
+      <span>© <span id="year"></span> PW Хелпер · Неофіційний фанатський інструмент · by Тайфорн</span>
       <span class="muted">Perfect World та пов'язані назви належать їхнім власникам.</span>
     </div>
   </footer>

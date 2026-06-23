@@ -83,6 +83,55 @@ small.hint {
 }
 .content { min-width: 0; }
 
+/* ── Згорнуте меню: контент на всю ширину (десктоп, push-модель) ───── */
+@media (min-width: 881px) {
+  html:not(.nav-open) .app-shell { grid-template-columns: minmax(0, 1fr); }
+  html:not(.nav-open) .sidebar { display: none; }
+}
+
+/* ── Кнопка-тогл меню (хамбургер) — виділена ──────────────────────── */
+.nav-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(124, 92, 255, 0.45);
+  border-radius: 11px;
+  background: linear-gradient(180deg, rgba(124, 92, 255, 0.22), rgba(124, 92, 255, 0.08));
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+  box-shadow: 0 6px 18px -8px rgba(124, 92, 255, 0.6);
+}
+.nav-toggle:hover {
+  background: linear-gradient(180deg, rgba(124, 92, 255, 0.32), rgba(124, 92, 255, 0.12));
+  border-color: rgba(124, 92, 255, 0.7);
+  transform: translateY(-1px);
+}
+.nav-toggle:active { transform: translateY(0); }
+/* три смужки */
+.nav-toggle-bars,
+.nav-toggle-bars::before,
+.nav-toggle-bars::after {
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transition: transform 0.22s ease, opacity 0.18s ease;
+}
+.nav-toggle-bars { position: relative; }
+.nav-toggle-bars::before { content: ''; position: absolute; top: -6px; left: 0; }
+.nav-toggle-bars::after  { content: ''; position: absolute; top: 6px;  left: 0; }
+/* у відкритому стані — перетворюємо на «×» */
+html.nav-open .nav-toggle-bars { background: transparent; }
+html.nav-open .nav-toggle-bars::before { transform: translateY(6px) rotate(45deg); }
+html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45deg); }
+
+/* Затемнення під drawer (тільки мобільний) */
+.nav-backdrop { display: none; }
+
 /* Background blobs */
 .bg-glow {
   position: fixed;
@@ -104,10 +153,10 @@ small.hint {
 .blob-c { display: none; }
 
 /* Header */
-.site-header {
+.site-header { /* z-index підвищено, щоб хедер з тоглом був над drawer/backdrop */
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 70;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   background: rgba(10, 10, 20, 0.65);
@@ -459,28 +508,42 @@ small.hint {
   /* на телефоні — комфортніші бокові поля (94vw) для всього */
   :root { --shell-w: min(1160px, 94vw); }
   .app-shell {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0;
     padding-top: 10px;
   }
-  .sidebar { position: static; top: auto; }
-  .sidebar .nav-primary {
-    flex-direction: row;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    gap: 4px;
-    min-height: 0;
-    padding: 6px;
-    border-radius: var(--radius);
+  /* Сайдбар — висувний drawer поверх контенту (під хедером) */
+  .sidebar {
+    position: fixed;
+    top: 62px;
+    left: 0;
+    bottom: 0;
+    width: 264px;
+    max-width: 84vw;
+    z-index: 60;
+    padding: 14px 12px 24px;
+    background: var(--bg-1);
+    border-right: 1px solid var(--line-2);
+    box-shadow: 18px 0 60px -22px rgba(0, 0, 0, 0.85);
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.26s ease;
   }
-  .sidebar .nav-primary .tab { width: auto; flex: 0 0 auto; }
-  .sidebar .nav-primary .tab.active::before {
-    left: 7px; right: 7px; top: auto; bottom: -2px;
-    width: auto; height: 3px;
+  html.nav-open .sidebar { transform: none; }
+  .sidebar .nav-primary { min-height: 0; }
+
+  /* Затемнення під drawer */
+  .nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 62px 0 0 0;
+    z-index: 55;
+    background: rgba(4, 4, 10, 0.55);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.26s ease;
   }
-  .sidebar .nav-primary .tab[data-group]::after { margin-left: 2px; }
-  .sidebar .nav-primary .tab-settings { margin-top: 0; margin-left: 0; }
-  .tab-settings-label { display: none; }
+  html.nav-open .nav-backdrop { opacity: 1; pointer-events: auto; }
 }
 
 .tab-panel {
