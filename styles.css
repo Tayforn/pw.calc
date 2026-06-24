@@ -1,22 +1,24 @@
 :root {
-  --bg-0: #08070d;
-  --bg-1: #0d0c16;
-  --bg-2: #141424;
-  --bg-3: #1c1c31;
-  --line: rgba(255, 255, 255, 0.08);
-  --line-2: rgba(255, 255, 255, 0.14);
-  --text: #e8e9ff;
-  --text-dim: #9ea0c0;
-  --text-mute: #6b6d8d;
-  --accent: #7c5cff;
-  --accent-2: #ff5ec4;
-  --accent-3: #22d3ee;
+  /* Темна тема — «вугільна» з правилом Elevation: фон найглибший,
+     поверхні (картки/меню) на тон світліші. Єдиний акцент — золото. */
+  --bg-0: #0d1117;   /* фон сторінки — найглибший */
+  --bg-1: #161b22;   /* підняті поверхні: картки, drawer */
+  --bg-2: #1c222c;   /* ще вище: вкладені блоки */
+  --bg-3: #232b37;   /* найвище: чіпи, інпути */
+  --line: rgba(230, 237, 246, 0.09);
+  --line-2: rgba(230, 237, 246, 0.16);
+  --text: #e6edf6;       /* м'який білий, без 100% білого */
+  --text-dim: #aeb6c4;
+  --text-mute: #7b8494;
+  --accent: #e3b95e;     /* фірмове золото — єдиний акцент */
+  --accent-2: #c79a3e;   /* глибше золото — кінці градієнтів */
+  --accent-3: #f0d089;   /* світле золото — посилання/іконки */
   --good: #35e0a1;
   --warn: #ffbf47;
   --bad: #ff5e6c;
   --radius: 14px;
   --radius-lg: 22px;
-  --shadow: 0 20px 60px -20px rgba(124, 92, 255, 0.35), 0 10px 30px -15px rgba(0, 0, 0, 0.7);
+  --shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.75), 0 10px 30px -15px rgba(0, 0, 0, 0.7);
 }
 
 * { box-sizing: border-box; }
@@ -36,12 +38,12 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   background:
-    radial-gradient(1100px 560px at 12% -12%, rgba(124, 92, 255, 0.10), transparent 62%),
+    radial-gradient(1100px 560px at 12% -12%, rgba(227, 185, 94, 0.10), transparent 62%),
     var(--bg-0);
 }
 
 a { color: inherit; text-decoration: none; }
-.link { color: var(--accent-3); border-bottom: 1px dashed rgba(34, 211, 238, 0.4); cursor: pointer; }
+.link { color: var(--accent-3); border-bottom: 1px dashed rgba(227, 185, 94, 0.4); cursor: pointer; }
 .link:hover { color: var(--accent); border-color: var(--accent); }
 
 img { max-width: 100%; display: block; }
@@ -96,18 +98,17 @@ small.hint {
   width: 40px;
   height: 40px;
   flex: 0 0 auto;
-  border: 1px solid rgba(124, 92, 255, 0.45);
+  border: 1px solid rgba(227, 185, 94, 0.45);
   border-radius: 11px;
-  background: linear-gradient(180deg, rgba(124, 92, 255, 0.22), rgba(124, 92, 255, 0.08));
+  background: linear-gradient(180deg, rgba(227, 185, 94, 0.22), rgba(227, 185, 94, 0.08));
   color: var(--text);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, transform 0.1s, box-shadow 0.15s;
-  box-shadow: 0 6px 18px -8px rgba(124, 92, 255, 0.6);
+  box-shadow: 0 6px 18px -8px rgba(227, 185, 94, 0.6);
 }
 .nav-toggle:hover {
-  background: linear-gradient(180deg, rgba(124, 92, 255, 0.32), rgba(124, 92, 255, 0.12));
-  border-color: rgba(124, 92, 255, 0.7);
-  transform: translateY(-1px);
+  background: linear-gradient(180deg, rgba(227, 185, 94, 0.32), rgba(227, 185, 94, 0.12));
+  border-color: rgba(227, 185, 94, 0.7);
 }
 .nav-toggle:active { transform: translateY(0); }
 /* три смужки */
@@ -148,8 +149,8 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
   filter: blur(120px);
   opacity: 0.18;
 }
-.blob-a { background: #7c5cff; top: -180px; left: -140px; }
-.blob-b { background: #ff5ec4; top: 30%; right: -240px; opacity: 0.10; }
+.blob-a { background: #e3b95e; top: -180px; left: -140px; }
+.blob-b { background: #c79a3e; top: 30%; right: -240px; opacity: 0.10; }
 .blob-c { display: none; }
 
 /* Header */
@@ -186,7 +187,7 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
   color: white;
   font-weight: 800;
   font-size: 13px;
-  box-shadow: 0 10px 24px -10px rgba(124, 92, 255, 0.8);
+  box-shadow: 0 10px 24px -10px rgba(227, 185, 94, 0.8);
 }
 .logo-text { color: var(--text); }
 
@@ -210,9 +211,8 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
   display: block;
 }
 .partner-logo:hover {
-  transform: translateY(-1px);
-  border-color: rgba(124, 92, 255, 0.4);
-  background: rgba(124, 92, 255, 0.08);
+  border-color: rgba(227, 185, 94, 0.4);
+  background: rgba(227, 185, 94, 0.08);
 }
 
 .header-meta { font-size: 13.5px; color: var(--text-dim); }
@@ -235,7 +235,6 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
 .gold-indicator:focus-visible {
   background: rgba(255, 191, 71, 0.14);
   border-color: rgba(255, 191, 71, 0.45);
-  transform: translateY(-1px);
 }
 .gold-indicator > .gold-indicator-text { font-weight: 600; opacity: 1; }
 .gold-indicator .gold-indicator-text > span { font-weight: 400; opacity: 0.8; }
@@ -315,10 +314,10 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
 }
 .tab.active {
   color: var(--text);
-  background: linear-gradient(180deg, rgba(124, 92, 255, 0.16), rgba(124, 92, 255, 0.04));
-  border-color: rgba(124, 92, 255, 0.4);
+  background: linear-gradient(180deg, rgba(227, 185, 94, 0.16), rgba(227, 185, 94, 0.04));
+  border-color: rgba(227, 185, 94, 0.4);
   border-bottom-color: transparent;
-  box-shadow: 0 -8px 20px -8px rgba(124, 92, 255, 0.4);
+  box-shadow: 0 -8px 20px -8px rgba(227, 185, 94, 0.4);
 }
 .tab.active .tab-ico { opacity: 1; color: var(--accent-2); }
 
@@ -423,12 +422,12 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
 }
 .subtab.active {
   color: var(--text);
-  background: linear-gradient(180deg, rgba(34, 211, 238, 0.12), rgba(34, 211, 238, 0.03));
-  border-color: rgba(34, 211, 238, 0.3);
+  background: linear-gradient(180deg, rgba(227, 185, 94, 0.14), rgba(227, 185, 94, 0.03));
+  border-color: rgba(227, 185, 94, 0.32);
   border-bottom-color: transparent;
-  box-shadow: 0 -5px 14px -5px rgba(34, 211, 238, 0.25);
+  box-shadow: 0 -5px 14px -5px rgba(227, 185, 94, 0.28);
 }
-.subtab.active .subtab-ico { opacity: 1; color: var(--accent-3); }
+.subtab.active .subtab-ico { opacity: 1; color: var(--accent); }
 
 /* ── Sidebar vertical nav (overrides horizontal .tab styling) ─────── */
 .sidebar .nav-primary {
@@ -461,9 +460,9 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
   background: rgba(255, 255, 255, 0.05);
 }
 .sidebar .nav-primary .tab.active {
-  background: linear-gradient(90deg, rgba(124, 92, 255, 0.16), rgba(124, 92, 255, 0.04));
-  border-color: rgba(124, 92, 255, 0.28);
-  border-bottom-color: rgba(124, 92, 255, 0.28);
+  background: linear-gradient(90deg, rgba(227, 185, 94, 0.16), rgba(227, 185, 94, 0.04));
+  border-color: rgba(227, 185, 94, 0.28);
+  border-bottom-color: rgba(227, 185, 94, 0.28);
   box-shadow: none;
 }
 /* left accent bar on active item */
@@ -487,7 +486,9 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
   padding: 14px 13px 10px;
   position: relative;
 }
-.sidebar .nav-primary .tab-settings::before {
+/* розділювач-лінія зверху — через ::after, бо ::before зайнятий
+   акцентною смужкою активної вкладки (.tab.active::before) */
+.sidebar .nav-primary .tab-settings::after {
   content: '';
   position: absolute;
   left: 13px;
@@ -585,7 +586,8 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
 
 /* Card */
 .card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.01));
+  /* Elevation: картка — піднята поверхня, на тон світліша за фон */
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   padding: 26px;
@@ -598,7 +600,7 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: radial-gradient(600px 200px at 0% 0%, rgba(124, 92, 255, 0.12), transparent 60%);
+  background: radial-gradient(600px 200px at 0% 0%, rgba(227, 185, 94, 0.12), transparent 60%);
 }
 
 /* Buttons */
@@ -619,10 +621,11 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
 }
 .btn-primary {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: white;
-  box-shadow: 0 14px 36px -14px rgba(124, 92, 255, 0.7);
+  color: #241a06;          /* темний текст на золоті — читабельно */
+  font-weight: 700;
+  box-shadow: 0 14px 36px -14px rgba(227, 185, 94, 0.7);
 }
-.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 18px 40px -14px rgba(255, 94, 196, 0.6); }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 18px 40px -14px rgba(199, 154, 62, 0.6); }
 .btn-ghost {
   background: rgba(255, 255, 255, 0.03);
   color: var(--text);
@@ -672,8 +675,8 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
 .search-form input:focus {
   outline: none;
   border-color: var(--accent);
-  background-color: rgba(124, 92, 255, 0.06);
-  box-shadow: 0 0 0 4px rgba(124, 92, 255, 0.15);
+  background-color: rgba(227, 185, 94, 0.06);
+  box-shadow: 0 0 0 4px rgba(227, 185, 94, 0.15);
 }
 .field select {
   appearance: none;
@@ -712,7 +715,7 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
 .segmented input:checked + label {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: white;
-  box-shadow: 0 8px 20px -10px rgba(124, 92, 255, 0.8);
+  box-shadow: 0 8px 20px -10px rgba(227, 185, 94, 0.8);
 }
 
 .field-group {
@@ -849,7 +852,7 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
 }
 tr.mc-good td { color: var(--good); }
 tr.mc-bad td { color: var(--bad); }
-tr.mc-mid { background: rgba(124, 92, 255, 0.08); }
+tr.mc-mid { background: rgba(227, 185, 94, 0.08); }
 tr.mc-mid td { font-weight: 700; color: #fff; }
 
 /* Tables */
@@ -880,7 +883,7 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   position: sticky;
   top: 0;
 }
-.data-table tbody tr:hover { background: rgba(124, 92, 255, 0.05); }
+.data-table tbody tr:hover { background: rgba(227, 185, 94, 0.05); }
 
 .has-tip {
   position: relative;
@@ -895,7 +898,7 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   left: 50%;
   transform: translateX(-50%);
   background: rgba(20, 22, 38, 0.98);
-  border: 1px solid rgba(124, 92, 255, 0.45);
+  border: 1px solid rgba(227, 185, 94, 0.45);
   border-radius: 10px;
   padding: 10px 12px;
   width: max-content;
@@ -947,9 +950,9 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   border-radius: 999px;
   font-size: 11.5px;
   font-weight: 600;
-  background: rgba(124, 92, 255, 0.18);
-  color: #cfc4ff;
-  border: 1px solid rgba(124, 92, 255, 0.35);
+  background: rgba(227, 185, 94, 0.18);
+  color: #efe2b8;
+  border: 1px solid rgba(227, 185, 94, 0.35);
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
@@ -985,7 +988,7 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
 }
 .note[open] summary::before { content: '−'; }
 .note p { margin: 10px 0 0; }
-.note code { background: rgba(124, 92, 255, 0.14); color: #cfc4ff; }
+.note code { background: rgba(227, 185, 94, 0.14); color: #efe2b8; }
 
 .muted { color: var(--text-mute); }
 .center { text-align: center; padding: 24px; }
@@ -1043,7 +1046,7 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
 .inv-row input:focus { outline: none; }
 .inv-row:focus-within {
   border-color: var(--accent);
-  background: rgba(124, 92, 255, 0.06);
+  background: rgba(227, 185, 94, 0.06);
 }
 
 .craft-egg-row {
@@ -1116,8 +1119,8 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   padding: 10px 14px;
   margin-bottom: 6px;
   border-radius: var(--radius);
-  background: rgba(124, 92, 255, 0.06);
-  border: 1px solid rgba(124, 92, 255, 0.2);
+  background: rgba(227, 185, 94, 0.06);
+  border: 1px solid rgba(227, 185, 94, 0.2);
   font-size: 14.5px;
 }
 .step-idx {
@@ -1157,8 +1160,8 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   margin-top: 18px;
   padding: 24px 26px;
   border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, rgba(124, 92, 255, 0.06), rgba(255, 255, 255, 0.015));
-  border: 1px solid rgba(124, 92, 255, 0.25);
+  background: linear-gradient(180deg, rgba(227, 185, 94, 0.06), rgba(255, 255, 255, 0.015));
+  border: 1px solid rgba(227, 185, 94, 0.25);
   box-shadow: var(--shadow);
 }
 .formula-box h3 {
@@ -1185,7 +1188,7 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   color: white;
   font-weight: 800;
   font-size: 14px;
-  box-shadow: 0 8px 20px -10px rgba(124, 92, 255, 0.8);
+  box-shadow: 0 8px 20px -10px rgba(227, 185, 94, 0.8);
 }
 .step-body {
   flex: 1;
@@ -1212,8 +1215,8 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   white-space: pre;
 }
 .step-body code {
-  background: rgba(124, 92, 255, 0.14);
-  color: #cfc4ff;
+  background: rgba(227, 185, 94, 0.14);
+  color: #efe2b8;
   padding: 1px 6px;
   border-radius: 4px;
   font-size: 13px;
@@ -1235,8 +1238,8 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   margin-top: 8px;
   padding: 16px 18px;
   border-radius: var(--radius);
-  background: rgba(34, 211, 238, 0.06);
-  border: 1px solid rgba(34, 211, 238, 0.25);
+  background: rgba(227, 185, 94, 0.06);
+  border: 1px solid rgba(227, 185, 94, 0.25);
   color: var(--text-dim);
   font-size: 14px;
   line-height: 1.6;
@@ -1253,15 +1256,15 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
 .formula-example pre code {
   background: transparent;
   padding: 0;
-  color: #b8efff;
+  color: #efe2b8;
   font-size: 13px;
   line-height: 1.55;
   white-space: pre;
   font-family: 'JetBrains Mono', monospace;
 }
 .formula-example code {
-  background: rgba(34, 211, 238, 0.15);
-  color: #b8efff;
+  background: rgba(227, 185, 94, 0.15);
+  color: #efe2b8;
   padding: 1px 5px;
   border-radius: 4px;
   font-size: 13px;
@@ -1274,15 +1277,15 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   .step-body pre, .formula-example pre { font-size: 12px; padding: 8px 10px; }
 }
 .banner.info {
-  background: rgba(34, 211, 238, 0.06);
-  border-color: rgba(34, 211, 238, 0.25);
-  color: #b8efff;
+  background: rgba(227, 185, 94, 0.06);
+  border-color: rgba(227, 185, 94, 0.25);
+  color: #efe2b8;
 }
 
 /* Defense (ПА/ПЗ) tab */
 .def-row { cursor: pointer; transition: background 0.15s ease; }
-.def-row:hover { background: rgba(124, 92, 255, 0.08); }
-.def-row:focus { outline: none; background: rgba(124, 92, 255, 0.12); }
+.def-row:hover { background: rgba(227, 185, 94, 0.08); }
+.def-row:focus { outline: none; background: rgba(227, 185, 94, 0.12); }
 .def-row-attack td:first-child {
   border-left: 3px solid rgba(255, 94, 108, 0.55);
 }
@@ -1339,8 +1342,8 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   margin-bottom: 18px;
   padding: 20px 24px;
   border-radius: var(--radius);
-  background: linear-gradient(180deg, rgba(124, 92, 255, 0.08), rgba(255, 94, 196, 0.04));
-  border: 1px solid rgba(124, 92, 255, 0.25);
+  background: linear-gradient(180deg, rgba(227, 185, 94, 0.08), rgba(199, 154, 62, 0.04));
+  border: 1px solid rgba(227, 185, 94, 0.25);
 }
 .sim-level {
   display: flex;
@@ -1404,8 +1407,8 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   gap: 8px;
   padding: 8px 14px;
   border-radius: 10px;
-  background: rgba(255, 94, 196, 0.07);
-  border: 1px dashed rgba(255, 94, 196, 0.35);
+  background: rgba(199, 154, 62, 0.07);
+  border: 1px dashed rgba(199, 154, 62, 0.35);
   font-size: 13px;
   color: var(--text-dim);
 }
@@ -1425,8 +1428,8 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   margin-left: 10px;
   padding: 1px 10px;
   border-radius: 999px;
-  background: rgba(34, 211, 238, 0.12);
-  border: 1px solid rgba(34, 211, 238, 0.35);
+  background: rgba(227, 185, 94, 0.12);
+  border: 1px solid rgba(227, 185, 94, 0.35);
   color: var(--accent-3);
   font-weight: 600;
   font-size: 12.5px;
@@ -1474,8 +1477,8 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
 }
 .stone-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  background: rgba(124, 92, 255, 0.08);
-  border-color: rgba(124, 92, 255, 0.4);
+  background: rgba(227, 185, 94, 0.08);
+  border-color: rgba(227, 185, 94, 0.4);
 }
 .stone-btn:active:not(:disabled) { transform: translateY(0); }
 .stone-btn:disabled {
@@ -1484,8 +1487,8 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
 }
 .stone-btn.selected {
   border-color: var(--accent);
-  background: rgba(124, 92, 255, 0.14);
-  box-shadow: 0 0 0 2px rgba(124, 92, 255, 0.25);
+  background: rgba(227, 185, 94, 0.14);
+  box-shadow: 0 0 0 2px rgba(227, 185, 94, 0.25);
 }
 .stone-rate {
   font-family: 'JetBrains Mono', monospace;
@@ -1552,11 +1555,11 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
 .sim-history-list::-webkit-scrollbar { width: 8px; }
 .sim-history-list::-webkit-scrollbar-track { background: transparent; }
 .sim-history-list::-webkit-scrollbar-thumb {
-  background: rgba(124, 92, 255, 0.25);
+  background: rgba(227, 185, 94, 0.25);
   border-radius: 4px;
 }
 .sim-history-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(124, 92, 255, 0.4);
+  background: rgba(227, 185, 94, 0.4);
 }
 .hist-empty {
   padding: 14px 12px;
@@ -1658,8 +1661,8 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
 }
 .guides-search input:focus {
   outline: none;
-  border-color: rgba(124, 92, 255, 0.5);
-  background: rgba(124, 92, 255, 0.06);
+  border-color: rgba(227, 185, 94, 0.5);
+  background: rgba(227, 185, 94, 0.06);
 }
 .guides-nav {
   display: flex;
@@ -1736,7 +1739,7 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   border-radius: 999px;
 }
 .guides-cat.open ul::-webkit-scrollbar-thumb:hover {
-  background: rgba(124, 92, 255, 0.45);
+  background: rgba(227, 185, 94, 0.45);
 }
 .guides-cat.open ul {
   scrollbar-width: thin;
@@ -1766,7 +1769,7 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
 .guides-cat li button.active {
   color: #fff;
   font-weight: 600;
-  background: rgba(124, 92, 255, 0.13);
+  background: rgba(227, 185, 94, 0.13);
   box-shadow: inset 2px 0 0 var(--accent);
 }
 .guide-cam { font-size: 11px; opacity: 0.6; margin-left: auto; }
@@ -1815,7 +1818,7 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
 .guide-body u { text-decoration-color: var(--accent); }
 .guide-link {
   color: var(--accent);
-  border-bottom: 1px dashed rgba(124, 92, 255, 0.5);
+  border-bottom: 1px dashed rgba(227, 185, 94, 0.5);
   cursor: pointer;
   font-weight: 600;
 }
@@ -1829,8 +1832,8 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   font-size: 0.9em;
   line-height: 1.4;
   color: var(--accent-3);
-  background: rgba(34, 211, 238, 0.08);
-  border: 1px solid rgba(34, 211, 238, 0.28);
+  background: rgba(227, 185, 94, 0.08);
+  border: 1px solid rgba(227, 185, 94, 0.28);
   border-radius: 6px;
   padding: 0 7px;
   cursor: pointer;
@@ -1844,8 +1847,8 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   opacity: 0.55;
 }
 .coord:hover {
-  background: rgba(34, 211, 238, 0.18);
-  border-color: rgba(34, 211, 238, 0.55);
+  background: rgba(227, 185, 94, 0.18);
+  border-color: rgba(227, 185, 94, 0.55);
   color: #fff;
 }
 .coord:hover::before { opacity: 0.9; }
@@ -1922,8 +1925,8 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
 .rb-subtab:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
 .rb-subtab.active {
   color: #fff;
-  background: linear-gradient(180deg, rgba(124, 92, 255, 0.18), rgba(124, 92, 255, 0.05));
-  border-color: rgba(124, 92, 255, 0.45);
+  background: linear-gradient(180deg, rgba(227, 185, 94, 0.18), rgba(227, 185, 94, 0.05));
+  border-color: rgba(227, 185, 94, 0.45);
 }
 .rb-sub { display: none; }
 .rb-sub.active { display: block; }
@@ -1941,7 +1944,7 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   overflow: hidden;
   transition: background 0.12s, color 0.12s, border-color 0.12s, opacity 0.12s;
 }
-.rb-chip:hover { border-color: rgba(124, 92, 255, 0.4); }
+.rb-chip:hover { border-color: rgba(227, 185, 94, 0.4); }
 .rb-chip-go, .rb-chip-kill {
   font: inherit;
   border: 0;
@@ -1954,7 +1957,7 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   transition: background 0.12s, color 0.12s;
 }
 .rb-chip-go { padding: 5px 8px 5px 12px; }
-.rb-chip-go:hover { color: #fff; background: rgba(124, 92, 255, 0.14); }
+.rb-chip-go:hover { color: #fff; background: rgba(227, 185, 94, 0.14); }
 .rb-chip-kill {
   padding: 5px 10px;
   border-left: 1px solid var(--line);
@@ -2023,7 +2026,7 @@ body.rb-fs-active { overflow: hidden; }
   color: var(--text);
   background: var(--bg-2);
 }
-.leaflet-bar.rb-fs a:hover { color: #fff; background: rgba(124, 92, 255, 0.18); }
+.leaflet-bar.rb-fs a:hover { color: #fff; background: rgba(227, 185, 94, 0.18); }
 
 /* мітки на карті */
 .rb-marker { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
@@ -2043,7 +2046,7 @@ body.rb-fs-active { overflow: hidden; }
   text-shadow: 0 1px 2px #000, 0 0 4px #000, 0 0 5px #000;
 }
 .rb-marker.t1 .rb-pin, .rb-chip.t1 .rb-chip-tier, .rb-pop-sub.t1 { background: var(--good); }
-.rb-marker.t2 .rb-pin, .rb-chip.t2 .rb-chip-tier, .rb-pop-sub.t2 { background: var(--accent-3); }
+.rb-marker.t2 .rb-pin, .rb-chip.t2 .rb-chip-tier, .rb-pop-sub.t2 { background: #5aa6ff; }
 .rb-marker.t3 .rb-pin, .rb-chip.t3 .rb-chip-tier, .rb-pop-sub.t3 { background: var(--warn); }
 .rb-marker.t4 .rb-pin, .rb-chip.t4 .rb-chip-tier, .rb-pop-sub.t4 { background: var(--bad); }
 
@@ -2154,13 +2157,15 @@ body.rb-fs-active { overflow: hidden; }
   text-align: right;
 }
 
-/* Рідкісність — колір лівої межі та самоцвіту */
+/* Рідкісність — колір лівої межі та самоцвіту.
+   Це КОДУВАННЯ ДАНИХ (синій=рідкісн., фіолет=епічн., золото=легенд.),
+   тож власні кольори, незалежні від фірмового акценту. */
 .rarity-common    { border-left-color: var(--line-2); }
 .rarity-common    .chest-gem { color: var(--text-dim); }
-.rarity-rare      { border-left-color: var(--accent-3); }
-.rarity-rare      .chest-gem { color: var(--accent-3); }
-.rarity-epic      { border-left-color: var(--accent-2); }
-.rarity-epic      .chest-gem { color: var(--accent-2); }
+.rarity-rare      { border-left-color: #5aa6ff; }
+.rarity-rare      .chest-gem { color: #5aa6ff; }
+.rarity-epic      { border-left-color: #c084fc; }
+.rarity-epic      .chest-gem { color: #c084fc; }
 .rarity-legendary { border-left-color: var(--warn); }
 .rarity-legendary .chest-gem { color: var(--warn); }
 .rarity-legendary .chest-drop-name,
@@ -2346,20 +2351,34 @@ body.modal-open { overflow: hidden; }
 .r8s-chip:hover { transform: translateY(-1px); border-color: var(--text-dim); }
 .r8s-chip.active {
   border-color: var(--accent);
-  background: rgba(124, 92, 255, 0.14);
+  background: rgba(227, 185, 94, 0.14);
   box-shadow: inset 0 0 0 1px var(--accent);
 }
+/* Тип броні — нейтральний текст + маленький кольоровий маркер (крапка).
+   Колір лишається лише в крапці, тому палітра спокійна, а текст читабельний. */
 .r8s-class-arm {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 1px 7px;
-  border-radius: 999px;
+  color: var(--text-mute);
 }
-.arm-light { background: rgba(34, 211, 238, 0.16); color: #b8efff; }
-.arm-heavy { background: rgba(255, 191, 71, 0.16); color: #ffe0a6; }
-.arm-int   { background: rgba(255, 94, 196, 0.16); color: #ffc7e8; }
+.r8s-class-arm::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--arm-dot, var(--text-mute));
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.05);
+}
+.r8s-chip.active .r8s-class-arm { color: var(--text-dim); }
+.arm-light { --arm-dot: #34d399; } /* зелений — легка */
+.arm-heavy { --arm-dot: #ff8a4c; } /* помаранчевий — важка */
+.arm-int   { --arm-dot: #c084fc; } /* фіолетовий — магічна */
 
 .r8s-layout {
   display: grid;
@@ -2404,7 +2423,7 @@ body.modal-open { overflow: hidden; }
   flex: 1;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: rgba(124, 92, 255, 0.05);
+  background: rgba(227, 185, 94, 0.05);
   padding: 16px 18px;
   min-height: 120px;
 }
@@ -2434,7 +2453,7 @@ body.modal-open { overflow: hidden; }
 .r8s-roll-val {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
-  color: #c7bdff;
+  color: #efdca6;
   white-space: nowrap;
 }
 .r8s-roll-line.is-target .r8s-roll-val { color: var(--good); }
@@ -2665,27 +2684,27 @@ body.modal-open { overflow: hidden; }
 
 /* ── Перемикач тем (працює в обох темах: хедер темний завжди) ──────── */
 .theme-toggle {
+  /* той самий стиль, що й кнопка-тогл меню (.nav-toggle) */
   display: inline-grid;
   place-items: center;
   width: 40px;
   height: 40px;
   flex: 0 0 auto;
   margin-left: 12px;
-  border: 1px solid rgba(206, 166, 88, 0.5);
+  border: 1px solid rgba(227, 185, 94, 0.45);
   border-radius: 11px;
-  background: linear-gradient(180deg, rgba(206, 166, 88, 0.2), rgba(206, 166, 88, 0.06));
-  color: #f3e4c1;
+  background: linear-gradient(180deg, rgba(227, 185, 94, 0.22), rgba(227, 185, 94, 0.08));
+  color: var(--text);
   font-size: 17px;
   line-height: 1;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  box-shadow: 0 6px 18px -8px rgba(227, 185, 94, 0.6);
 }
 .theme-toggle:hover {
-  background: linear-gradient(180deg, rgba(206, 166, 88, 0.32), rgba(206, 166, 88, 0.12));
-  border-color: rgba(206, 166, 88, 0.72);
-  transform: translateY(-1px);
+  background: linear-gradient(180deg, rgba(227, 185, 94, 0.32), rgba(227, 185, 94, 0.12));
+  border-color: rgba(227, 185, 94, 0.7);
 }
-.theme-toggle:active { transform: translateY(0); }
 .theme-ico-sun, .theme-ico-moon { display: none; }
 html[data-theme="dark"]  .theme-ico-sun  { display: inline; }
 html[data-theme="light"] .theme-ico-moon { display: inline; }
@@ -2712,17 +2731,18 @@ html[data-theme="light"] {
   --bad:  #ad352e;
   --shadow: 0 18px 50px -22px rgba(80, 52, 20, 0.45),
             0 8px 22px -14px rgba(80, 52, 20, 0.38);
-  --display: 'Cinzel', 'Marcellus', Georgia, serif;
+  /* Шрифти у світлій темі — ті самі, що й у темній (Inter), без serif */
+  --display: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* ── Сторінка ─────────────────────────────────────────────────────── */
 html[data-theme="light"] body {
   color: var(--text);
   background:
-    radial-gradient(1200px 720px at 50% -12%, #e0caa0, transparent 60%),
-    radial-gradient(900px 620px at 100% 0%, #cab488, transparent 55%),
-    radial-gradient(800px 600px at 0% 12%, #cdb78c, transparent 55%),
-    linear-gradient(180deg, #c6ae84 0%, #b79b6c 60%, #ad8f5f 100%);
+    radial-gradient(1200px 720px at 50% -12%, #f3e7cd, transparent 60%),
+    radial-gradient(900px 620px at 100% 0%, #ecdcbd, transparent 55%),
+    radial-gradient(800px 600px at 0% 12%, #edddbe, transparent 55%),
+    linear-gradient(180deg, #ecddc2 0%, #e3d1b0 60%, #dcc8a4 100%);
   background-attachment: fixed;
 }
 html[data-theme="light"] .bg-glow { display: none; }
@@ -2730,11 +2750,11 @@ html[data-theme="light"] .link { color: #8f4f1d; border-bottom-color: rgba(143, 
 html[data-theme="light"] .link:hover { color: #b07f23; border-color: #b07f23; }
 html[data-theme="light"] code { background: rgba(120, 84, 38, 0.12); color: var(--text); }
 
-/* ── Хедер: темний «дерев'яний» брус (як на форумі) ───────────────── */
+/* ── Хедер: світлий пергаментний брус (під загальну світлу тему) ───── */
 html[data-theme="light"] .site-header {
-  background: linear-gradient(180deg, rgba(60, 42, 22, 0.94), rgba(44, 30, 15, 0.92));
-  border-bottom: 1px solid rgba(206, 166, 88, 0.45);
-  box-shadow: 0 1px 0 rgba(206, 166, 88, 0.25), 0 10px 28px -14px rgba(30, 18, 6, 0.7);
+  background: linear-gradient(180deg, rgba(249, 242, 227, 0.92), rgba(241, 230, 208, 0.90));
+  border-bottom: 1px solid rgba(150, 108, 50, 0.34);
+  box-shadow: 0 1px 0 rgba(255, 253, 247, 0.7), 0 10px 26px -16px rgba(80, 52, 20, 0.40);
 }
 html[data-theme="light"] .logo-text { color: #f3e4c1; font-family: var(--display); font-weight: 600; letter-spacing: 0.04em; }
 html[data-theme="light"] .logo-mark {
@@ -2743,15 +2763,22 @@ html[data-theme="light"] .logo-mark {
   border: 1px solid rgba(255, 235, 180, 0.5);
   box-shadow: 0 8px 20px -10px rgba(150, 100, 30, 0.85);
 }
-html[data-theme="light"] .nav-toggle {
-  border-color: rgba(206, 166, 88, 0.5);
-  background: linear-gradient(180deg, rgba(206, 166, 88, 0.24), rgba(206, 166, 88, 0.08));
-  color: #f3e4c1;
-  box-shadow: 0 6px 16px -8px rgba(20, 12, 4, 0.6);
+html[data-theme="light"] .nav-toggle,
+html[data-theme="light"] .theme-toggle {
+  border-color: rgba(150, 108, 50, 0.5);
+  /* СУЦІЛЬНИЙ колір (не градієнт), щоб ховер плавно інтерполював у білий
+     без дискретного «брунатного» спалаху (градієнт↔колір не анімується) */
+  background: rgba(255, 253, 247, 0.85);
+  color: #5a4326;
+  box-shadow: 0 6px 16px -10px rgba(80, 52, 20, 0.4);
 }
-html[data-theme="light"] .nav-toggle:hover {
-  background: linear-gradient(180deg, rgba(206, 166, 88, 0.34), rgba(206, 166, 88, 0.12));
-  border-color: rgba(206, 166, 88, 0.72);
+html[data-theme="light"] .nav-toggle:hover,
+html[data-theme="light"] .theme-toggle:hover {
+  /* світліший фон + золота рамка (без золотої заливки), щоб іконка
+     лишалась контрастною — як у плашки голди */
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(176, 127, 35, 0.72);
+  color: #4f3a10;
 }
 html[data-theme="light"] .partner-logo { background: rgba(255, 255, 255, 0.05); border-color: rgba(206, 166, 88, 0.3); }
 html[data-theme="light"] .partner-logo:hover { background: rgba(206, 166, 88, 0.14); border-color: rgba(206, 166, 88, 0.6); }
@@ -2783,17 +2810,19 @@ html[data-theme="light"] .tab.active .tab-ico { color: var(--accent-2); }
 
 html[data-theme="light"] .subtab { color: var(--text-dim); background: rgba(120, 84, 38, 0.04); }
 html[data-theme="light"] .subtab.active {
-  background: linear-gradient(180deg, rgba(63, 111, 70, 0.18), rgba(63, 111, 70, 0.05));
-  border-color: rgba(63, 111, 70, 0.4);
-  box-shadow: 0 -5px 14px -5px rgba(63, 111, 70, 0.25);
+  background: linear-gradient(180deg, rgba(176, 127, 35, 0.18), rgba(176, 127, 35, 0.05));
+  border-color: rgba(176, 127, 35, 0.42);
+  box-shadow: 0 -5px 14px -5px rgba(176, 127, 35, 0.25);
 }
-html[data-theme="light"] .subtab.active .subtab-ico { color: var(--accent-3); }
+html[data-theme="light"] .subtab.active .subtab-ico { color: var(--accent); }
 
-/* ── Картки ───────────────────────────────────────────────────────── */
+/* ── Картки ─ Elevation: майже білі блоки на пастельному пергаменті ── */
 html[data-theme="light"] .card {
-  background: linear-gradient(180deg, #f7eed7, #efe2c2);
-  border: 1px solid rgba(150, 108, 50, 0.4);
-  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 250, 235, 0.6);
+  background: linear-gradient(180deg, #fffdf9, #fbf6ec);
+  border: 1px solid rgba(150, 108, 50, 0.34);
+  box-shadow: 0 22px 48px -24px rgba(80, 52, 20, 0.42),
+              0 6px 18px -12px rgba(80, 52, 20, 0.30),
+              inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 html[data-theme="light"] .calc-card::before { background: radial-gradient(600px 220px at 0% 0%, rgba(200, 160, 80, 0.18), transparent 60%); }
 
@@ -2863,11 +2892,26 @@ html[data-theme="light"] .data-table tr.winner td { background: rgba(120, 170, 9
 
 /* ── Бейджі / нотатки / банери / тултіпи ──────────────────────────── */
 html[data-theme="light"] .badge { background: rgba(176, 127, 35, 0.2); color: #6e4f17; border-color: rgba(176, 127, 35, 0.45); }
+/* Кольорові статус-бейджі (дані): пастельне тло + дуже темний текст */
+html[data-theme="light"] .badge.under  { background: rgba(46, 125, 50, 0.16);  color: #1d5a26; border-color: rgba(46, 125, 50, 0.4); }
+html[data-theme="light"] .badge.sky    { background: rgba(20, 120, 140, 0.15); color: #0e5563; border-color: rgba(20, 120, 140, 0.4); }
+html[data-theme="light"] .badge.world  { background: rgba(176, 127, 35, 0.18); color: #7a4e12; border-color: rgba(176, 127, 35, 0.45); }
+html[data-theme="light"] .badge.orb    { background: rgba(168, 50, 120, 0.14); color: #84285f; border-color: rgba(168, 50, 120, 0.4); }
+html[data-theme="light"] .badge.good   { background: rgba(46, 125, 50, 0.16);  color: #1d5a26; border-color: rgba(46, 125, 50, 0.4); }
+html[data-theme="light"] .badge.bad    { background: rgba(173, 53, 46, 0.14);  color: #8f231d; border-color: rgba(173, 53, 46, 0.42); }
 html[data-theme="light"] .note { background: rgba(120, 84, 38, 0.04); border-color: var(--line); color: var(--text-dim); }
 html[data-theme="light"] .note summary { color: var(--text); }
 html[data-theme="light"] .note summary::before { color: var(--accent); }
 html[data-theme="light"] .note code { background: rgba(176, 127, 35, 0.18); color: #6e4f17; }
 html[data-theme="light"] .banner { background: rgba(176, 127, 35, 0.12); border-color: rgba(176, 127, 35, 0.35); color: #6e4f17; }
+/* Дрібні елементи зі світлим текстом → темний текст на світлих картках */
+html[data-theme="light"] .step-body code,
+html[data-theme="light"] .formula-example code { background: rgba(176, 127, 35, 0.16); color: #6e4f17; }
+html[data-theme="light"] .stone-price { color: #7a4e12; }
+html[data-theme="light"] .field-default-badge,
+html[data-theme="light"] .gold-default-badge,
+html[data-theme="light"] .tab-attention { background: rgba(176, 127, 35, 0.18); color: #7a4e12; border-color: rgba(176, 127, 35, 0.5); }
+html[data-theme="light"] .chest-cfg-del { background: rgba(173, 53, 46, 0.1); border-color: rgba(173, 53, 46, 0.32); color: #8f231d; }
 html[data-theme="light"] .has-tip .tip-body {
   background: #fbf3df;
   border-color: rgba(150, 108, 50, 0.45);
@@ -2903,9 +2947,18 @@ html[data-theme="light"] .coord { color: #6e4f17; background: rgba(176, 127, 35,
 html[data-theme="light"] .gsn-metric-blue   { color: #2f6fae; }
 html[data-theme="light"] .gsn-metric-purple { color: #7a48ae; }
 html[data-theme="light"] .gsn-metric-gold   { color: #8f6716; }
+html[data-theme="light"] .gsn-tier-blue   { --gsn-c: #1f6dab; }
+html[data-theme="light"] .gsn-tier-purple { --gsn-c: #7b3fb0; }
 html[data-theme="light"] .gsn-tier-gold   { --gsn-c: #8f6716; }
+/* Рідкісність скринь: темніші відтінки даних на світлих картках */
+html[data-theme="light"] .rarity-rare      { border-left-color: #1f6dab; }
+html[data-theme="light"] .rarity-rare      .chest-gem { color: #1f6dab; }
+html[data-theme="light"] .rarity-epic      { border-left-color: #7b3fb0; }
+html[data-theme="light"] .rarity-epic      .chest-gem { color: #7b3fb0; }
+html[data-theme="light"] .rarity-legendary .chest-drop-name,
+html[data-theme="light"] .rarity-legendary .chest-inv-name { color: #7a4e12; }
 /* Симулятор бейдж */
-html[data-theme="light"] .sim-running { color: var(--accent-3); background: rgba(63, 111, 70, 0.12); border-color: rgba(63, 111, 70, 0.35); }
+html[data-theme="light"] .sim-running { color: var(--accent-2); background: rgba(176, 127, 35, 0.12); border-color: rgba(176, 127, 35, 0.35); }
 
 /* ════════════════════════════════════════════════════════════════════
    ПОЛИШ ДИЗАЙНУ (раунд 2): монохромні іконки, рамки карток, фактура фону,
@@ -3039,15 +3092,26 @@ html[data-theme="light"] .partner-logo:hover {
   border-color: rgba(214, 174, 96, 0.7);
 }
 
-/* Золота рамка-кант навколо мітки голди в хедері */
-html[data-theme="light"] .gold-indicator {
-  background: rgba(214, 174, 96, 0.12);
-  border-color: rgba(214, 174, 96, 0.4);
-  color: #ffe7b8;
+/* Мітка голди в хедері — світла, з темним текстом у ВСІХ станах.
+   Покриваємо hover/focus/focus-visible та is-default, щоб темний амбер
+   із базових (темнотемних) правил не «вибілював» плашку на світлому хедері. */
+html[data-theme="light"] .gold-indicator,
+html[data-theme="light"] .gold-indicator.is-default {
+  background: rgba(255, 253, 247, 0.72);
+  border-color: rgba(176, 127, 35, 0.45);
+  color: #6e4f17;
+  animation: none;            /* без амбер-пульсу на світлому */
 }
-html[data-theme="light"] .gold-indicator:hover {
-  background: rgba(214, 174, 96, 0.2);
-  border-color: rgba(214, 174, 96, 0.62);
+html[data-theme="light"] .gold-indicator:hover,
+html[data-theme="light"] .gold-indicator:focus-visible,
+html[data-theme="light"] .gold-indicator.is-default:hover,
+html[data-theme="light"] .gold-indicator.is-default:focus-visible {
+  /* підсвітка ховером — світліший фон + золота рамка/тінь, БЕЗ золотої
+     заливки, щоб темний текст лишався контрастним */
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(176, 127, 35, 0.72);
+  color: #4f3a10;
+  box-shadow: 0 6px 16px -10px rgba(80, 52, 20, 0.5);
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -3063,16 +3127,16 @@ html[data-theme="light"] .gold-indicator:hover {
   margin-top: 16px;
   height: 10px;
   background:
-    radial-gradient(circle at center, #9182ff 0 2.4px, rgba(145, 130, 255, 0) 3px) center/10px 10px no-repeat,
+    radial-gradient(circle at center, #e3b95e 0 2.4px, rgba(145, 130, 255, 0) 3px) center/10px 10px no-repeat,
     linear-gradient(90deg,
-      rgba(124, 92, 255, 0) 0,
-      rgba(124, 92, 255, 0.42) 8%,
-      rgba(124, 92, 255, 0.42) 43%,
-      rgba(124, 92, 255, 0) 47%,
-      rgba(124, 92, 255, 0) 53%,
-      rgba(124, 92, 255, 0.42) 57%,
-      rgba(124, 92, 255, 0.42) 92%,
-      rgba(124, 92, 255, 0) 100%) center/100% 1.5px no-repeat;
+      rgba(227, 185, 94, 0) 0,
+      rgba(227, 185, 94, 0.42) 8%,
+      rgba(227, 185, 94, 0.42) 43%,
+      rgba(227, 185, 94, 0) 47%,
+      rgba(227, 185, 94, 0) 53%,
+      rgba(227, 185, 94, 0.42) 57%,
+      rgba(227, 185, 94, 0.42) 92%,
+      rgba(227, 185, 94, 0) 100%) center/100% 1.5px no-repeat;
 }
 /* світла версія (золото) визначена раніше з вищою специфічністю — лишається */
 
@@ -3133,3 +3197,63 @@ html[data-theme="light"] .logo-text {
   filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.45));
   text-shadow: none;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   СВІТЛА ТЕМА — Симулятор спорядження Р8 (.r8s-*)
+   Темні значення кольорів washed-out на пергаменті; тут — контрастні
+   відповідники. Головне: підписи класів (Легка/Важка/Маг.) добре читаються.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Чіпи класів і частин */
+html[data-theme="light"] .r8s-chip {
+  background: var(--bg-3);
+  border-color: var(--line-2);
+}
+html[data-theme="light"] .r8s-chip:hover { border-color: var(--accent); }
+html[data-theme="light"] .r8s-chip.active {
+  border-color: var(--accent);
+  background: rgba(176, 127, 35, 0.16);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+/* Тип броні: текст темно-коричневий, колір лише в крапці (глибші відтінки
+   для контрасту на пергаменті). Кільце навколо крапки — теж тепле, не біле. */
+html[data-theme="light"] .r8s-class-arm { color: var(--text-dim); }
+html[data-theme="light"] .r8s-class-arm::before { box-shadow: 0 0 0 2px rgba(120, 84, 38, 0.12); }
+html[data-theme="light"] .arm-light { --arm-dot: #1f8f63; } /* зелений */
+html[data-theme="light"] .arm-heavy { --arm-dot: #cf6a1c; } /* помаранчевий */
+html[data-theme="light"] .arm-int   { --arm-dot: #9333ea; } /* фіолетовий */
+
+/* Картка предмета */
+html[data-theme="light"] .r8s-item { background: var(--bg-3); }
+html[data-theme="light"] .r8s-item-name { color: var(--accent-2); }
+
+/* Результат крутки */
+html[data-theme="light"] .r8s-result {
+  background: rgba(176, 127, 35, 0.08);
+  border-color: var(--line);
+}
+html[data-theme="light"] .r8s-roll-line { background: rgba(255, 252, 244, 0.7); }
+html[data-theme="light"] .r8s-roll-val { color: var(--accent-2); }
+html[data-theme="light"] .r8s-roll-line.is-target { background: rgba(54, 121, 76, 0.14); }
+
+/* Полювання на стати */
+html[data-theme="light"] .r8s-target {
+  background: var(--bg-3);
+  border-color: var(--line-2);
+}
+html[data-theme="light"] .r8s-target:hover { border-color: var(--accent); }
+html[data-theme="light"] .r8s-target.active {
+  border-color: var(--good);
+  background: rgba(54, 121, 76, 0.15);
+  color: #1f5f3a;
+}
+html[data-theme="light"] .r8s-target.active .r8s-target-pct { color: #1f5f3a; }
+html[data-theme="light"] .r8s-target-count { color: #f6efdd; }
+
+html[data-theme="light"] .r8s-slot {
+  background: rgba(54, 121, 76, 0.14);
+  border-color: rgba(54, 121, 76, 0.42);
+  color: #1f5f3a;
+}
+html[data-theme="light"] .r8s-slot:hover { background: rgba(54, 121, 76, 0.22); }
