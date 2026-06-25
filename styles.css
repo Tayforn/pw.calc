@@ -1069,15 +1069,17 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
 }
 .inv-row {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 8px;
-  padding: 6px 10px;
+  padding: 6px 0 6px 10px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--line);
 }
-.inv-row .badge { flex: 0 0 auto; }
+.inv-row .badge { flex: 0 0 auto; align-self: center; }
+/* stepper fills the full row height and sits flush against the right edge */
 .inv-row .num-stepper { flex: 1; min-width: 0; }
+.inv-row .num-stepper > input[type='number'] { height: 100%; }
 .inv-row input {
   flex: 1;
   min-width: 0;
@@ -2143,11 +2145,13 @@ body.rb-fs-active { overflow: hidden; }
 .chest-open-row {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
   margin-bottom: 18px;
 }
 .chest-open-btn { font-size: 16px; padding: 14px 28px; }
-.chest-bulk { display: flex; align-items: center; gap: 8px; }
+/* stretch so the count input matches the height of the "Відкрити всі" button */
+.chest-bulk { display: flex; align-items: stretch; gap: 8px; }
 .chest-bulk .num-stepper { width: 96px; }
 .chest-bulk input {
   width: 96px;
