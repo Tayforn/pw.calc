@@ -694,6 +694,51 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
   padding: 8px;
 }
 
+/* ── Числовий степпер: кастомні стрілки замість нативних ──────────── */
+input[type='number'] { -moz-appearance: textfield; }
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+.num-stepper { position: relative; display: block; width: 100%; }
+.num-stepper > input[type='number'] { width: 100%; padding-right: 30px; }
+.num-stepper-btns {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  bottom: 1px;
+  width: 24px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--line-2);
+  border-radius: 0 10px 10px 0;
+  overflow: hidden;
+}
+.num-stepper-btns button {
+  flex: 1 1 50%;
+  min-height: 0;
+  border: none;
+  background: rgba(227, 185, 94, 0.08);
+  color: var(--accent);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  line-height: 1;
+  padding: 0;
+  transition: background 0.12s, color 0.12s;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+}
+.num-stepper-btns .num-up { border-bottom: 1px solid var(--line-2); }
+.num-stepper-btns button:hover { background: rgba(227, 185, 94, 0.20); color: var(--accent-3); }
+.num-stepper-btns button:active { background: rgba(227, 185, 94, 0.34); }
+.num-stepper > input[type='number']:focus + .num-stepper-btns { border-left-color: var(--accent); }
+
 .segmented {
   display: inline-flex;
   padding: 4px;
@@ -2860,6 +2905,15 @@ html[data-theme="light"] .field select {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'><path d='M1 1.5L6 6.5L11 1.5' stroke='%23574325' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>");
 }
 html[data-theme="light"] .field select option { background: #fffdf4; color: var(--text); }
+html[data-theme="light"] .num-stepper-btns button {
+  background: rgba(176, 127, 35, 0.10);
+  color: var(--accent-2);
+}
+html[data-theme="light"] .num-stepper-btns button:hover {
+  background: rgba(176, 127, 35, 0.20);
+  color: var(--accent);
+}
+html[data-theme="light"] .num-stepper-btns button:active { background: rgba(176, 127, 35, 0.30); }
 html[data-theme="light"] .segmented { background: rgba(120, 84, 38, 0.06); border-color: var(--line-2); }
 html[data-theme="light"] .segmented label { color: var(--text-dim); }
 html[data-theme="light"] .segmented input:checked + label {

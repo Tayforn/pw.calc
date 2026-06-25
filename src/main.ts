@@ -5,6 +5,7 @@
 import { $ } from './utils/dom';
 import { updateAllBudgetHints } from './utils/budgetHint';
 import { initClipboard } from './utils/clipboard';
+import { initNumberSteppers } from './utils/numberStepper';
 import { applyDefaultEggPrice, getSettings, initSettings } from './settings';
 import { initEggPriceSync } from './settings/eggPrice';
 import { initNavigation } from './navigation';
@@ -61,6 +62,9 @@ rbInit();
 guidesInit();
 applyDefaultEggPrice();
 renderAll();
+
+// Кастомні стрілки для всіх числових інпутів (після стартового рендера).
+initNumberSteppers();
 
 // Навігація — в кінці: setTab активує початковий таб (і rbActivate, якщо #rb).
 initNavigation(rbActivate);
