@@ -1071,7 +1071,8 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   display: flex;
   align-items: stretch;
   gap: 8px;
-  padding: 6px 0 6px 10px;
+  padding: 0 0 0 10px;
+  min-height: 40px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--line);
@@ -2153,10 +2154,12 @@ body.rb-fs-active { overflow: hidden; }
 /* stretch so the count input matches the height of the "Відкрити всі" button */
 .chest-bulk { display: flex; align-items: stretch; gap: 8px; }
 .chest-bulk .num-stepper { width: 96px; }
+/* input fills the stretched wrapper so the stepper stays within its bounds */
+.chest-bulk .num-stepper > input[type='number'] { height: 100%; }
 .chest-bulk input {
   width: 96px;
   padding: 8px 12px;
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--bg-3);
   border: 1px solid var(--line-2);
   color: var(--text);
