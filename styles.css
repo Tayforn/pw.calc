@@ -1077,6 +1077,7 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   border: 1px solid var(--line);
 }
 .inv-row .badge { flex: 0 0 auto; }
+.inv-row .num-stepper { flex: 1; min-width: 0; }
 .inv-row input {
   flex: 1;
   min-width: 0;
@@ -2146,7 +2147,8 @@ body.rb-fs-active { overflow: hidden; }
   margin-bottom: 18px;
 }
 .chest-open-btn { font-size: 16px; padding: 14px 28px; }
-.chest-bulk { display: flex; align-items: stretch; gap: 8px; }
+.chest-bulk { display: flex; align-items: center; gap: 8px; }
+.chest-bulk .num-stepper { width: 96px; }
 .chest-bulk input {
   width: 96px;
   padding: 8px 12px;
