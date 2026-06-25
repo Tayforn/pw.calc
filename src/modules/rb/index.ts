@@ -59,6 +59,15 @@ const CHRONO_BOSSES: ChronoBoss[] = [
 ];
 CHRONO_BOSSES.forEach((b) => (b.sub = 'Хроно ' + b.tier));
 
+// Підписи тірів по квадрантах хроно-карти (latlng у CRS.Simple, 0..1024).
+// Розташовані в порожніх кутах, щоб не затуляти мітки босів.
+const CHRONO_REGIONS: { tier: number; lat: number; lng: number }[] = [
+  { tier: 1, lat: 115, lng: 100 }, // низ-ліво
+  { tier: 2, lat: 590, lng: 95 },  // верх-ліво
+  { tier: 3, lat: 610, lng: 925 }, // верх-право
+  { tier: 4, lat: 120, lng: 605 }, // низ-право
+];
+
 // Перетворення координат гри PW -> карта worldmap.pw.
 function pwToLatLng(x: number, y: number): any {
   return L.CRS.EPSG3857.unproject(L.point(x, y));
@@ -258,6 +267,23 @@ function buildRbMap(kind: Kind): any {
 
   if (kind === 'world' && lls.length) {
     map.setMaxBounds(L.latLngBounds(lls).pad(0.5));
+  }
+
+  if (kind === 'chrono') {
+    CHRONO_REGIONS.forEach((r) => {
+      const icon = L.divIcon({
+        className: 'rb-region t' + r.tier,
+        html: String(r.tier),
+        iconSize: null,
+        iconAnchor: [22, 36],
+      });
+      L.marker([r.lat, r.lng], {
+        icon,
+        interactive: false,
+        keyboard: false,
+        zIndexOffset: -1000,
+      }).addTo(map);
+    });
   }
 
   fit = (animate?: boolean): void => {

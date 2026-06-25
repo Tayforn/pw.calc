@@ -2128,6 +2128,21 @@ body.rb-fs-active .rb-sub.active .rb-checklist .rb-subtabs-fs { display: flex; m
 .rb-marker.t3 .rb-pin, .rb-chip.t3 .rb-chip-tier, .rb-pop-sub.t3 { background: var(--warn); }
 .rb-marker.t4 .rb-pin, .rb-chip.t4 .rb-chip-tier, .rb-pop-sub.t4 { background: var(--bad); }
 
+/* підписи тірів-квадрантів на хроно-карті (водяний знак, не перехоплює кліки) */
+.rb-region {
+  font-weight: 900;
+  font-size: 64px;
+  line-height: 1;
+  opacity: 0.55;
+  pointer-events: none;
+  user-select: none;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.85), 0 0 4px rgba(0, 0, 0, 0.9);
+}
+.rb-region.t1 { color: var(--good); }
+.rb-region.t2 { color: #5aa6ff; }
+.rb-region.t3 { color: var(--warn); }
+.rb-region.t4 { color: var(--bad); }
+
 /* темні попапи Leaflet у стилі сайту */
 .leaflet-container { font-family: inherit; background: var(--bg-2); }
 .leaflet-popup-content-wrapper {
