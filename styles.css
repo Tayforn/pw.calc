@@ -1093,6 +1093,8 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   width: 100%;
 }
 .inv-row input:focus { outline: none; }
+/* the row border doubles as the input border, so the stepper sits flush (no 1px inset) */
+.inv-row .num-stepper-btns { top: 0; right: 0; bottom: 0; border-radius: 0 9px 9px 0; }
 .inv-row:focus-within {
   border-color: var(--accent);
   background: rgba(227, 185, 94, 0.06);
