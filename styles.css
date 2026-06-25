@@ -687,11 +687,17 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
   padding-right: 36px;
   cursor: pointer;
   color-scheme: dark;
+  accent-color: var(--accent);
 }
 .field select option {
-  background: #17172a;
+  background: var(--bg-2);
   color: var(--text);
   padding: 8px;
+}
+.field select option:checked,
+.field select option:hover {
+  background: var(--bg-3);
+  color: var(--accent-3);
 }
 
 /* ── Числовий степпер: кастомні стрілки замість нативних ──────────── */
@@ -2916,6 +2922,8 @@ html[data-theme="light"] .field select {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'><path d='M1 1.5L6 6.5L11 1.5' stroke='%23574325' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>");
 }
 html[data-theme="light"] .field select option { background: #fffdf4; color: var(--text); }
+html[data-theme="light"] .field select option:checked,
+html[data-theme="light"] .field select option:hover { background: var(--bg-3); color: var(--accent); }
 html[data-theme="light"] .num-stepper-btns button {
   background: rgba(176, 127, 35, 0.10);
   color: var(--accent-2);
