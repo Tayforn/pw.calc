@@ -2116,6 +2116,7 @@ body.rb-fs-active .rb-sub.active .rb-checklist .rb-subtabs-fs { display: flex; m
   border: 2px solid #fff;
   box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.6);
   flex: none;
+  transition: transform 0.12s, box-shadow 0.12s;
 }
 .rb-lbl {
   font-size: 11px;
@@ -2123,6 +2124,12 @@ body.rb-fs-active .rb-sub.active .rb-checklist .rb-subtabs-fs { display: flex; m
   color: #fff;
   text-shadow: 0 1px 2px #000, 0 0 4px #000, 0 0 5px #000;
 }
+/* підсвічування мітки боса при наведенні на його чип */
+.rb-marker.hl .rb-pin {
+  transform: scale(1.6);
+  box-shadow: 0 0 0 2px #fff, 0 0 0 5px var(--accent), 0 0 14px 4px rgba(227, 185, 94, 0.85);
+}
+.rb-marker.hl .rb-lbl { color: var(--accent-3); }
 .rb-marker.t1 .rb-pin, .rb-chip.t1 .rb-chip-tier, .rb-pop-sub.t1 { background: var(--good); }
 .rb-marker.t2 .rb-pin, .rb-chip.t2 .rb-chip-tier, .rb-pop-sub.t2 { background: #5aa6ff; }
 .rb-marker.t3 .rb-pin, .rb-chip.t3 .rb-chip-tier, .rb-pop-sub.t3 { background: var(--warn); }

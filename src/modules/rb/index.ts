@@ -335,6 +335,26 @@ function buildRbMap(kind: Kind): any {
       map.flyTo(b._ll, flyZoom, { duration: 0.6 });
       b._marker.openPopup();
     });
+
+    // Наведення на чип боса — підсвічуємо його мітку на карті.
+    const rbSetHl = (b: Boss, on: boolean): void => {
+      const m = b._marker;
+      if (!m || !m._icon) return;
+      m._icon.classList.toggle('hl', on);
+      m.setZIndexOffset(on ? 1000 : 0);
+    };
+    listEl.addEventListener('mouseover', (e) => {
+      const chip = (e.target as HTMLElement).closest<HTMLElement>('.rb-chip[data-rb]');
+      if (!chip) return;
+      rbSetHl(bosses[+(chip.dataset.rb as string)], true);
+    });
+    listEl.addEventListener('mouseout', (e) => {
+      const chip = (e.target as HTMLElement).closest<HTMLElement>('.rb-chip[data-rb]');
+      if (!chip) return;
+      const to = e.relatedTarget as Node | null;
+      if (to && chip.contains(to)) return; // ще всередині того ж чипа
+      rbSetHl(bosses[+(chip.dataset.rb as string)], false);
+    });
   }
 
   const resetBtn = document.getElementById(
