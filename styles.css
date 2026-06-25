@@ -2092,6 +2092,9 @@ body.rb-fs-active .rb-sub.active .rb-checklist {
   backdrop-filter: blur(6px);
 }
 body.rb-fs-active .rb-sub.active .rb-checklist .rb-list { margin-bottom: 0; }
+/* переключалка Світ/Хроно показується лише в панелі фуллскріну */
+.rb-subtabs-fs { display: none; }
+body.rb-fs-active .rb-sub.active .rb-checklist .rb-subtabs-fs { display: flex; margin-bottom: 12px; }
 
 /* кнопка «на весь екран» поверх Leaflet */
 .leaflet-bar.rb-fs a {

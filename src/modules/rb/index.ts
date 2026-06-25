@@ -364,7 +364,17 @@ function rbRefresh(kind: Kind): void {
   setTimeout(() => rbFit(kind), 550);
 }
 
+function rbApplyZoom(kind: Kind, fullscreen: boolean): void {
+  const map = rbMaps[kind];
+  if (!map) return;
+  const z = RB_ZOOM[kind][fullscreen ? 'fullscreen' : 'windowed'];
+  map.setMinZoom(z.min);
+  map.setMaxZoom(z.max);
+}
+
 function rbShowSub(sub: Kind): void {
+  const prev = rbSub;
+  const fs = document.body.classList.contains('rb-fs-active');
   rbSub = sub;
   $$<HTMLElement>('.rb-subtab').forEach((b) => {
     const on = b.dataset.sub === sub;
@@ -373,6 +383,15 @@ function rbShowSub(sub: Kind): void {
   });
   $$<HTMLElement>('.rb-sub').forEach((p) => p.classList.toggle('active', p.dataset.sub === sub));
   if (!rbMaps[sub]) rbMaps[sub] = buildRbMap(sub);
+  // У фуллскріні перенесемо режим «на весь екран» на нову карту.
+  if (fs && prev !== sub) {
+    const elId = (k: Kind) => (k === 'world' ? 'rbMapWorld' : 'rbMapChrono');
+    document.getElementById(elId(prev))?.classList.remove('fullscreen');
+    document.getElementById(elId(sub))?.classList.add('fullscreen');
+    rbApplyZoom(prev, false);
+    rbApplyZoom(sub, true);
+    rbRefresh(prev);
+  }
   rbRefresh(sub);
 }
 
