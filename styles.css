@@ -2015,6 +2015,8 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
 }
 .rb-chip-go { padding: 5px 8px 5px 12px; }
 .rb-chip-go:hover { color: #fff; background: rgba(227, 185, 94, 0.14); }
+/* у світлій темі білий текст на світлому золотистому фоні не читався */
+html[data-theme="light"] .rb-chip-go:hover { color: var(--accent-2); background: rgba(176, 127, 35, 0.16); }
 .rb-chip-kill {
   padding: 5px 10px;
   border-left: 1px solid var(--line);
