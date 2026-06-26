@@ -1985,6 +1985,12 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   background: linear-gradient(180deg, rgba(227, 185, 94, 0.18), rgba(227, 185, 94, 0.05));
   border-color: rgba(227, 185, 94, 0.45);
 }
+/* у світлій темі білий текст активної переключалки не читався на світлому золоті */
+html[data-theme="light"] .rb-subtab.active {
+  color: var(--accent-2);
+  background: linear-gradient(180deg, rgba(176, 127, 35, 0.20), rgba(176, 127, 35, 0.05));
+  border-color: rgba(176, 127, 35, 0.45);
+}
 .rb-sub { display: none; }
 .rb-sub.active { display: block; }
 .rb-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
@@ -2113,6 +2119,7 @@ body.rb-fs-active .rb-sub.active .rb-checklist .rb-subtabs-fs { display: flex; m
   background: var(--bg-2);
 }
 .leaflet-bar.rb-fs a:hover { color: #fff; background: rgba(227, 185, 94, 0.18); }
+html[data-theme="light"] .leaflet-bar.rb-fs a:hover { color: var(--accent-2); background: rgba(176, 127, 35, 0.16); }
 
 /* мітки на карті */
 .rb-marker { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
