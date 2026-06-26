@@ -2091,6 +2091,12 @@ body.rb-fs-active .rb-sub.active .rb-checklist {
   box-shadow: var(--shadow);
   backdrop-filter: blur(6px);
 }
+/* у світлій темі панель стає світлим «пергаментним» склом, щоб назви босів читались */
+html[data-theme="light"] body.rb-fs-active .rb-sub.active .rb-checklist {
+  background: rgba(255, 253, 246, 0.94);
+  border-color: rgba(150, 108, 50, 0.34);
+  box-shadow: 0 22px 48px -24px rgba(80, 52, 20, 0.42);
+}
 body.rb-fs-active .rb-sub.active .rb-checklist .rb-list { margin-bottom: 0; }
 /* переключалка Світ/Хроно показується лише в панелі фуллскріну */
 .rb-subtabs-fs { display: none; }
