@@ -509,8 +509,10 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
 .tab-settings-label { display: inline; }
 .sidebar .nav-primary .tab-settings .tab-attention { margin-left: auto; }
 
-/* subtabs bar sits at top of the content column */
-.content .nav-secondary { padding: 0 0 4px; }
+/* subtabs bar sits at top of the content column — keep the segmented-control
+   track padding symmetric so the active segment fills full height; spacing
+   below the bar via margin, not inner padding */
+.content .nav-secondary { margin-bottom: 4px; }
 
 /* collapse sidebar → horizontal scroll row on narrow screens */
 @media (max-width: 880px) {
