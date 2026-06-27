@@ -311,28 +311,6 @@ function gsnRenderOdds(): void {
     .join('');
 }
 
-function gsnRenderItemInfo(): void {
-  const el = $('#gsnItem');
-  if (!el) return;
-  const td = gsnState.tierData;
-  if (!td) {
-    el.innerHTML = '';
-    return;
-  }
-  const item = gsnData().items.find((i: any) => i.code === gsnState.item);
-  let html = '<div class="r8s-item-name">' + escHtml(item.emoji + ' ' + item.ua) + '</div>';
-  for (const t of gsnData().tiers as GsnTier[]) {
-    const d = td[t.code];
-    html +=
-      '<div class="gsn-tier-block gsn-tier-' + t.color + '">' +
-      '<div class="gsn-tier-block-head">' + escHtml(t.star + ' ' + t.ua) +
-      '<span class="gsn-tier-block-chance">' + r8sPct(t.chance) + '</span></div>' +
-      '<div class="r8s-item-static">' + escHtml(d.static_char).replace(/\n/g, '<br/>') + '</div>' +
-      '</div>';
-  }
-  el.innerHTML = html;
-}
-
 function gsnRenderResult(): void {
   const el = $('#gsnResult');
   if (!el) return;
@@ -464,7 +442,6 @@ function gsnRenderAll(): void {
   if (body) body.hidden = !ready;
   if (ready) {
     gsnRenderOdds();
-    gsnRenderItemInfo();
     gsnRenderResult();
     gsnRenderTierPick();
     gsnRenderTargets();
