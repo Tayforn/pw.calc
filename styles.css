@@ -393,6 +393,7 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
    активним сегментом. Трек звужується під ширину табів (inline-flex). */
 .nav-secondary {
   display: inline-flex;
+  align-items: stretch;
   gap: 3px;
   padding: 3px;
   margin-top: 4px;
@@ -424,15 +425,16 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
   color: var(--text);
   background: rgba(255, 255, 255, 0.05);
 }
-/* Активний — піднятий сегмент (elevation), золотий текст і тонка золота рамка */
+/* Активний — сегмент на всю висоту треку з легким золотим відтінком,
+   золотий текст і тонка золота рамка; підняття — м'яким верхнім хайлайтом
+   (без нижньої тіні, щоб не читалось як просвіт під сегментом) */
 .subtab.active {
   color: var(--accent-3);
   font-weight: 600;
-  background: #2b333f;
-  border-color: rgba(227, 185, 94, 0.35);
-  box-shadow: 0 2px 7px -2px rgba(0, 0, 0, 0.55);
+  background: linear-gradient(180deg, rgba(227, 185, 94, 0.20), rgba(227, 185, 94, 0.06)), #2b333f;
+  border-color: rgba(227, 185, 94, 0.45);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
-.subtab.active:hover { background: #2f3744; }
 .subtab.active .subtab-ico { opacity: 1; color: var(--accent); }
 
 /* ── Sidebar vertical nav (overrides horizontal .tab styling) ─────── */
@@ -2941,11 +2943,10 @@ html[data-theme="light"] .subtab { color: var(--text-dim); background: transpare
 html[data-theme="light"] .subtab:hover { color: var(--text); background: rgba(120, 84, 38, 0.08); }
 html[data-theme="light"] .subtab.active {
   color: var(--accent-2);
-  background: #fffdf9;
-  border-color: rgba(176, 127, 35, 0.4);
-  box-shadow: 0 2px 7px -2px rgba(80, 52, 20, 0.3);
+  background: linear-gradient(180deg, rgba(176, 127, 35, 0.16), rgba(176, 127, 35, 0.04)), #fffdf9;
+  border-color: rgba(176, 127, 35, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
-html[data-theme="light"] .subtab.active:hover { background: #fffdf9; }
 html[data-theme="light"] .subtab.active .subtab-ico { color: var(--accent-2); }
 
 /* ── Картки ─ Elevation: майже білі блоки на пастельному пергаменті ── */
