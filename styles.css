@@ -389,12 +389,17 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
 }
 .nav-primary .tab[data-group].active::after { opacity: 0.8; }
 
-/* Secondary subtabs bar */
+/* Secondary subtabs bar — сегмент-контрол: жолобок-трек із піднятим
+   активним сегментом. Трек звужується під ширину табів (inline-flex). */
 .nav-secondary {
-  display: flex;
-  gap: 4px;
-  padding: 5px 0 0;
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  margin-top: 4px;
   flex-wrap: wrap;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: 13px;
   animation: fadeIn 0.18s ease-out;
 }
 .nav-secondary[hidden] { display: none; }
@@ -403,11 +408,11 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--line);
+  background: transparent;
+  border: 1px solid transparent;
   color: var(--text-dim);
-  padding: 7px 15px;
-  border-radius: 999px;
+  padding: 6px 15px;
+  border-radius: 9px;
   font-family: inherit;
   font-size: 13.5px;
   font-weight: 500;
@@ -417,18 +422,18 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
 .subtab-ico { font-size: 13px; opacity: 0.7; }
 .subtab:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(227, 185, 94, 0.4);
+  background: rgba(255, 255, 255, 0.05);
 }
-/* Активний — суцільна золота «пігулка»: однозначно читається в обох темах */
+/* Активний — піднятий сегмент (elevation), золотий текст і тонка золота рамка */
 .subtab.active {
-  color: #1d1404;
+  color: var(--accent-3);
   font-weight: 600;
-  background: linear-gradient(135deg, var(--accent-3), var(--accent));
-  border-color: var(--accent-2);
-  box-shadow: 0 4px 14px -5px rgba(227, 185, 94, 0.6);
+  background: #2b333f;
+  border-color: rgba(227, 185, 94, 0.35);
+  box-shadow: 0 2px 7px -2px rgba(0, 0, 0, 0.55);
 }
-.subtab.active .subtab-ico { opacity: 1; color: #1d1404; }
+.subtab.active:hover { background: #2f3744; }
+.subtab.active .subtab-ico { opacity: 1; color: var(--accent); }
 
 /* ── Sidebar vertical nav (overrides horizontal .tab styling) ─────── */
 .sidebar .nav-primary {
@@ -2929,15 +2934,19 @@ html[data-theme="light"] .tab.active {
 }
 html[data-theme="light"] .tab.active .tab-ico { color: var(--accent-2); }
 
-html[data-theme="light"] .subtab { color: var(--text-dim); background: rgba(120, 84, 38, 0.06); border-color: var(--line); }
-html[data-theme="light"] .subtab:hover { color: var(--text); background: rgba(176, 127, 35, 0.12); border-color: rgba(176, 127, 35, 0.45); }
+/* Сегмент-контрол у світлій темі: пергаментний жолобок, активний сегмент —
+   майже білий «піднятий» кахель із бронзовим текстом */
+html[data-theme="light"] .nav-secondary { background: #efe3c6; border-color: var(--line); }
+html[data-theme="light"] .subtab { color: var(--text-dim); background: transparent; border-color: transparent; }
+html[data-theme="light"] .subtab:hover { color: var(--text); background: rgba(120, 84, 38, 0.08); }
 html[data-theme="light"] .subtab.active {
-  color: #fff7e6;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  border-color: var(--accent-2);
-  box-shadow: 0 4px 14px -5px rgba(176, 127, 35, 0.55);
+  color: var(--accent-2);
+  background: #fffdf9;
+  border-color: rgba(176, 127, 35, 0.4);
+  box-shadow: 0 2px 7px -2px rgba(80, 52, 20, 0.3);
 }
-html[data-theme="light"] .subtab.active .subtab-ico { color: #fff7e6; }
+html[data-theme="light"] .subtab.active:hover { background: #fffdf9; }
+html[data-theme="light"] .subtab.active .subtab-ico { color: var(--accent-2); }
 
 /* ── Картки ─ Elevation: майже білі блоки на пастельному пергаменті ── */
 html[data-theme="light"] .card {
