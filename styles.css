@@ -1239,10 +1239,12 @@ html[data-theme='light'] .doll-pick-name .gx-0, html[data-theme='light'] .doll-t
   display: flex; align-items: flex-start; justify-content: center; padding: 6vh 16px; overflow-y: auto;
 }
 .doll-picker[hidden] { display: none; }
-.doll-picker-box { width: 100%; max-width: 300px; padding: 12px; }
-.doll-picker-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
-.doll-picker-head h3 { margin: 0; flex: 1; font-size: 15px; }
-.doll-picker-head .btn { padding: 4px 8px; font-size: 11.5px; white-space: nowrap; }
+/* Пікер речі/каменя завжди над редактором (з якого відкривається гніздо) */
+#dollPicker { z-index: 90; }
+.doll-picker-box { width: 100%; max-width: 460px; padding: 16px; }
+.doll-picker-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.doll-picker-head h3 { margin: 0; flex: 1 1 auto; min-width: 0; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.doll-picker-head .btn { padding: 5px 10px; font-size: 12px; white-space: nowrap; }
 .doll-picker-x { background: none; border: none; color: var(--text-mute); font-size: 18px; cursor: pointer; line-height: 1; }
 .doll-picker-x:hover { color: var(--text); }
 .doll-picker-list { margin-top: 8px; max-height: 48vh; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
