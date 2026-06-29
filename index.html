@@ -617,12 +617,12 @@
           <div class="field">
             <label for="defAtkLevel">Рівень нападника</label>
             <input type="number" id="defAtkLevel" min="1" max="200" step="1" value="105" />
-            <small class="hint">Рівень персонажа-нападника.</small>
+            <small class="hint">Рівень персонажа-нападника. Впливає на формулу дефу цілі.</small>
           </div>
           <div class="field">
             <label for="defDefLevel" id="defDefLevelLabel">Рівень цілі</label>
             <input type="number" id="defDefLevel" min="1" max="200" step="1" value="105" />
-            <small class="hint" id="defDefLevelHint">Рівень цілі — впливає й на формулу дефу.</small>
+            <small class="hint" id="defDefLevelHint">Рівень цілі — впливає на штраф за різницю рівнів.</small>
           </div>
           <div class="field">
             <label for="defBaseDmg">Базова шкода <span class="muted" style="font-weight:400">(опційно)</span></label>
@@ -668,8 +668,8 @@
           <span class="eyebrow">Довідкова таблиця · 2</span>
           <h2 style="font-size:22px">% зрізання від фіз / маг дефу</h2>
           <p id="defArmorTableCaption">
-            Формула <code>редукція = Деф / (Деф + 40×Рівень − 85)</code>.
-            Таблиця рахується для <b id="defArmorTableLevel">105</b> рівня цілі
+            Формула <code>редукція = Деф / (40×Рівень + Деф − 25)</code>, кап 95%.
+            Таблиця рахується для <b id="defArmorTableLevel">105</b> рівня нападника
             (з поля вище). Натисни рядок — значення дефу підставиться у калькулятор.
           </p>
         </header>
@@ -691,18 +691,22 @@
       <div class="card calc-card" style="margin-top:22px">
         <header class="section-head" style="margin-bottom:14px">
           <span class="eyebrow">Довідкова таблиця · 3</span>
-          <h2 style="font-size:22px">PvP-штраф за різницю рівнів</h2>
+          <h2 style="font-size:22px">
+            Штраф за різницю рівнів
+            <span class="muted" style="font-weight:400;font-size:15px">· за PWI wiki</span>
+          </h2>
           <p>
-            Працює дзеркально: і коли нападник нижчий за ціль, і навпаки
-            (щоб хай-левели не вбивали новачків одним ударом). До 2 рівнів
-            різниці — штрафу немає.
+            Одностороння (за вікі PWI): урон ріжеться лише коли <b>ціль вища
+            за нападника</b> (рахується <code>рівень_цілі − рівень_нападника</code>).
+            Коли нападник вищий — штрафу немає (100%). До 2 рівнів різниці —
+            теж 100%. Понад 20 рівнів різниці — стале 25%.
           </p>
         </header>
         <div class="table-wrap">
           <table class="data-table" id="defLevelTable">
             <thead>
               <tr>
-                <th>Різниця рівнів</th>
+                <th>Ціль − нападник</th>
                 <th class="num">Коефіцієнт</th>
                 <th class="num">Шкоди</th>
               </tr>
@@ -720,34 +724,39 @@
           Три фільтри незалежні й перемножуються.
         </p>
         <p>
-          <b>1. ПА/ПЗ.</b> Δ = <code>ПА − ПЗ</code>.
+          <b>1. ПА/ПЗ (Attack/Defense Level).</b> Δ = <code>ПА − ПЗ</code>.
           Δ ≥ 0: <code>k = 1 + Δ/100</code> (лінійний приріст, +1% урону за
-          одиницю). Δ &lt; 0: <code>k = 1/(1 + |Δ|/100)</code> (гіперболічний
-          деф; перші 100 одиниць ПЗ ріжуть урон удвічі).
+          одиницю). Δ &lt; 0: <code>k = 1/(1 + 1.2×|Δ|/100)</code> (гіперболічний
+          деф із множником <b>1.2</b> за формулою PWI; при Δ = −100 урон ×0.455).
         </p>
         <p>
           <b>2. Фіз / маг деф.</b>
-          <code>редукція = Деф / (Деф + 40×Рівень − 85)</code>.
-          Формула <b>однакова</b> для фізичного дефу й усіх 5 стихій маг
-          дефу, тому окремих полів немає — введи будь-який із них.
+          <code>редукція = Деф / (40×Рівень + Деф − 25)</code>, кап 95%
+          (рівень — нападника). Формула <b>однакова</b> для фізичного дефу
+          й усіх 5 стихій маг дефу, тому окремих полів немає — введи будь-який із них.
           Diminishing returns: на 105 лвл перші 50% дефу коштують ~4 100
           одиниць, а наступні 25% — ще ~8 000. Деякі теоркрафтери округлюють
           знаменник до <code>Деф + 40×Рівень</code> (тобто +4200 на 105 лвл).
         </p>
         <p>
           <b>3. Різниця рівнів.</b>
-          PvP — сходинкова сітка (0–2 лвл: 100%, 3–5: 90%, 6–8: 80%,
-          9–11: 70%, 12–15: 60%, 16–20: 50%, далі стрімко до ~20%),
-          дзеркальна для обох сторін.
-          PvE — <code>k = Рівень_гравця / Рівень_моба</code> (якщо моб
-          вищий); якщо гравець ≥ моба, урон не штрафується (k = 1.0).
+          За PWpedia — сходинкова сітка від <code>рівень_цілі − рівень_нападника</code>
+          (&lt;3: 100%, 3–5: 90%, 6–8: 80%, 9–11: 70%, 12–15: 60%, 16–20: 50%,
+          &gt;20: 25%). Одностороння: ріже урон лише коли ціль вища за нападника.
+          PvE (наш режим) — приблизно <code>k = Рівень_гравця / Рівень_моба</code>
+          (якщо моб вищий); якщо гравець ≥ моба — k = 1.0.
         </p>
         <p>
-          Джерела: офіційні форуми (PvP/PvE level
-          penalty), PWDatabase, TriviaPW / WikiPW (BR-комʼюніті,
-          «Tabela de Multiplicador de Dano» та формула Redução de Dano).
-          Бойовий дух (Espírito), %crit, елементалка зброї тут не
-          враховуються — це чиста механіка ПА/ПЗ, дефу та рівня.
+          <b>4. PvP flat −75%.</b> За PWpedia, у PvP <b>увесь урон додатково
+          множиться на 25%</b> (тобто −75%) — окремий базовий множник поверх
+          усього іншого (виняток — деякі атаки петів вомансера). У калькуляторі
+          вище він <b>не врахований</b> у коефіцієнті; це окрема постійна знижка PvP.
+        </p>
+        <p>
+          Джерела: <b>PWpedia</b> (Damage, Gear Addons — формули резисту
+          <code>def/(40×AL+def−25)</code>, Attack/Defense Level з множником 1.2,
+          Level Difference Reduction, PvP −75%), PWDatabase. Бойовий дух (Spirit),
+          %crit, елементалка зброї та пробивання тут не враховуються.
         </p>
       </details>
     </section>
@@ -914,6 +923,225 @@
             </div>
             <div id="gsnStats"></div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: ABILITIES (Абілки зброї) -->
+    <section class="tab-panel" data-panel="abilities" role="tabpanel">
+      <header class="section-head">
+        <span class="eyebrow">Спорядження</span>
+        <h2>Абілки зброї</h2>
+        <p>
+          Особливі ефекти зброї («проки»), що з певним шансом спрацьовують під
+          час атаки або при отриманні урону. Нижче — назва, тип, опис ефекту та
+          шанс спрацювання (де він відомий). Пошук — за назвою чи ефектом.
+        </p>
+      </header>
+
+      <div class="card calc-card abil-controls">
+        <div class="field">
+          <label for="abilSearch">Пошук</label>
+          <input type="search" id="abilSearch" placeholder="Назва або ефект абілки…" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label>Тип</label>
+          <div class="segmented" role="radiogroup" aria-label="Тип абілки">
+            <input type="radio" id="abilCatAll" name="abilCat" value="all" checked />
+            <label for="abilCatAll">Усі</label>
+            <input type="radio" id="abilCatBuff" name="abilCat" value="buff" />
+            <label for="abilCatBuff">Бафи</label>
+            <input type="radio" id="abilCatDebuff" name="abilCat" value="debuff" />
+            <label for="abilCatDebuff">Дебафи</label>
+            <input type="radio" id="abilCatAttack" name="abilCat" value="attack" />
+            <label for="abilCatAttack">Атака</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrap" style="margin-top:22px">
+        <table class="data-table" id="abilTable">
+          <thead>
+            <tr>
+              <th>Абілка</th>
+              <th>Ефект</th>
+              <th>Перезаписує</th>
+              <th>Нотатки</th>
+              <th class="num">Шанс прока</th>
+              <th class="num">приклад id зброї</th>
+            </tr>
+          </thead>
+          <tbody id="abilTableBody"></tbody>
+        </table>
+      </div>
+      <p class="muted" id="abilCount" style="margin-top:10px"></p>
+
+      <details class="note">
+        <summary>Джерела та примітки</summary>
+        <p>
+          Дані зібрані з відкритих джерел спільноти Perfect World (PWI):
+          загальнодоступні описи спорядження та довідники ігрових механік. Шанси
+          прока наведено там, де вони задокументовані; позначка <b>~</b> означає
+          приблизне або неперевірене значення. Частина новіших абілок не має
+          задокументованого шансу — у таких рядках стоїть «—».
+        </p>
+        <p>
+          Назви та описи перекладено українською <b>за допомогою ШІ</b> й вони можуть
+          відрізнятися від офіційного формулювання в грі.
+        </p>
+        <p>
+          <b>Перезаписує</b> та <b>Нотатки</b> —
+          з PWpedia (англійською, для звірки з джерелом). <b>id зброї</b> — приклади
+          предметів, на яких є ця абілка: встав id у базу предметів, щоб перевірити
+          самостійно (порожньо — якщо абілки немає на зброї в наших даних).
+        </p>
+      </details>
+    </section>
+
+    <!-- TAB: DOLL (Лялька) -->
+    <section class="tab-panel" data-panel="doll" role="tabpanel">
+      <header class="section-head doll-head">
+        <div>
+          <span class="eyebrow">Спорядження</span>
+          <h2>Лялька персонажа</h2>
+        </div>
+        <button type="button" class="btn btn-ghost" id="dollReset">↺ Скинути все</button>
+      </header>
+
+      <div class="card calc-card doll-header">
+        <div class="field"><label for="dollClass">Клас</label><select id="dollClass"></select></div>
+        <div class="field">
+          <label>Стать</label>
+          <div class="segmented" role="radiogroup" aria-label="Стать">
+            <input type="radio" id="dollGenderM" name="dollGender" value="m" checked />
+            <label for="dollGenderM">Чол.</label>
+            <input type="radio" id="dollGenderF" name="dollGender" value="f" />
+            <label for="dollGenderF">Жін.</label>
+          </div>
+        </div>
+        <div class="field"><label for="dollLevel">Рівень</label><input type="number" id="dollLevel" min="1" max="200" value="105" /></div>
+        <div class="field"><label for="dollStr">Сила</label><input type="number" id="dollStr" min="5" value="5" /></div>
+        <div class="field"><label for="dollDex">Спритність</label><input type="number" id="dollDex" min="5" value="5" /></div>
+        <div class="field"><label for="dollVit">Тілобудова</label><input type="number" id="dollVit" min="5" value="5" /></div>
+        <div class="field"><label for="dollMag">Інтелект</label><input type="number" id="dollMag" min="5" value="5" /></div>
+        <div class="field doll-avail"><label>Доступно очок</label><div class="doll-avail-v" id="dollAvail">0</div></div>
+      </div>
+
+      <div class="card calc-card">
+        <h3 class="doll-stats-title">Бафи
+          <span class="muted">(чекбокс — активувати; клік по іконці — налаштування; «+» — додати)</span>
+        </h3>
+        <div class="doll-buffs" id="dollBuffs"></div>
+      </div>
+
+      <div class="doll-main">
+        <div class="card calc-card doll-main-stats">
+          <h3 class="doll-stats-title">Характеристики персонажа
+            <span class="muted">(база + спорядження + камені + заточка + сети + стани)</span>
+          </h3>
+          <div class="doll-stats" id="dollSummary"></div>
+          <p class="muted" style="margin:12px 0 0;font-size:12.5px">
+            Розрахунок за формулами PW (атака, захист із % зрізання, HP/MP, меткість,
+            ухилення, крит) з урахуванням каменів, заточки, бонусів сетів і станів.
+          </p>
+        </div>
+        <div class="doll-main-eq">
+          <div class="card calc-card">
+            <div class="doll-fig" id="dollGrid"></div>
+          </div>
+          <div class="card calc-card">
+            <h3 class="doll-stats-title">Рюкзак
+              <span class="muted">(відкладені речі — не враховуються; клік повертає на персонажа)</span>
+            </h3>
+            <div class="doll-backpack" id="dollBackpack"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card calc-card doll-dmg-section" id="dollDmgSection">
+        <h3 class="doll-stats-title">Перевірка дамага
+          <span class="muted">(налаштуй суперника й перевір урон по ньому)</span>
+        </h3>
+        <div class="doll-opp-panel" id="dollOpp"></div>
+        <div class="doll-compare-actions">
+          <button type="button" class="btn btn-primary" id="dollCheckDmg">Перевірити дамаг</button>
+          <button type="button" class="btn btn-ghost" id="dollResetOpp">Скинути суперника</button>
+        </div>
+        <div class="doll-dmg-body">
+          <h4 class="doll-skills-h">Скіли класу <span class="muted">(клікни по скілу — урон додасться в лог)</span></h4>
+          <div class="doll-skill-grid" id="dollSkillGrid"></div>
+          <div class="doll-dmg-loghead">
+            <h4 class="doll-skills-h">Лог урону</h4>
+            <button type="button" class="btn btn-ghost" id="dollClearLog">Очистити</button>
+          </div>
+          <div class="doll-dmg-log" id="dollDmgLog"></div>
+        </div>
+      </div>
+
+      <div class="card calc-card">
+        <h3 class="doll-stats-title">Збережені білди
+          <span class="muted">(локально, до 20)</span>
+        </h3>
+        <div class="doll-save-row">
+          <input type="text" id="dollBuildName" placeholder="Назва білду…" autocomplete="off" maxlength="40" />
+          <button type="button" class="btn btn-primary" id="dollSaveBuild">Зберегти білд</button>
+        </div>
+        <div class="doll-history" id="dollHistory" style="margin-top:12px"></div>
+      </div>
+
+      <details class="note">
+        <summary>Про сторінку</summary>
+        <p>
+          Повний редактор: стати (5 очок/рівень), вимоги речей (рівень/Сила/Спритн/Інт —
+          непридатна річ підсвічена червоним і не враховується), камені, заточка, сети,
+          стани, порівняння з опонентом, збереження. Назви предметів — з ігрових даних
+          і можуть бути російською. Дані та іконки — з відкритих джерел спільноти PW.
+        </p>
+      </details>
+
+      <!-- плаваючий тултіп + модалка вибору предмета -->
+      <div class="doll-tip" id="dollTip" hidden></div>
+      <div class="doll-picker" id="dollPicker" hidden>
+        <div class="doll-picker-box card">
+          <header class="doll-picker-head">
+            <h3 id="dollPickTitle">Слот</h3>
+            <button type="button" class="btn btn-ghost" id="dollPickBackpack" hidden>У рюкзак</button>
+            <button type="button" class="btn btn-ghost" id="dollPickUnequip" hidden>Зняти</button>
+            <button type="button" class="doll-picker-x" id="dollPickClose" aria-label="Закрити">✕</button>
+          </header>
+          <input type="search" id="dollPickSearch" placeholder="100 (ур), назва…" autocomplete="off" />
+          <div class="doll-pick-types" id="dollPickTypes" hidden></div>
+          <p class="muted" id="dollPickCount" style="margin:8px 0 0"></p>
+          <div class="doll-picker-list" id="dollPickList"></div>
+        </div>
+      </div>
+
+      <!-- редактор речі (камені / заточка / характеристики) -->
+      <div class="doll-picker doll-editor" id="dollEditor" hidden>
+        <div class="doll-picker-box card">
+          <button type="button" class="doll-picker-x doll-ed-close" aria-label="Закрити">✕</button>
+          <div id="dollEditorBody"></div>
+        </div>
+      </div>
+
+      <!-- налаштування бафа (рівень / світл-темн / видалити) -->
+      <div class="doll-picker doll-editor" id="dollBuffCfg" hidden>
+        <div class="doll-picker-box card doll-bcfg-box">
+          <button type="button" class="doll-picker-x doll-bcfg-x" aria-label="Закрити">✕</button>
+          <div id="dollBuffCfgBody"></div>
+        </div>
+      </div>
+
+      <!-- пошук бафа для додавання (фільтр за класом) -->
+      <div class="doll-picker" id="dollBuffPick" hidden>
+        <div class="doll-picker-box card">
+          <header class="doll-picker-head">
+            <h3>Додати баф</h3>
+            <button type="button" class="doll-picker-x doll-buffpick-x" aria-label="Закрити">✕</button>
+          </header>
+          <input type="search" id="dollBuffPickSearch" placeholder="назва бафа…" autocomplete="off" />
+          <div class="doll-pick-types doll-buffpick-classes" id="dollBuffPickClasses"></div>
+          <div class="doll-picker-list" id="dollBuffPickList"></div>
         </div>
       </div>
     </section>

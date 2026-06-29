@@ -13,19 +13,20 @@ const DEF_DELTA_ROWS: Array<{ delta: number; note: string }> = [
   { delta: 50, note: 'Перевага ПА +50 — +50% до урону.' },
   { delta: 20, note: 'Невелика перевага атаки, +20% урону.' },
   { delta: 0, note: 'ПА = ПЗ → базова шкода без модифікаторів.' },
-  { delta: -10, note: 'Початок захисту: −9% урону.' },
-  { delta: -20, note: 'Перші 20 одиниць ПЗ дають чудовий приріст.' },
-  { delta: -50, note: 'Супротивник втрачає третину сили.' },
-  { delta: -100, note: '«Ponto de corte» — урон урізано рівно вдвічі.' },
-  { delta: -150, note: 'Diminishing returns: −60%, але кожна одиниця дешевшає.' },
-  { delta: -200, note: 'Урон зменшено на 2/3.' },
-  { delta: -300, note: 'Максимально досяжна порізка у ~75% (важко в реальному бою).' },
+  { delta: -10, note: 'Початок захисту: −11% урону (з множником 1.2).' },
+  { delta: -20, note: 'Перевага захисту: −19% урону.' },
+  { delta: -50, note: 'Супротивник втрачає ~37% сили.' },
+  { delta: -100, note: '«Точка розрізу» — урон зрізано більш ніж удвічі (−55%).' },
+  { delta: -150, note: 'Diminishing returns: −64%, але кожна одиниця дешевшає.' },
+  { delta: -200, note: 'Урон зменшено на ~71%.' },
+  { delta: -300, note: 'Максимально досяжна порізка ~78% (важко в реальному бою).' },
 ];
 
-/** Коефіцієнт ПА/ПЗ за різницею Δ = ПА − ПЗ. */
+/** Коефіцієнт ПА/ПЗ (Attack/Defense Level) за різницею Δ = ПА − ПЗ, за формулою PWI.
+ *  Δ ≥ 0: 1 + Δ/100. Δ < 0: 1 / (1 + 1.2×|Δ|/100) — множник 1.2 на стороні захисту. */
 export function paPzCoef(delta: number): number {
   if (delta >= 0) return 1 + delta / 100;
-  return 1 / (1 + Math.abs(delta) / 100);
+  return 1 / (1 + (1.2 * Math.abs(delta)) / 100);
 }
 
 /** Текстове представлення коефіцієнта як % зміни шкоди. */
@@ -39,28 +40,29 @@ function coefEffectText(k: number): string {
 
 const DEF_ARMOR_VALUES = [0, 1000, 2000, 4200, 10000, 20000, 40000, 80000, 160000];
 
-/** Частка зрізаної шкоди від фіз/маг дефу: Деф / (Деф + 40×Рівень − 85). */
+/** Частка зрізаної шкоди від фіз/маг дефу: Деф / (40×Рівень + Деф − 25), кап 95%.
+ *  Рівень — це рівень НАПАДНИКА (як у формулі Perfect World, що бере рівень атакуючого). */
 export function armorReduction(def: number, level: number): number {
   if (!(def > 0)) return 0;
-  const denom = def + 40 * level - 85;
+  const denom = 40 * level + def - 25;
   if (denom <= 0) return 0;
   const r = def / denom;
-  return Math.max(0, Math.min(0.999, r));
+  return Math.max(0, Math.min(0.95, r));
 }
 
 // --- Фільтр 3: різниця рівнів ---
 
-/** PvP-коефіцієнт за абсолютною різницею рівнів (дзеркальний). */
-export function pvpLevelCoef(levelDiff: number): number {
-  const d = Math.abs(levelDiff);
-  if (d <= 2) return 1.0;
+/** PvP-коефіцієнт за різницею рівнів (ціль − нападник), за таблицею PWI wiki.
+ *  Урон ріжеться лише коли ціль вища за нападника; зворотний бік (нападник вищий) = 100%. */
+export function pvpLevelCoef(targetMinusAttacker: number): number {
+  const d = targetMinusAttacker;
+  if (d < 3) return 1.0;
   if (d <= 5) return 0.9;
   if (d <= 8) return 0.8;
   if (d <= 11) return 0.7;
   if (d <= 15) return 0.6;
   if (d <= 20) return 0.5;
-  if (d >= 40) return 0.2;
-  return 0.5 - (d - 20) * (0.3 / 20);
+  return 0.25;
 }
 
 /** PvE-коефіцієнт: рівень_гравця / рівень_моба, не більше 1.0. */
@@ -69,14 +71,14 @@ export function pveLevelCoef(playerLevel: number, monsterLevel: number): number 
   return Math.min(1, playerLevel / monsterLevel);
 }
 
-const PVP_RANGES: Array<{ lo: number; hi: number | null; k: number | null }> = [
+const PVP_RANGES: Array<{ lo: number; hi: number | null; k: number }> = [
   { lo: 0, hi: 2, k: 1.0 },
   { lo: 3, hi: 5, k: 0.9 },
   { lo: 6, hi: 8, k: 0.8 },
   { lo: 9, hi: 11, k: 0.7 },
   { lo: 12, hi: 15, k: 0.6 },
   { lo: 16, hi: 20, k: 0.5 },
-  { lo: 21, hi: null, k: null }, // 0.4…0.2
+  { lo: 21, hi: null, k: 0.25 },
 ];
 
 function getDefMode(): 'pvp' | 'pve' {
@@ -147,8 +149,8 @@ export function buildPvpLevelTable(): void {
   if (!body) return;
   body.innerHTML = PVP_RANGES.map((r) => {
     const label = r.hi === null ? 'понад ' + (r.lo - 1) : r.lo + '–' + r.hi;
-    const kTxt = r.k === null ? '~0.4 … 0.2' : r.k.toFixed(2);
-    const dmgTxt = r.k === null ? '~40 … 20%' : (r.k * 100).toFixed(0) + '%';
+    const kTxt = r.k.toFixed(2);
+    const dmgTxt = (r.k * 100).toFixed(0) + '%';
     return (
       '<tr>' +
       '<td><span class="badge">' + label + ' лвл</span></td>' +
@@ -180,8 +182,8 @@ function renderDefense(): void {
   if (defLevelHint) {
     defLevelHint.textContent =
       mode === 'pve'
-        ? 'Рівень моба — впливає на формулу дефу та PvE-штраф.'
-        : 'Рівень цілі — впливає й на формулу дефу.';
+        ? 'Рівень моба — впливає на PvE-штраф.'
+        : 'Рівень цілі — впливає на штраф за різницю рівнів.';
   }
 
   if (
@@ -198,17 +200,17 @@ function renderDefense(): void {
     return;
   }
 
-  buildArmorTable(defLevel);
+  buildArmorTable(atkLevel);
 
   const delta = atk - pz;
   const kPaPz = paPzCoef(delta);
 
   const armorVal = Number.isFinite(armor) && armor > 0 ? armor : 0;
-  const reduction = armorReduction(armorVal, defLevel);
+  const reduction = armorReduction(armorVal, atkLevel);
   const kArmor = 1 - reduction;
 
-  const levelDiff = atkLevel - defLevel;
-  const kLevel = mode === 'pve' ? pveLevelCoef(atkLevel, defLevel) : pvpLevelCoef(levelDiff);
+  const targetGap = defLevel - atkLevel; // ціль − нападник (PWI-таблиця різниці рівнів)
+  const kLevel = mode === 'pve' ? pveLevelCoef(atkLevel, defLevel) : pvpLevelCoef(targetGap);
 
   const kTotal = kPaPz * kArmor * kLevel;
   const totalCls = kTotal > 1 ? 'bad' : kTotal < 1 ? 'good' : '';
@@ -244,9 +246,9 @@ function renderDefense(): void {
     '<span class="metric-sub">множник ×' + kArmor.toFixed(3) + '</span>' +
     '</div>' +
     '<div class="metric">' +
-    '<span class="metric-label">Рівень (' + (mode === 'pve' ? 'PvE' : 'PvP ' + (levelDiff >= 0 ? '+' : '') + levelDiff) + ')</span>' +
+    '<span class="metric-label">Рівень (' + (mode === 'pve' ? 'PvE' : 'PvP, ціль ' + (targetGap >= 0 ? '+' : '') + targetGap) + ')</span>' +
     '<span class="metric-value">×' + kLevel.toFixed(3) + '</span>' +
-    '<span class="metric-sub">' + coefEffectText(kLevel) + '</span>' +
+    '<span class="metric-sub">' + coefEffectText(kLevel) + (mode === 'pve' ? ' · приблизна оцінка' : ' · за PWI') + '</span>' +
     '</div>' +
     dmgMetric +
     '</div>';
@@ -254,15 +256,15 @@ function renderDefense(): void {
   const paPzFormula =
     delta >= 0
       ? 'k₁ = 1 + ' + delta + '/100 = ' + kPaPz.toFixed(3)
-      : 'k₁ = 1 / (1 + ' + Math.abs(delta) + '/100) = ' + kPaPz.toFixed(3);
+      : 'k₁ = 1 / (1 + 1.2×' + Math.abs(delta) + '/100) = ' + kPaPz.toFixed(3);
   const armorFormula =
     armorVal > 0
-      ? 'k₂ = 1 − ' + armorVal + '/(' + armorVal + ' + 40×' + defLevel + ' − 85) = ' + kArmor.toFixed(3)
+      ? 'k₂ = 1 − ' + armorVal + '/(40×' + atkLevel + ' + ' + armorVal + ' − 25) = ' + kArmor.toFixed(3)
       : 'k₂ = 1.000 (деф = 0)';
   const levelFormula =
     mode === 'pve'
       ? 'k₃ = min(1, ' + atkLevel + '/' + defLevel + ') = ' + kLevel.toFixed(3)
-      : 'k₃ = ' + kLevel.toFixed(3) + ' (PvP, різниця ' + Math.abs(levelDiff) + ' лвл)';
+      : 'k₃ = ' + kLevel.toFixed(3) + ' (PvP, ціль − нападник = ' + targetGap + ' лвл)';
 
   const formula =
     '<code>фінал = k₁ × k₂ × k₃ = ' +
@@ -273,10 +275,14 @@ function renderDefense(): void {
 
   const tips: string[] = [];
   if (delta < -100) tips.push('ПА/ПЗ: ти за «точкою розрізу» (Δ &lt; −100) — кожна нова одиниця ПЗ дає &lt; 0.5% дефу.');
-  else if (delta < 0) tips.push('ПА/ПЗ: до «точки розрізу» (Δ = −100, урон навпіл) ще є простір.');
+  else if (delta < 0) tips.push('ПА/ПЗ: до «точки розрізу» (Δ = −100) ще є простір.');
   else if (delta > 0) tips.push('ПА/ПЗ: перевага атаки — кожна +1 ПА додає +1% урону.');
   if (armorVal > 0 && reduction >= 0.5) tips.push('Деф: ти вже за 50% зрізання — далі diminishing returns, кожна 1k дефу дає все менше.');
-  if (mode === 'pvp' && Math.abs(levelDiff) >= 3) tips.push('Рівень: різниця ≥ 3 лвл вмикає PvP-штраф (дзеркальний для обох сторін).');
+  if (mode === 'pvp') {
+    tips.push('PvP: понад усе діє базовий PvP-множник — увесь урон у PvP додатково ×25% (−75%). Він НЕ входить у коефіцієнт вище.');
+    if (targetGap >= 3)
+      tips.push('Рівень: ціль вища за тебе на ' + targetGap + ' лвл — твій урон ріжеться за таблицею PWI (одностороннє: коли нападник вищий — штрафу немає).');
+  }
   if (mode === 'pve' && atkLevel < defLevel) tips.push('Рівень: моб вищий за тебе — урон ріжеться за k = твій_рівень/рівень_моба.');
   if (mode === 'pve' && atkLevel >= defLevel) tips.push('Рівень: ти не нижчий за моба — PvE-штрафу на урон немає (k = 1.0).');
 

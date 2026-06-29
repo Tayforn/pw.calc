@@ -16,7 +16,7 @@ interface TabGroup {
 
 const VALID_TABS = [
   'refine', 'eggs', 'compare', 'craft', 'simulator', 'chests',
-  'defense', 'r8', 'r8sim', 'gsn', 'guides', 'rb', 'settings',
+  'defense', 'r8', 'r8sim', 'gsn', 'abilities', 'doll', 'guides', 'rb', 'settings',
 ];
 
 const TAB_GROUPS: Record<string, TabGroup> = {
@@ -38,6 +38,8 @@ const TAB_GROUPS: Record<string, TabGroup> = {
       { id: 'r8', label: 'Р8 бонуси', ico: '🏆' },
       { id: 'r8sim', label: 'Симулятор Р8', ico: '⚙' },
       { id: 'gsn', label: 'ГСН', ico: '📿' },
+      { id: 'abilities', label: 'Абілки зброї', ico: '⚔' },
+      { id: 'doll', label: 'Лялька', ico: '🪆' },
     ],
   },
 };

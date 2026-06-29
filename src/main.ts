@@ -20,6 +20,8 @@ import { defInit } from './modules/defense';
 import { chestsInit } from './modules/chests';
 import { r8sInit } from './modules/r8sim';
 import { gsnInit } from './modules/gsn';
+import { abilitiesInit } from './modules/abilities';
+import { dollInit } from './modules/doll';
 import { rbActivate, rbInit } from './modules/rb';
 import { guidesInit } from './modules/guides';
 
@@ -58,6 +60,8 @@ defInit();
 chestsInit();
 r8sInit();
 gsnInit();
+abilitiesInit();
+dollInit();
 rbInit();
 guidesInit();
 applyDefaultEggPrice();

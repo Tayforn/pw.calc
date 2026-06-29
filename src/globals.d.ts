@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 // Глобали, що їх встановлюють зовнішні data-файли (r8-data.js, gsn-data.js,
 // guides-data.js) та UMD-бібліотека Leaflet. Структури складні — типізуємо
 // як `any`, бо вони приходять з runtime-скриптів, а не з модулів.
