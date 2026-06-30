@@ -3810,3 +3810,175 @@ html[data-theme="light"] .r8s-slot {
   color: #1f5f3a;
 }
 html[data-theme="light"] .r8s-slot:hover { background: rgba(54, 121, 76, 0.22); }
+
+/* =========================================================
+   СКІЛБАЗА — уміння класів / джинн / питомець
+   ========================================================= */
+.skl-classbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+.skl-class {
+  appearance: none;
+  border: 1px solid var(--line-2);
+  background: var(--bg-3);
+  color: var(--text-dim);
+  border-radius: 999px;
+  padding: 7px 15px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.skl-class:hover { color: var(--text); border-color: var(--accent-2); }
+.skl-class.active {
+  background: linear-gradient(180deg, rgba(227,185,94,.22), rgba(227,185,94,.12));
+  border-color: var(--accent);
+  color: var(--accent-3);
+}
+
+.skl-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
+  gap: 16px;
+  align-items: start;
+}
+.skl-layout-pet { grid-template-columns: minmax(220px, 320px) minmax(0, 1fr); }
+@media (max-width: 880px) { .skl-layout, .skl-layout-pet { grid-template-columns: 1fr; } }
+
+.skl-treewrap { padding: 18px; overflow: auto; }
+
+/* дерево класових умінь — сітка за posx/posy */
+.skl-tree {
+  display: grid;
+  grid-template-columns: repeat(var(--skl-cols, 8), 40px);
+  grid-auto-rows: 40px;
+  gap: 6px;
+  justify-content: center;
+  min-width: max-content;
+  margin: 0 auto;
+}
+/* грід джина / списки-сітки */
+.skl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 40px);
+  gap: 6px;
+  justify-content: center;
+}
+
+.skl-tile {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 0;
+  background-color: var(--bg-0);
+  background-repeat: no-repeat;
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow .12s, transform .08s;
+}
+.skl-tile-g { background-color: #14181f; }
+.skl-tile:hover { transform: translateY(-1px); box-shadow: 0 0 0 2px var(--accent-2); position: relative; z-index: 1; }
+.skl-tile.active {
+  box-shadow: 0 0 0 2px var(--accent);
+  position: relative; z-index: 2;
+}
+
+/* список умінь питомця — картка-обгортка кліпає скролбар у заокруглені кути */
+.skl-petwrap { padding: 8px; overflow: hidden; }
+.skl-petlist { padding: 4px 6px 4px 4px; display: flex; flex-direction: column; gap: 4px; max-height: 68vh; overflow-y: auto; }
+.skl-petrow {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; text-align: left;
+  border: 1px solid transparent; border-radius: 10px;
+  background: transparent; color: var(--text-dim);
+  padding: 7px 10px; font-size: 13.5px; font-weight: 600; cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.skl-petrow:hover { background: var(--bg-3); color: var(--text); }
+.skl-petrow.active { background: rgba(227,185,94,.14); border-color: var(--accent); color: var(--accent-3); }
+.skl-petico { width: 30px; height: 30px; border-radius: 7px; flex: 0 0 auto; background: var(--bg-0); }
+
+/* панель деталей */
+.skl-detail { padding: 22px; position: sticky; top: 16px; }
+.skl-empty { text-align: center; padding: 40px 12px; }
+.skl-detail-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.skl-name { margin: 0; font-size: 19px; color: var(--accent-3); }
+.skl-lvltag { font-size: 12px; color: var(--text-mute); white-space: nowrap; }
+
+.skl-levels { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 16px; }
+.skl-lvl {
+  min-width: 30px;
+  border: 1px solid var(--line-2);
+  background: var(--bg-3);
+  color: var(--text-dim);
+  border-radius: 8px;
+  padding: 5px 9px;
+  font-size: 12.5px; font-weight: 600; cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.skl-lvl:hover { color: var(--text); border-color: var(--accent-2); }
+.skl-lvl.active { background: var(--accent); border-color: var(--accent); color: #1a1205; }
+.skl-lvl.skl-sage.active { background: #7b6fd6; border-color: #7b6fd6; color: #fff; }
+.skl-lvl.skl-demon.active { background: #c247c9; border-color: #c247c9; color: #fff; }
+
+.skl-stats { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.skl-info { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; padding: 4px 0; border-bottom: 1px dashed var(--line); }
+.skl-info-l { color: var(--text-mute); }
+.skl-info-v { color: var(--text); font-weight: 600; }
+
+.skl-text { font-size: 13.5px; line-height: 1.6; color: var(--text-dim); }
+.skl-text br { content: ""; }
+
+/* кольорові класи з оригіналу (адаптовані під тему) */
+.skl-text .culti, .skl-detail-head .culti { color: var(--accent); }
+.skl-text .bleuclair { color: #7fdcef; font-weight: 600; }
+.skl-text .bleu { color: #5fcfe0; font-weight: 600; }
+.skl-text .fury { color: #93b4e6; }
+.skl-text .genie, .skl-text .genie2 { color: #e3a07f; }
+.skl-text .holy { color: #e6c878; }
+.skl-text .dark { color: #d061d6; }
+.skl-text .holydark { color: #9a8ef0; font-weight: 600; }
+.skl-text .hh { color: var(--good, #4fbf78); }
+
+.skl-toolbar { padding: 12px 14px; margin-bottom: 16px; }
+.skl-search {
+  width: 100%;
+  border: 1px solid var(--line-2);
+  background: var(--bg-0);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 9px 13px;
+  font-size: 14px;
+}
+.skl-search::placeholder { color: var(--text-mute); }
+
+.skl-sage-t { color: #9a8ef0; font-weight: 600; }
+.skl-demon-t { color: #d061d6; font-weight: 600; }
+
+html[data-theme="light"] .skl-tile { background-color: #2a2118; }
+html[data-theme="light"] .skl-tile-g { background-color: #2a2118; }
+
+/* стилізований скролбар (як на сторінці гайдів) */
+.skl-petlist, .skl-treewrap, .skl-detail {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+.skl-petlist::-webkit-scrollbar,
+.skl-treewrap::-webkit-scrollbar,
+.skl-detail::-webkit-scrollbar { width: 8px; height: 8px; }
+.skl-petlist::-webkit-scrollbar-track,
+.skl-treewrap::-webkit-scrollbar-track,
+.skl-detail::-webkit-scrollbar-track { background: transparent; margin: 4px 0; }
+.skl-petlist::-webkit-scrollbar-thumb,
+.skl-treewrap::-webkit-scrollbar-thumb,
+.skl-detail::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 999px; }
+.skl-petlist::-webkit-scrollbar-thumb:hover,
+.skl-treewrap::-webkit-scrollbar-thumb:hover,
+.skl-detail::-webkit-scrollbar-thumb:hover { background: rgba(227, 185, 94, 0.45); }
+html[data-theme="light"] .skl-petlist,
+html[data-theme="light"] .skl-treewrap,
+html[data-theme="light"] .skl-detail { scrollbar-color: rgba(120, 84, 38, 0.5) transparent; }

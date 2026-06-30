@@ -16,7 +16,8 @@ interface TabGroup {
 
 const VALID_TABS = [
   'refine', 'eggs', 'compare', 'craft', 'simulator', 'chests',
-  'defense', 'r8', 'r8sim', 'gsn', 'abilities', 'doll', 'guides', 'rb', 'settings',
+  'defense', 'r8', 'r8sim', 'gsn', 'abilities', 'doll',
+  'skills', 'genie', 'pets', 'guides', 'rb', 'settings',
 ];
 
 const TAB_GROUPS: Record<string, TabGroup> = {
@@ -40,6 +41,13 @@ const TAB_GROUPS: Record<string, TabGroup> = {
       { id: 'gsn', label: 'ГСН', ico: '📿' },
       { id: 'abilities', label: 'Абілки зброї', ico: '⚔' },
       { id: 'doll', label: 'Лялька', ico: '🪆' },
+    ],
+  },
+  skillbase: {
+    tabs: [
+      { id: 'skills', label: 'Уміння класів', ico: '✶' },
+      { id: 'genie', label: 'Джинн', ico: '🧞' },
+      { id: 'pets', label: 'Питомець', ico: '🐾' },
     ],
   },
 };
@@ -105,6 +113,8 @@ export function setTab(name: string, pushHistory = true): void {
   }
   window.scrollTo({ top: 0, behavior: 'smooth' });
   if (name === 'rb') onRbActivateCb();
+  const sklActivate = (window as unknown as { __sklActivate?: (n: string) => void }).__sklActivate;
+  if (sklActivate) sklActivate(name);
 }
 
 // Чи зараз вузький екран (drawer-режим). Має збігатися з CSS-брейкпоінтом 880px.

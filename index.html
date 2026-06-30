@@ -91,6 +91,9 @@
     <button class="tab" role="tab" data-tab="r8" data-group="gear" aria-selected="false">
       <span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5c0 4.8 3 7.8 7 9.8 4-2 7-5 7-9.8V6z"/></svg></span><span>Спорядження</span>
     </button>
+    <button class="tab" role="tab" data-tab="skills" data-group="skillbase" aria-selected="false">
+      <span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2.5 2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 8.8l6.1-.7z"/></svg></span><span>Уміння</span>
+    </button>
     <button class="tab" role="tab" data-tab="chests" aria-selected="false">
       <span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="8.5" width="17" height="11" rx="1.5"/><path d="M3.5 8.5 5.5 5h13l2 3.5"/><path d="M3.5 13h17"/><path d="M11 13v2h2v-2"/></svg></span><span>Скрині</span>
     </button>
@@ -1142,6 +1145,60 @@
           <input type="search" id="dollBuffPickSearch" placeholder="назва бафа…" autocomplete="off" />
           <div class="doll-pick-types doll-buffpick-classes" id="dollBuffPickClasses"></div>
           <div class="doll-picker-list" id="dollBuffPickList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: SKILLS (уміння класів) -->
+    <section class="tab-panel" data-panel="skills" role="tabpanel">
+      <header class="section-head">
+        <span class="eyebrow">Скілбаза</span>
+        <h2>Уміння класів</h2>
+        <p>
+          Дерево вмінь усіх 10 класів. Обери клас, далі — вміння у дереві.
+          Кнопки рівнів (1–10) показують потрібний рівень, дух і монети та опис
+          із числами для цього рівня. <span class="skl-sage-t">Рай</span> /
+          <span class="skl-demon-t">Ад</span> — світла й темна культивація.
+        </p>
+      </header>
+      <div class="card skl-classbar" id="sklClassBar"></div>
+      <div class="skl-layout">
+        <div class="card skl-treewrap"><div class="skl-tree" id="sklTree"></div></div>
+        <div class="card skl-detail" id="sklDetail">
+          <p class="muted skl-empty">Завантаження…</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: GENIE (джинн) -->
+    <section class="tab-panel" data-panel="genie" role="tabpanel">
+      <header class="section-head">
+        <span class="eyebrow">Скілбаза</span>
+        <h2>Уміння джина</h2>
+        <p>Усі вміння джина. Деякі прокачуються по рівнях — обери рівень для перерахунку чисел.</p>
+      </header>
+      <div class="card skl-toolbar">
+        <input type="search" id="sklGenieSearch" class="skl-search" placeholder="Пошук вміння джина…" />
+      </div>
+      <div class="skl-layout">
+        <div class="card skl-treewrap"><div class="skl-grid" id="sklGenieGrid"></div></div>
+        <div class="card skl-detail" id="sklGenieDetail">
+          <p class="muted skl-empty">Завантаження…</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: PETS (питомець) -->
+    <section class="tab-panel" data-panel="pets" role="tabpanel">
+      <header class="section-head">
+        <span class="eyebrow">Скілбаза</span>
+        <h2>Уміння питомця</h2>
+        <p>Бойові вміння питомців. Рівні (1 / 20 / 40 / 60 / 80) показують силу вміння й вартість.</p>
+      </header>
+      <div class="skl-layout skl-layout-pet">
+        <div class="card skl-petwrap"><div class="skl-petlist" id="sklPetGrid"></div></div>
+        <div class="card skl-detail" id="sklPetDetail">
+          <p class="muted skl-empty">Завантаження…</p>
         </div>
       </div>
     </section>

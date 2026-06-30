@@ -22,6 +22,7 @@ import { r8sInit } from './modules/r8sim';
 import { gsnInit } from './modules/gsn';
 import { abilitiesInit } from './modules/abilities';
 import { dollInit } from './modules/doll';
+import { skillsInit } from './modules/skills';
 import { rbActivate, rbInit } from './modules/rb';
 import { guidesInit } from './modules/guides';
 
@@ -62,6 +63,7 @@ r8sInit();
 gsnInit();
 abilitiesInit();
 dollInit();
+skillsInit();
 rbInit();
 guidesInit();
 applyDefaultEggPrice();
