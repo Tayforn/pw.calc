@@ -115,12 +115,15 @@ interface ReqCheck {
   dex: boolean;
   mag: boolean;
 }
-/** Чи відповідає персонаж вимогам речі (рівень + Сила/Спритн/Інт). */
-function meetsReq(it: Item): ReqCheck {
+/** Бонуси атрибутів (om/uy/lf/tx) від активного спорядження — кеш останнього computeStats. */
+let gearAttr: Record<string, number> = {};
+/** Чи відповідає персонаж вимогам речі (рівень + Сила/Спритн/Інт).
+ *  Атрибути — з урахуванням бонусів від речей (як у грі: трактат +45 інт дозволяє зброю з 297). */
+function meetsReq(it: Item, gear: Record<string, number> = gearAttr): ReqCheck {
   const lvl = state.level >= (Number(it.oj) || 0);
-  const str = state.str >= (Number(it.om_uo) || 0);
-  const dex = state.dex >= (Number(it.uy_uo) || 0);
-  const mag = state.mag >= (Number((it as Record<string, unknown>).tx_uo) || 0);
+  const str = state.str + (gear.om || 0) >= (Number(it.om_uo) || 0);
+  const dex = state.dex + (gear.uy || 0) >= (Number(it.uy_uo) || 0);
+  const mag = state.mag + (gear.tx || 0) >= (Number((it as Record<string, unknown>).tx_uo) || 0);
   return { ok: lvl && str && dex && mag, lvl, str, dex, mag };
 }
 
@@ -158,8 +161,9 @@ function slotHtml(slot: SlotDef): string {
 function renderDoll(): void {
   const grid = $('dollGrid');
   if (!grid) return;
+  const t = computeStats(); // спершу стати — щоб is-bad слотів бачив свіжі бонуси атрибутів
   grid.innerHTML = SLOTS.map(slotHtml).join('');
-  renderStats();
+  renderSummary(t);
   renderBuffs();
   renderHistory();
   renderOpponent();
@@ -224,8 +228,8 @@ function flattenItemStats(it: Item): Array<{ type: string; val: number }> {
   return out;
 }
 
-/** Сумарні стати з усіх надітих предметів (редаговані властивості + камені + заточка). */
-function computeStats(): Record<string, number> {
+/** Сумарні стати зі вказаних слотів (редаговані властивості + камені + заточка + сети). */
+function aggregateStats(active: ReadonlySet<string>): Record<string, number> {
   const t: Record<string, number> = {};
   const add = (k: string, v: number): void => {
     const key = STAT_ALIAS[k] || k;
@@ -233,7 +237,7 @@ function computeStats(): Record<string, number> {
   };
   for (const slot in state.equipped) {
     const it = state.equipped[slot];
-    if (!meetsReq(it).ok) continue; // непридатна річ (не вистачає рівня/статів) — не враховується
+    if (!active.has(slot)) continue; // непридатна річ (не вистачає рівня/статів) — не враховується
     if (typeof it.sy === 'number') t.sy = Math.max(t.sy || 0, it.sy); // АПС — з предмета
     // Властивості речі (редаговані per-instance; якщо не задані — з бази предмета).
     const ad = state.addons[slot];
@@ -292,7 +296,7 @@ function computeStats(): Record<string, number> {
   // Бонуси комплектів (сетів): рахуємо деталі за спільним ps, додаємо zn для порогів ≤ к-сті.
   const sd = getSets();
   if (sd) {
-    const psCount = setPieceCount();
+    const psCount = setPieceCount(active);
     for (const ps in psCount) {
       const set = sd[ps];
       if (!set || !set.zn) continue;
@@ -317,14 +321,40 @@ function computeStats(): Record<string, number> {
   return t;
 }
 
+/** Набір слотів, чиї вимоги виконані. Атрибути від уже активних речей ідуть у залік
+ *  (трактат +45 інт «вмикає» зброю з вимогою 297) — ітеруємо до фікспоінта. */
+function computeActiveSlots(): Set<string> {
+  const slots = Object.keys(state.equipped);
+  const active = new Set<string>();
+  for (let pass = 0; pass < slots.length; pass++) {
+    const t = aggregateStats(active);
+    let changed = false;
+    for (const slot of slots) {
+      if (!active.has(slot) && meetsReq(state.equipped[slot], t).ok) {
+        active.add(slot);
+        changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+  return active;
+}
+
+/** Сумарні стати з усіх придатних надітих предметів (+ оновлює кеш gearAttr для meetsReq). */
+function computeStats(): Record<string, number> {
+  const t = aggregateStats(computeActiveSlots());
+  gearAttr = { om: t.om || 0, uy: t.uy || 0, lf: t.lf || 0, tx: t.tx || 0 };
+  return t;
+}
+
 /** Скільки деталей кожного сета (за спільним ps) надіто.
  *  Як у mypers: лише речі, що проходять вимоги, і без дублів (та сама річ двічі — 1 деталь). */
-function setPieceCount(): Record<string, number> {
+function setPieceCount(active: ReadonlySet<string>): Record<string, number> {
   const c: Record<string, number> = {};
   const seen = new Set<string>();
   for (const slot in state.equipped) {
     const it = state.equipped[slot];
-    if (!meetsReq(it).ok) continue;
+    if (!active.has(slot)) continue;
     const ps = (it as Record<string, unknown>).ps;
     if (ps == null) continue;
     const cat = SLOTS.find((s) => s.slot === slot)?.cat || slot;
@@ -429,6 +459,18 @@ function renderSummary(t: Record<string, number>): void {
     attrRow('Спритність', c.attr.dex, t.uy || 0) +
     attrRow('Інтелект', c.attr.mag, t.tx || 0) +
     '</div>';
+
+  // Бейдж «+N» біля інпутів атрибутів у шапці (чистий стат + бонус від речей).
+  const attrPlus = (id: string, base: number, bonus: number) => {
+    const el = $(id);
+    if (!el) return;
+    el.textContent = bonus ? '+' + f(bonus) : '';
+    el.title = bonus ? f(base) + ' чистих + ' + f(bonus) + ' від речей = ' + f(base + bonus) : '';
+  };
+  attrPlus('dollStrPlus', state.str, t.om || 0);
+  attrPlus('dollDexPlus', state.dex, t.uy || 0);
+  attrPlus('dollVitPlus', state.vit, t.lf || 0);
+  attrPlus('dollMagPlus', state.mag, t.tx || 0);
 }
 
 function renderStats(): void {
@@ -1149,7 +1191,7 @@ function renderSets(): void {
     box.innerHTML = '<div class="muted" style="padding:6px 0">Завантаження…</div>';
     return;
   }
-  const psCount = setPieceCount();
+  const psCount = setPieceCount(computeActiveSlots());
   const rows: string[] = [];
   for (const ps in psCount) {
     const set = sd[ps];

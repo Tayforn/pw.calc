@@ -1275,6 +1275,8 @@ html[data-theme='light'] .doll-pick-name .gx-0, html[data-theme='light'] .doll-t
 .doll-stat b { color: var(--text); font-variant-numeric: tabular-nums; }
 /* Атрибут, змінений спорядженням: зелений + приріст до чистих статів */
 .doll-stat b.up { color: var(--good); }
+/* Бейдж «+N від речей» біля інпутів атрибутів у шапці */
+.doll-attr-plus { color: var(--good); margin-left: 5px; font-weight: 600; }
 .doll-stat b.up i { font-style: normal; font-weight: 400; font-size: 11.5px; opacity: 0.85; }
 
 .doll-gems { display: flex; flex-direction: column; gap: 10px; }
