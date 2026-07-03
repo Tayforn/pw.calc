@@ -194,13 +194,20 @@ function applyStat(add: (k: string, v: number) => void, type: string, v: number)
 function flattenItemStats(it: Item): Array<{ type: string; val: number }> {
   const o = it as Record<string, unknown>;
   const out: Array<{ type: string; val: number }> = [];
+  // ld/xq: у зброї — діапазон [min,max], у біжутерії/поясів/боєприпасів/томів — плоске число (+N до обох меж)
   if (Array.isArray(it.ld)) {
     out.push({ type: 'ld_min', val: num(it.ld[0]) });
     out.push({ type: 'ld_max', val: num(it.ld[1]) });
+  } else if (num(it.ld)) {
+    out.push({ type: 'ld_min', val: num(it.ld) });
+    out.push({ type: 'ld_max', val: num(it.ld) });
   }
   if (Array.isArray(it.xq)) {
     out.push({ type: 'xq_min', val: num(it.xq[0]) });
     out.push({ type: 'xq_max', val: num(it.xq[1]) });
+  } else if (num(it.xq)) {
+    out.push({ type: 'xq_min', val: num(it.xq) });
+    out.push({ type: 'xq_max', val: num(it.xq) });
   }
   if (typeof it.wf === 'number' && it.wf) out.push({ type: 'wf', val: it.wf });
   const ab = it.ab_gq;
@@ -251,11 +258,11 @@ function computeStats(): Record<string, number> {
       const types = Array.isArray(gh[0]) ? (gh[0] as string[]) : [String(gh[0])];
       for (const rt of types) {
         if (rt === 'av') {
-          if (Array.isArray(it.ld)) {
+          if (Array.isArray(it.ld) || num(it.ld)) {
             add('ld_min', rv);
             add('ld_max', rv);
           }
-          if (Array.isArray(it.xq)) {
+          if (Array.isArray(it.xq) || num(it.xq)) {
             add('xq_min', rv);
             add('xq_max', rv);
           }
@@ -1236,8 +1243,11 @@ function edDelAddon(i: number): void {
 function statLines(it: Item): string {
   const o = it as Record<string, unknown>;
   const out: string[] = [];
+  // Зброя — діапазон «мін–макс», біжутерія/пояси/боєприпаси/томи — плоский бонус «+N».
   const range = (v: unknown) =>
-    Array.isArray(v) ? Number(v[0]).toLocaleString('uk') + '–' + Number(v[1]).toLocaleString('uk') : '';
+    Array.isArray(v)
+      ? Number(v[0]).toLocaleString('uk') + '–' + Number(v[1]).toLocaleString('uk')
+      : '+' + Number(v).toLocaleString('uk');
   // тип (модель) + рівень
   const typeLbl = it.pg ? lbl('pg', it.pg) : '';
   if (typeLbl) out.push('<span class="doll-tip-type">' + escHtml(typeLbl) + '</span>');
