@@ -3949,13 +3949,28 @@ html[data-theme="light"] .r8s-slot:hover { background: rgba(54, 121, 76, 0.22); 
 .skl-search {
   width: 100%;
   border: 1px solid var(--line-2);
-  background: var(--bg-0);
+  background: rgba(255, 255, 255, 0.03);
   color: var(--text);
   border-radius: 10px;
   padding: 9px 13px;
   font-size: 14px;
 }
 .skl-search::placeholder { color: var(--text-mute); }
+.skl-search:focus {
+  outline: none;
+  border-color: var(--accent);
+  background-color: rgba(227, 185, 94, 0.06);
+  box-shadow: 0 0 0 4px rgba(227, 185, 94, 0.15);
+}
+html[data-theme="light"] .skl-search {
+  background-color: #fffdf4;
+  border-color: rgba(120, 84, 38, 0.36);
+}
+html[data-theme="light"] .skl-search:focus {
+  border-color: var(--accent);
+  background-color: #fffef9;
+  box-shadow: 0 0 0 4px rgba(176, 127, 35, 0.18);
+}
 
 .skl-sage-t { color: #9a8ef0; font-weight: 600; }
 .skl-demon-t { color: #d061d6; font-weight: 600; }
