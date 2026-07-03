@@ -1134,13 +1134,13 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
 .doll-slot-label { font-size: 11px; color: var(--text-mute); text-align: center; line-height: 1.2; }
 
 .doll-tip {
-  position: absolute; z-index: 60; max-width: 280px;
+  /* Вище за пікер (#dollPicker) і редактор, щоб тултіп речі не ховався під попапом */
+  position: absolute; z-index: 100; max-width: 280px;
   background: var(--bg-2); border: 1px solid var(--line-2); border-radius: var(--radius);
   padding: 10px 12px; box-shadow: var(--shadow); font-size: 12.5px; color: var(--text-dim);
   pointer-events: none;
 }
 .doll-tip[hidden] { display: none; }
-.doll-tip { z-index: 90; }
 .doll-tip-name { font-weight: 700; color: var(--text); margin-bottom: 4px; }
 .doll-tip-abil { color: var(--accent); margin-top: 4px; display: block; }
 .doll-tip-bad { color: #ff8a8a; font-weight: 600; }
@@ -1273,6 +1273,9 @@ html[data-theme='light'] .doll-pick-name .gx-0, html[data-theme='light'] .doll-t
 .doll-stat { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; font-size: 13px; }
 .doll-stat span { color: var(--text-mute); }
 .doll-stat b { color: var(--text); font-variant-numeric: tabular-nums; }
+/* Атрибут, змінений спорядженням: зелений + приріст до чистих статів */
+.doll-stat b.up { color: var(--good); }
+.doll-stat b.up i { font-style: normal; font-weight: 400; font-size: 11.5px; opacity: 0.85; }
 
 .doll-gems { display: flex; flex-direction: column; gap: 10px; }
 .doll-gem-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }

@@ -351,6 +351,12 @@ function renderSummary(t: Record<string, number>): void {
   const f = (n: number) => Math.round(n).toLocaleString('uk');
   const rng = (rr: { min: number; max: number }) => f(rr.min) + '–' + f(rr.max);
   const row = (l: string, v: string) => '<div class="doll-stat"><span>' + l + '</span><b>' + v + '</b></div>';
+  // Атрибут із бонусом від спорядження: підсвітка зеленим + скільки додалося до чистих статів
+  const attrRow = (l: string, total: number, bonus: number) =>
+    bonus
+      ? '<div class="doll-stat"><span>' + l + '</span><b class="up">' + f(total) +
+        ' <i>(' + (bonus > 0 ? '+' : '−') + f(Math.abs(bonus)) + ')</i></b></div>'
+      : row(l, f(total));
   const ELEM_LABEL: Record<string, string> = { lw: 'Метал', mo: 'Дерево', dn: 'Вода', vt: 'Вогонь', sp: 'Земля' };
   const elemRows = Object.entries(c.elem)
     .map(([k, e]) => row('  ' + ELEM_LABEL[k], f(e.def) + ' (−' + e.perc.toFixed(1) + '%)'))
@@ -411,10 +417,10 @@ function renderSummary(t: Record<string, number>): void {
     row('Захист від монстрів', f(mobDef)) +
     '</div>' +
     '<div class="doll-stat-group"><h4>Атрибути</h4>' +
-    row('Сила', f(c.attr.str)) +
-    row('Тілобудова', f(c.attr.vit)) +
-    row('Спритність', f(c.attr.dex)) +
-    row('Інтелект', f(c.attr.mag)) +
+    attrRow('Сила', c.attr.str, t.om || 0) +
+    attrRow('Тілобудова', c.attr.vit, t.lf || 0) +
+    attrRow('Спритність', c.attr.dex, t.uy || 0) +
+    attrRow('Інтелект', c.attr.mag, t.tx || 0) +
     '</div>';
 }
 
@@ -1377,12 +1383,21 @@ function itemNameHtml(it: Item, cat = ''): string {
   return '<span class="gx-' + tier + '">' + st + escHtml(it.name) + '</span>';
 }
 
+/** Рівень для фільтра цифрами: вимога oj, а без неї (книги/збірники) — рівень предмета hf. */
+function pickerReqLvl(it: Item): number {
+  return Number(it.oj) || Number(it.hf) || 0;
+}
+
 function pickerRowHtml(it: Item, cat: string): string {
   let meta = '';
   if (!pickerGem) {
     const oj = Number(it.oj) || 0;
-    const ok = state.level >= oj;
-    meta = '<span class="doll-pick-req' + (ok ? '' : ' bad') + '">Треб. ур.: ' + oj + '</span>';
+    if (oj) {
+      const ok = state.level >= oj;
+      meta = '<span class="doll-pick-req' + (ok ? '' : ' bad') + '">Треб. ур.: ' + oj + '</span>';
+    } else if (Number(it.hf)) {
+      meta = '<span class="doll-pick-req">Рівень ' + it.hf + '</span>';
+    }
   }
   return (
     '<button type="button" class="doll-pick-row" data-id="' + it.id + '">' +
@@ -1404,16 +1419,16 @@ function activeArmorTypes(): Set<string> {
 function renderPickerList(q: string): void {
   const list = $('dollPickList');
   if (!list) return;
-  // «100 назва» → рівень-фільтр + ім'я (як у mypers).
+  // «80 назва» → тільки предмети з треб. рівнем рівно 80 (+ фільтр по імені).
   const m = q.trim().toLowerCase().match(/^(\d+)\s*(.*)$/);
-  const maxLvl = m ? Number(m[1]) : Infinity;
+  const lvlQ = m ? Number(m[1]) : null;
   const nameQ = m ? m[2].trim() : q.trim().toLowerCase();
   const types = pickerGem ? new Set<string>() : activeArmorTypes();
   // Дедуплікація: один запис на унікальний предмет (назва+іконка+рівень) —
   // прибирає дублі-варіанти (особливо польоти, де та сама модель дублюється по расах).
   const seen = new Set<string>();
   const rows = pickerItems.filter((it) => {
-    if (maxLvl !== Infinity && (Number(it.oj) || 0) > maxLvl) return false;
+    if (lvlQ != null && pickerReqLvl(it) !== lvlQ) return false;
     if (nameQ && !it.name.toLowerCase().includes(nameQ)) return false;
     if (types.size && !types.has(it.ir as string)) return false;
     const o = it as Record<string, unknown>;
@@ -1698,6 +1713,10 @@ export function dollInit(): void {
   const panel = document.querySelector('[data-panel="doll"]');
   if (!panel) return;
   document.documentElement.style.setProperty('--doll-cell-bg', "url('" + ASSET_BASE + "items/item-cells.png')");
+  // Тултіп — у body: усередині панелі спозиційований предок зсуває absolute-координати
+  // (showTip рахує їх від документа), і тултіп опинявся не біля курсора / за екраном.
+  const tipEl = $('dollTip');
+  if (tipEl && tipEl.parentElement !== document.body) document.body.appendChild(tipEl);
   load();
   void initHeader();
   renderDoll();
