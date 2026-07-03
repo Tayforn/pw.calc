@@ -4,7 +4,7 @@
 // Без бафів/дебафів і без заточки/каменів (ib={}); це база від класу/рівня/
 // атрибутів + внесок спорядження (gear totals з index.ts).
 
-import { HP_VIT, MP_MAG, ACC_DEX, EVA_DEX, XZ, DEX_WEAPONS, ELEM } from './data';
+import { HP_VIT, MP_MAG, ACC_DEX, EVA_DEX, SPEED_BASE, XZ, DEX_WEAPONS, ELEM } from './data';
 
 export interface Range {
   min: number;
@@ -27,6 +27,8 @@ export interface CharStats {
   acc: number;
   eva: number;
   crit: number; // %
+  speed: number; // швидкість руху, м/с (база класу + речі + бафи, кап 15)
+  aps: number; // атак/сек (0 = без зброї)
   attr: { str: number; vit: number; dex: number; mag: number }; // ефективні
 }
 
@@ -92,10 +94,34 @@ export function computeChar(inp: CharInput, t: Totals, buffs: Record<string, num
   const mpBase = (MP_MAG[cls] ?? 11) * (vu.tx + 2 * (hf - 1)) + (t.mp || 0);
   const mpPct = (t.cc || 0) + bf('vd') - bf('ef');
 
-  const acc = ((ACC_DEX[cls] ?? 8) * vu.uy + (t.ae || 0)) * (1 + (bf('bx') - bf('yr')) / 100);
-  const eva = ((EVA_DEX[cls] ?? 6) * vu.uy + (t.qe || 0)) * (1 + (bf('br') - bf('na')) / 100);
+  // Меткість/ухилення (mypers ev/yp): flat зі споряди (+gs_ae баф), % — допи _eg + бафи.
+  const acc =
+    ((ACC_DEX[cls] ?? 8) * vu.uy + (t.ae || 0) + bf('gs_ae')) *
+    (1 + ((t.ae_eg || 0) + bf('bx') - bf('yr')) / 100);
+  const eva = ((EVA_DEX[cls] ?? 6) * vu.uy + (t.qe || 0)) * (1 + ((t.qe_eg || 0) + bf('br') - bf('na')) / 100);
   // Крит: 1 + ⌊Спритн/20⌋ + допи + бафи, кап 100 (як mypers kp).
   const crit = Math.min(100, 1 + Math.floor(vu.uy / 20) + (t.ed || 0) + bf('jk'));
+
+  // Швидкість руху, м/с (mypers gy): база класу + gs_cl, ×(1 + (cl_eg + ln − la)/100),
+  // потім flat cl від речей; кап 15.
+  let speed = (SPEED_BASE[cls] ?? 5) + bf('gs_cl');
+  speed += (speed / 100) * ((t.cl_eg || 0) + bf('ln') - bf('la'));
+  speed += t.cl || 0;
+  if (speed > 15) speed = 15;
+
+  // Атак/сек (mypers zi): інтервал = 1/sy − Σxn (мін 0.2 сек), ±% швидкості атаки (wh/gn),
+  // квантування до 0.05 сек; кап 5 атак/сек. Без зброї (sy=0) — 0.
+  let aps = 0;
+  if (t.sy) {
+    let s = Number((1 / t.sy).toFixed(2));
+    const xn = t.xn || 0;
+    if (xn >= s) s = 0.2;
+    else s -= xn;
+    const spd = bf('wh') - bf('gn');
+    if (spd) s *= 1 - spd / 100;
+    s = 0.05 * r(s / 0.05);
+    aps = s > 0 ? Math.min(5, 1 / s) : 5;
+  }
 
   // Фіз. атака (mypers rl): множник e = nl(атрибут) + hd (%-бафи yh/xp + за типом зброї),
   // плоскі бафи gs_oi_av додаються ДО множення.
@@ -126,7 +152,7 @@ export function computeChar(inp: CharInput, t: Totals, buffs: Record<string, num
   // Фіз. захист (mypers qv): ts(ЗАХИСТ СПОРЯДИ, Тіло, Сила, коеф) — тобто захист речей
   // масштабується бонусом від атрибутів; %-бафи (tb/od/−va) — як частка захисту речей.
   const gearWf = t.wf || 0;
-  const pdPct = bf('tb') + bf('od') - bf('va');
+  const pdPct = (t.wf_eg || 0) + bf('tb') + bf('od') - bf('va'); // wf_eg — «+% фіз. захисту» з допів речей
   let physDef = ts(gearWf, vu.lf, vu.om, [1, 2, 4, 1, 3, 25, 100]) + r((gearWf / 100) * pdPct);
   if (physDef < 0) physDef = 0;
   if (bf('va') >= 1000) physDef = 0; // дебаф «захист у 0»
@@ -139,7 +165,8 @@ export function computeChar(inp: CharInput, t: Totals, buffs: Record<string, num
   for (const eKey of ELEM) {
     const short = eKey.replace('_eq', ''); // lw/mo/dn/vt/sp
     const gearE = t[eKey] || 0;
-    const pctE = bf('og') + bf('xk') - bf('pt') + bf('gs_' + short + '_gq_eg') - bf('vh_' + short + '_gq_eg');
+    const pctE =
+      (t.ab_gq_eg || 0) + bf('og') + bf('xk') - bf('pt') + bf('gs_' + short + '_gq_eg') - bf('vh_' + short + '_gq_eg');
     let def = ts(gearE, vu.lf, vu.tx, [0, 2, 4, 1, 3, 25, 100]) + r((gearE / 100) * pctE);
     if (def < 0) def = 0;
     elem[short] = { def, perc: defPerc(def, hf) };
@@ -160,6 +187,8 @@ export function computeChar(inp: CharInput, t: Totals, buffs: Record<string, num
     acc: r(acc),
     eva: r(eva),
     crit,
+    speed: Number(speed.toFixed(1)),
+    aps: Number(aps.toFixed(2)),
     attr: { str: vu.om, vit: vu.lf, dex: vu.uy, mag: vu.tx },
   };
 }

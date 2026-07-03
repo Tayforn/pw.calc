@@ -286,6 +286,11 @@ export const EVA_DEX: Record<string, number> = {
   by: 10, ej: 10, paladin: 10, ya: 8, rl: 6, js: 6, fx: 6, rg: 6, uf: 6, gunner: 6,
   ga: 2, ij: 2, sj: 2, he: 2,
 };
+// Базова швидкість руху класу, м/с (mypers sd.gy).
+export const SPEED_BASE: Record<string, number> = {
+  by: 5, ej: 5, paladin: 5, ya: 4.9, rl: 5.1, js: 5.2, fx: 5.2, uf: 5.2, gunner: 5.2,
+  ga: 4.8, ij: 4.8, sj: 4.8, rg: 4.8, he: 4.8,
+};
 // Клас → індекс sm (визначає per-level фактор атаки в mypers).
 export const XZ: Record<string, number> = {
   by: 1, ga: 2, ya: 3, rl: 4, ij: 5, js: 6, fx: 7, sj: 8, ej: 9, rg: 10, uf: 11, he: 12, paladin: 13, gunner: 14,
@@ -379,7 +384,7 @@ export const QN_REFINE_ADDONS: Record<number, Record<string, number>> = {
 };
 
 // Аліаси кодів стат до канонічних (co/cc — НЕ аліаси: це % макс. HP/MP, рушій їх читає окремо).
-export const STAT_ALIAS: Record<string, string> = { mana: 'mp', oi_eq: 'wf', ab_eq: 'ab_gq' };
+export const STAT_ALIAS: Record<string, string> = { mana: 'mp', oi_eq: 'wf', ab_eq: 'ab_gq', metal_eq: 'lw_eq' };
 
 export interface StatRow {
   key: string;
