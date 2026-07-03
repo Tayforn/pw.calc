@@ -78,6 +78,7 @@ export function computeChar(inp: CharInput, t: Totals, buffs: Record<string, num
   const cls = inp.cls;
   const hf = inp.level || 1;
   const sm = XZ[cls] || 1;
+  // Атрибути = база + спорядження (як vu у mypers: без бафів).
   const vu = {
     om: inp.str + (t.om || 0),
     uy: inp.dex + (t.uy || 0),
@@ -85,96 +86,80 @@ export function computeChar(inp: CharInput, t: Totals, buffs: Record<string, num
     tx: inp.mag + (t.tx || 0),
   };
 
-  const hp = (HP_VIT[cls] ?? 13) * (vu.lf + 2 * (hf - 1)) + (t.hp || 0);
-  const mp = (MP_MAG[cls] ?? 11) * (vu.tx + 2 * (hf - 1)) + (t.mp || 0);
-  const acc = (ACC_DEX[cls] ?? 8) * vu.uy + (t.ae || 0);
-  const eva = (EVA_DEX[cls] ?? 6) * vu.uy + (t.qe || 0);
-  const crit = 1 + Math.floor(vu.uy / 20) + (t.ed || 0);
+  // HP/MP: коеф×(атрибут + 2×(рів−1)) + flat; потім % (стат co/cc речей + бафи fw/eh, vd/ef).
+  const hpBase = (HP_VIT[cls] ?? 13) * (vu.lf + 2 * (hf - 1)) + (t.hp || 0);
+  const hpPct = (t.co || 0) + bf('fw') - bf('eh');
+  const mpBase = (MP_MAG[cls] ?? 11) * (vu.tx + 2 * (hf - 1)) + (t.mp || 0);
+  const mpPct = (t.cc || 0) + bf('vd') - bf('ef');
 
-  // Фіз. атака: база — урон зброї + допи, фактори від Сили (або Спритності для дальньої).
+  const acc = ((ACC_DEX[cls] ?? 8) * vu.uy + (t.ae || 0)) * (1 + (bf('bx') - bf('yr')) / 100);
+  const eva = ((EVA_DEX[cls] ?? 6) * vu.uy + (t.qe || 0)) * (1 + (bf('br') - bf('na')) / 100);
+  // Крит: 1 + ⌊Спритн/20⌋ + допи + бафи, кап 100 (як mypers kp).
+  const crit = Math.min(100, 1 + Math.floor(vu.uy / 20) + (t.ed || 0) + bf('jk'));
+
+  // Фіз. атака (mypers rl): множник e = nl(атрибут) + hd (%-бафи yh/xp + за типом зброї),
+  // плоскі бафи gs_oi_av додаються ДО множення.
   const pAttr: 'om' | 'uy' = DEX_WEAPONS.has(inp.weaponIr || '') ? 'uy' : 'om';
-  const pi = t.ld_min || 0;
-  const ps = (t.ld_max || 0) + (t.max_oi_av || 0);
-  const pe = vu[pAttr] / 100 + 1;
+  const physPct = bf('yh') - bf('xp') + (inp.weaponIr ? bf('gs_oi_' + inp.weaponIr + '_av_eg') : 0);
+  const pi = (t.ld_min || 0) + bf('gs_oi_av');
+  const ps = (t.ld_max || 0) + (t.max_oi_av || 0) + bf('gs_oi_av');
+  const pe = vu[pAttr] / 100 + 1 + physPct / 100;
   const pa = nm(pAttr, sm);
   const pl = r(vu[pAttr] / 3);
   const physAtk: Range = {
-    min: Math.max(0, r(pi * pe + r(hf * pa) * pe - ((pi + r(hf * pa)) / 100) * pl)),
-    max: Math.max(0, r(ps * pe + r(hf * pa) * pe - ((ps + r(hf * pa)) / 100) * pl)),
+    min: r(pi * pe + r(hf * pa) * pe - ((pi + r(hf * pa)) / 100) * pl) || 1,
+    max: r(ps * pe + r(hf * pa) * pe - ((ps + r(hf * pa)) / 100) * pl) || 1,
   };
 
-  // Маг. атака: база — маг. урон зброї + допи, фактори від Інтелекту.
-  const mi = t.xq_min || 0;
-  const ms = (t.xq_max || 0) + (t.max_xq || 0);
-  const ma = vu.tx / 100 + 1;
+  // Маг. атака (mypers gl): множник a = nl(tx) + hd (%-бафи sq/so), плоскі gs_xq — до множення.
+  const magPct = bf('sq') - bf('so');
+  const mi = (t.xq_min || 0) + bf('gs_xq');
+  const ms = (t.xq_max || 0) + (t.max_xq || 0) + bf('gs_xq');
+  const ma = vu.tx / 100 + 1 + magPct / 100;
   const me = nm('tx', sm);
   const mn = uaTx(sm, vu.tx);
   const magAtk: Range = {
-    min: Math.max(0, r(ma * mi) + r(r(hf * me) * ma + mn)),
-    max: Math.max(0, r(ma * ms) + r(r(hf * me) * ma + mn)),
+    min: r(ma * mi) + r(r(hf * me) * ma + mn) || 1,
+    max: r(ma * ms) + r(r(hf * me) * ma + mn) || 1,
   };
 
-  // Фіз. захист: база від Тілобудови+Сили + внесок споряди (×рівень/100).
-  const physBase = ts(hf, vu.lf, vu.om, [1, 2, 4, 1, 3, 25, 100]);
-  const physDef = Math.max(0, physBase + r((hf / 100) * (t.wf || 0)));
-  const physDefPerc = defPerc(physDef, hf);
+  // Фіз. захист (mypers qv): ts(ЗАХИСТ СПОРЯДИ, Тіло, Сила, коеф) — тобто захист речей
+  // масштабується бонусом від атрибутів; %-бафи (tb/od/−va) — як частка захисту речей.
+  const gearWf = t.wf || 0;
+  const pdPct = bf('tb') + bf('od') - bf('va');
+  let physDef = ts(gearWf, vu.lf, vu.om, [1, 2, 4, 1, 3, 25, 100]) + r((gearWf / 100) * pdPct);
+  if (physDef < 0) physDef = 0;
+  if (bf('va') >= 1000) physDef = 0; // дебаф «захист у 0»
+  const physDefPerc = bf('va') >= 1000 ? 0 : defPerc(physDef, hf);
 
-  // Маг. захист: per-element від Тілобудови+Інтелекту + стихійний захист споряди.
+  // Маг. захист (mypers dd): per-element ts(захист споряди, Тіло, Інт, коеф) + %-бафи
+  // (og/xk/−pt + стихійні gs_<el>_gq_eg / vh_<el>_gq_eg) як частка захисту речей.
   const elem: Record<string, ElemDef> = {};
   let magSum = 0;
   for (const eKey of ELEM) {
     const short = eKey.replace('_eq', ''); // lw/mo/dn/vt/sp
-    const base = ts(hf, vu.lf, vu.tx, [0, 2, 4, 1, 3, 25, 100]);
-    const def = Math.max(0, base + r((hf / 100) * (t[eKey] || 0)));
+    const gearE = t[eKey] || 0;
+    const pctE = bf('og') + bf('xk') - bf('pt') + bf('gs_' + short + '_gq_eg') - bf('vh_' + short + '_gq_eg');
+    let def = ts(gearE, vu.lf, vu.tx, [0, 2, 4, 1, 3, 25, 100]) + r((gearE / 100) * pctE);
+    if (def < 0) def = 0;
     elem[short] = { def, perc: defPerc(def, hf) };
     magSum += def;
   }
   const magDef = r(magSum / 5);
 
-  // Бафи/дебафи (стани): зведені %-модифікатори з ib-карти.
-  const wtBuff = inp.weaponIr ? bf('gs_oi_' + inp.weaponIr + '_av_eg') : 0; // бонус % за типом зброї
-  const physPct = bf('yh') - bf('xp') + wtBuff;
-  const flatPhys = bf('gs_oi_av');
-  const magPct =
-    bf('sq') - bf('so') + bf('gs_ab_lw_av_eg') + bf('gs_ab_mo_av_eg') + bf('gs_ab_dn_av_eg') + bf('gs_ab_vt_av_eg') + bf('gs_ab_sp_av_eg');
-  const flatMag = bf('gs_xq');
-  const physDefPct = bf('tb') + bf('od') - bf('va');
-  const magDefPct = bf('xk') + bf('og') - bf('pt');
-  const hpPct = bf('fw') - bf('eh');
-  const accPct = bf('bx') - bf('yr');
-  const evaPct = bf('br') - bf('na');
-
-  const physAtkB: Range = {
-    min: r((physAtk.min + flatPhys) * (1 + physPct / 100)),
-    max: r((physAtk.max + flatPhys) * (1 + physPct / 100)),
-  };
-  const magAtkB: Range = {
-    min: r((magAtk.min + flatMag) * (1 + magPct / 100)),
-    max: r((magAtk.max + flatMag) * (1 + magPct / 100)),
-  };
-  const physDefB = r(physDef * (1 + physDefPct / 100));
-  const elemB: Record<string, ElemDef> = {};
-  let magSumB = 0;
-  for (const k in elem) {
-    const def = r(elem[k].def * (1 + magDefPct / 100));
-    elemB[k] = { def, perc: defPerc(def, hf) };
-    magSumB += def;
-  }
-  const magDefB = r(magSumB / 5);
-
   return {
-    hp: r(hp * (1 + hpPct / 100)),
-    mp: r(mp),
-    physAtk: physAtkB,
-    magAtk: magAtkB,
-    physDef: physDefB,
-    physDefPerc: defPerc(physDefB, hf),
-    magDef: magDefB,
-    magDefPerc: defPerc(magDefB, hf),
-    elem: elemB,
-    acc: r(acc * (1 + accPct / 100)),
-    eva: r(eva * (1 + evaPct / 100)),
-    crit: crit + bf('jk'),
+    hp: r(hpBase * (1 + hpPct / 100)),
+    mp: r(mpBase * (1 + mpPct / 100)),
+    physAtk,
+    magAtk,
+    physDef,
+    physDefPerc,
+    magDef,
+    magDefPerc: defPerc(magDef, hf),
+    elem,
+    acc: r(acc),
+    eva: r(eva),
+    crit,
     attr: { str: vu.om, vit: vu.lf, dex: vu.uy, mag: vu.tx },
   };
 }

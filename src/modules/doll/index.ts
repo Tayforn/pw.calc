@@ -14,6 +14,7 @@ import {
   defaultSockets,
   maxSockets,
   refineVal,
+  QN_REFINE_ADDONS,
   loadCat,
   loadLabels,
   loadSets,
@@ -241,11 +242,12 @@ function computeStats(): Record<string, number> {
         if (Array.isArray(pick)) applyStat(add, String(pick[0]), parseFloat(String(pick[1])) || 0);
       }
     }
-    // Заточка (+N): бонус головної стати за типом gh[0].
+    // Заточка (+N): бонус головної стати за типом gh[0] (книги мають власну таблицю поправок).
     const lvl = state.refine[slot] || 0;
     const gh = it.gh as unknown;
+    const isBook = slot === 'qn';
     if (lvl > 0 && Array.isArray(gh) && typeof gh[1] === 'number') {
-      const rv = refineVal(gh[1], lvl);
+      const rv = refineVal(gh[1], lvl, isBook);
       const types = Array.isArray(gh[0]) ? (gh[0] as string[]) : [String(gh[0])];
       for (const rt of types) {
         if (rt === 'av') {
@@ -259,6 +261,23 @@ function computeStats(): Record<string, number> {
           }
         } else {
           applyStat(add, rt, rv);
+        }
+      }
+    }
+    // Бонуси заточки книг (mypers ghAddons.qn): кумулятивні пороги +3/+6/+9/+12.
+    if (isBook && lvl > 0) {
+      for (const thr in QN_REFINE_ADDONS) {
+        if (Number(thr) > lvl) continue;
+        for (const [code, val] of Object.entries(QN_REFINE_ADDONS[Number(thr)])) {
+          if (code === 'ld') {
+            add('ld_min', val);
+            add('ld_max', val);
+          } else if (code === 'xq') {
+            add('xq_min', val);
+            add('xq_max', val);
+          } else {
+            add(code, val);
+          }
         }
       }
     }
@@ -291,15 +310,22 @@ function computeStats(): Record<string, number> {
   return t;
 }
 
-/** Скільки деталей кожного сета (за спільним ps) надіто. */
+/** Скільки деталей кожного сета (за спільним ps) надіто.
+ *  Як у mypers: лише речі, що проходять вимоги, і без дублів (та сама річ двічі — 1 деталь). */
 function setPieceCount(): Record<string, number> {
   const c: Record<string, number> = {};
+  const seen = new Set<string>();
   for (const slot in state.equipped) {
-    const ps = (state.equipped[slot] as Record<string, unknown>).ps;
-    if (ps != null) {
-      const k = String(ps);
-      c[k] = (c[k] || 0) + 1;
-    }
+    const it = state.equipped[slot];
+    if (!meetsReq(it).ok) continue;
+    const ps = (it as Record<string, unknown>).ps;
+    if (ps == null) continue;
+    const cat = SLOTS.find((s) => s.slot === slot)?.cat || slot;
+    const key = cat + ':' + it.id;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const k = String(ps);
+    c[k] = (c[k] || 0) + 1;
   }
   return c;
 }
@@ -418,24 +444,23 @@ function edCat(): string {
   }
   return state.backpack[editorTarget.idx]?.cat || '';
 }
+/** Приводить масив гнізд до фіксованої довжини (старі збереження мали 2 для броні). */
+function normGems(arr: Array<Item | null>, cat: string): Array<Item | null> {
+  const want = defaultSockets(cat);
+  while (arr.length < want) arr.push(null);
+  if (arr.length > want) arr.length = want;
+  return arr;
+}
 function edGems(): Array<Item | null> {
   if (!editorTarget) return [];
   if (editorTarget.kind === 'slot') {
-    if (!Array.isArray(state.gems[editorTarget.slot])) state.gems[editorTarget.slot] = new Array(defaultSockets(edCat())).fill(null);
-    return state.gems[editorTarget.slot];
+    if (!Array.isArray(state.gems[editorTarget.slot])) state.gems[editorTarget.slot] = [];
+    return normGems(state.gems[editorTarget.slot], edCat());
   }
   const e = state.backpack[editorTarget.idx];
   if (!e) return [];
-  if (!Array.isArray(e.gems)) e.gems = new Array(defaultSockets(e.cat)).fill(null);
-  return e.gems;
-}
-function edSetGems(a: Array<Item | null>): void {
-  if (!editorTarget) return;
-  if (editorTarget.kind === 'slot') state.gems[editorTarget.slot] = a;
-  else {
-    const e = state.backpack[editorTarget.idx];
-    if (e) e.gems = a;
-  }
+  if (!Array.isArray(e.gems)) e.gems = [];
+  return normGems(e.gems, e.cat);
 }
 function edRefine(): number {
   if (!editorTarget) return 0;
@@ -512,13 +537,7 @@ function renderEditor(): void {
             (g ? '<span class="doll-icon" style="' + iconStyle(g, 'ob', state.gender) + '"></span>' : '') + '</span></button>',
         )
         .join('');
-      let ctrl = '';
-      if (max > 2) {
-        const o: string[] = [];
-        for (let k = 2; k <= max; k++) o.push('<button type="button" class="doll-sockn' + (k === gems.length ? ' active' : '') + '" data-n="' + k + '">' + k + '</button>');
-        ctrl = '<span class="doll-sockn-ctrl">Гнізд: ' + o.join('') + '</span>';
-      }
-      body = '<div class="doll-sockets">' + cells + '</div>' + ctrl;
+      body = '<div class="doll-sockets">' + cells + '</div>';
     }
   } else {
     const addonRows = edAddons()
@@ -738,16 +757,27 @@ interface SkillDmg {
 }
 
 /**
- * Урон скіла по мобу (формула mypers `ghk`/`vyp`):
- *   урон зброї × множник рівня + плоский урон скіла, мінус % захисту мішені.
- *   крит = урон × (база крит. урону / 100).
+ * Множник рівнів атаки/захисту (mypers L): q = наш рівень атаки, w = рівень захисту цілі.
+ * q>w → 1+(q−w)/100; q<w → 1/(1+1.2×(w−q)/100).
  */
-function skillDamage(me: CharStats, mob: OppMob, sk: SkillDef, critMult: number): SkillDmg {
+function atkLevelMult(q: number, w: number): number {
+  if (q > w) return 1 + (q - w) / 100;
+  if (q < w) return 1 / (1 + (1.2 * (w - q)) / 100);
+  return 1;
+}
+
+/**
+ * Урон скіла по мобу (формула mypers `ghk`/`vyp`):
+ *   атака × множник рівня (oza) × множник рівня атаки (L) + плоский урон скіла,
+ *   мінус % захисту мішені. Крит = урон × (крит. множник / 100).
+ */
+function skillDamage(me: CharStats, mob: OppMob, sk: SkillDef, critMult: number, atkLvl: number): SkillDmg {
   const hfMult = levelMult(state.level || 1, mob.level || 1);
+  const L = atkLevelMult(atkLvl, 0); // редактор моба не має рівня захисту → 0
   const red = sk.mag ? oppMagReductionPerc(mob) : oppReductionPerc(mob, 'phys');
   const atk = sk.mag ? me.magAtk : me.physAtk;
   const z = 1 - red / 100;
-  const calc = (base: number) => Math.max(0, Math.round((base * (sk.thw || 1) * hfMult + sk.flat) * z));
+  const calc = (base: number) => Math.max(0, Math.round((base * (sk.thw || 1) * hfMult * L + sk.flat) * z));
   const min = calc(atk.min);
   const max = calc(atk.max);
   return { min, max, critMin: Math.round(min * critMult), critMax: Math.round(max * critMult) };
@@ -829,8 +859,15 @@ function logSkillDamage(skillId: number): void {
   const me = currentChar();
   const mob = getOpp();
   const t = computeStats();
-  const critMult = (200 + (t.mk || 0)) / 100; // база крит. урону у %
-  const d = skillDamage(me, mob, sk, critMult);
+  const ib = deriveIb();
+  // Крит. множник (mypers mq): 200% + gs_crit_rage_ghk зі споряди та бафів;
+  // спец-скіли перекривають: 334 → ×1.5, 330/331 → ×1.3.
+  let critMult = (200 + (t.gs_crit_rage_ghk || 0) + (ib.gs_crit_rage_ghk || 0)) / 100;
+  if (sk.id === 334) critMult = 1.5;
+  else if (sk.id === 330 || sk.id === 331) critMult = 1.3;
+  // Рівень атаки: спорядження (ad) + бафи (gs_ad/−vh_ad).
+  const atkLvl = (t.ad || 0) + (ib.ad || 0) + (ib.gs_ad || 0) - (ib.vh_ad || 0);
+  const d = skillDamage(me, mob, sk, critMult, atkLvl);
   const f = (n: number) => Math.round(n).toLocaleString('uk');
   dmgLog.unshift(
     '<div class="doll-dmg-line">' +
@@ -1164,15 +1201,6 @@ function edSetRefine(n: number): void {
   save();
   renderDoll();
 }
-function edSockets(n: number): void {
-  const arr = edGems();
-  const next = arr.slice(0, n);
-  while (next.length < n) next.push(null);
-  edSetGems(next);
-  save();
-  renderEditor();
-  renderDoll();
-}
 function edAddAddon(): void {
   edAddons().push({ type: ADDON_OPTIONS[0].code, val: 0 });
   save();
@@ -1258,12 +1286,12 @@ function statLines(it: Item): string {
   );
 }
 
-function showTip(target: HTMLElement, it: Item): void {
+function showTip(target: HTMLElement, it: Item, cat = ''): void {
   const tip = $('dollTip');
   if (!tip) return;
   const lvl = it.hf != null ? ' · ур. ' + it.hf : '';
   tip.innerHTML =
-    '<div class="doll-tip-name">' + itemNameHtml(it) + '<span class="muted">' + lvl + '</span></div>' +
+    '<div class="doll-tip-name">' + itemNameHtml(it, cat) + '<span class="muted">' + lvl + '</span></div>' +
     statLines(it);
   tip.hidden = false;
   const r = target.getBoundingClientRect();
@@ -1319,9 +1347,13 @@ let pickerCat = '';
 let pickerGem: { idx: number } | null = null; // режим вибору каменя (ціль — у редакторі)
 
 /** Розбір грейду предмета з поля tv → {tier (колір gx-N), stars} — точно як у mypers (we). */
-function itemGrade(it: Item): { tier: number; stars: number } {
+function itemGrade(it: Item, cat = ''): { tier: number; stars: number } {
   const tv = (it as Record<string, unknown>).tv;
-  if (tv == null || tv === '') return { tier: 0, stars: 0 };
+  if (tv == null || tv === '') {
+    // Книги без tv: 2☆ на рівнях 5–9, інакше 3☆ (mypers we, гілка qn).
+    if (cat === 'qn') return { tier: 0, stars: Number(it.hf) >= 5 && Number(it.hf) <= 9 ? 2 : 3 };
+    return { tier: 0, stars: 0 };
+  }
   const c = String(tv).split('');
   let tier: number;
   let stars: number;
@@ -1339,8 +1371,8 @@ function itemGrade(it: Item): { tier: number; stars: number } {
   return { tier, stars };
 }
 /** Назва предмета з зірками й кольором грейду (як у mypers: ☆×stars + клас gx-tier). */
-function itemNameHtml(it: Item): string {
-  const { tier, stars } = itemGrade(it);
+function itemNameHtml(it: Item, cat = ''): string {
+  const { tier, stars } = itemGrade(it, cat);
   const st = stars > 0 ? '☆'.repeat(stars) + ' ' : '';
   return '<span class="gx-' + tier + '">' + st + escHtml(it.name) + '</span>';
 }
@@ -1355,7 +1387,7 @@ function pickerRowHtml(it: Item, cat: string): string {
   return (
     '<button type="button" class="doll-pick-row" data-id="' + it.id + '">' +
     '<span class="doll-cell sm"><span class="doll-icon" style="' + iconStyle(it, cat, state.gender) + '"></span></span>' +
-    '<span class="doll-pick-name">' + itemNameHtml(it) + meta + '</span>' +
+    '<span class="doll-pick-name">' + itemNameHtml(it, cat) + meta + '</span>' +
     '</button>'
   );
 }
@@ -1698,7 +1730,8 @@ export function dollInit(): void {
     const slot = (e.target as HTMLElement).closest<HTMLElement>('.doll-slot.is-filled');
     if (slot?.dataset.slot) {
       const it = state.equipped[slot.dataset.slot];
-      if (it) showTip(slot, it);
+      const cat = SLOTS.find((s) => s.slot === slot.dataset.slot)?.cat || '';
+      if (it) showTip(slot, it, cat);
     }
   });
   grid?.addEventListener('mouseout', (e) => {
@@ -1717,11 +1750,6 @@ export function dollInit(): void {
     if (tab?.dataset.tab) {
       editorTab = tab.dataset.tab as 'gems' | 'addons';
       renderEditor();
-      return;
-    }
-    const nBtn = target.closest<HTMLElement>('.doll-sockn');
-    if (nBtn?.dataset.n != null) {
-      edSockets(Number(nBtn.dataset.n));
       return;
     }
     const sock = target.closest<HTMLElement>('.doll-socket');
@@ -1905,7 +1933,7 @@ export function dollInit(): void {
     const row = (e.target as HTMLElement).closest<HTMLElement>('.doll-pick-row');
     if (row?.dataset.id) {
       const it = pickerItems.find((x) => Number(x.id) === Number(row.dataset.id));
-      if (it) showTip(row, it);
+      if (it) showTip(row, it, pickerCat);
     }
   });
   $('dollPickList')?.addEventListener('mouseout', (e) => {
@@ -1927,7 +1955,7 @@ export function dollInit(): void {
     const cell = (e.target as HTMLElement).closest<HTMLElement>('.doll-bp-cell');
     if (cell?.dataset.bp != null) {
       const ent = state.backpack[Number(cell.dataset.bp)];
-      if (ent) showTip(cell, ent.item);
+      if (ent) showTip(cell, ent.item, ent.cat);
     }
   });
   $('dollBackpack')?.addEventListener('mouseout', (e) => {
