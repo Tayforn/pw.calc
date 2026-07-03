@@ -4,6 +4,7 @@
 // =========================================================
 
 import { escHtml } from '../../utils/format';
+import { gcInit, gcIsDisabled, gcIsPicked, gcSetSkills, gcSkillAffHtml, gcToggle } from './genieCalc';
 import {
   loadClasses,
   loadGenie,
@@ -161,16 +162,22 @@ function renderGenieGrid(): void {
   );
   grid.innerHTML =
     list
-      .map(
-        ({ s, i }) =>
-          `<button type="button" class="skl-tile skl-tile-g${i === curGenie ? ' active' : ''}" ` +
-          `style="${genieIconStyle(s.page, s.posx, s.posy)}" data-gi="${i}" title="${escHtml(s.name)}" aria-label="${escHtml(s.name)}"></button>`,
-      )
+      .map(({ s, i }) => {
+        const state =
+          (i === curGenie ? ' active' : '') +
+          (gcIsPicked(s.ref) ? ' picked' : '') +
+          (gcIsDisabled(s.ref) ? ' dis' : '');
+        return (
+          `<button type="button" class="skl-tile skl-tile-g${state}" ` +
+          `style="${genieIconStyle(s.page, s.posx, s.posy)}" data-gi="${i}" title="${escHtml(s.name)}" aria-label="${escHtml(s.name)}"></button>`
+        );
+      })
       .join('') || '<p class="muted skl-empty">Нічого не знайдено.</p>';
   grid.querySelectorAll<HTMLButtonElement>('.skl-tile-g').forEach((b) =>
     b.addEventListener('click', () => {
       curGenie = +b.dataset.gi!;
       curGenieLvl = 0;
+      gcToggle(GENIE[curGenie].ref); // вибір у білд калькулятора (якщо доступне)
       renderGenieGrid();
       renderGenieDetail();
     }),
@@ -205,6 +212,7 @@ function renderGenieDetail(): void {
     `<div class="skl-stats">` +
     infoRow('Потрібний рівень джина', s.stats['0']?.[curGenieLvl] ?? '') +
     infoRow('Дух для вивчення', s.stats['1']?.[curGenieLvl] ?? '') +
+    gcSkillAffHtml(s.ref) +
     `</div>` +
     `<div class="skl-text">${renderTpl(s.tpl, s.stats, curGenieLvl)}</div>`;
 
@@ -301,6 +309,7 @@ async function ensureGenie(): Promise<void> {
   GENIE = await loadGenie();
   GENIE.sort((a, b) => a.page - b.page || a.posy - b.posy || a.posx - b.posx);
   genieReady = true;
+  gcSetSkills(GENIE);
   renderGenieGrid();
   renderGenieDetail();
 }
@@ -318,6 +327,11 @@ export function skillsInit(): void {
   const gs = document.getElementById('sklGenieSearch') as HTMLInputElement | null;
   gs?.addEventListener('input', () => {
     genieQ = gs.value;
+    renderGenieGrid();
+  });
+
+  // калькулятор джина: зміна рівня/удачі/фільтрів перемальовує сітку
+  gcInit(() => {
     renderGenieGrid();
   });
 

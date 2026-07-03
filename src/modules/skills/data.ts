@@ -83,27 +83,24 @@ export function renderTpl(tpl: string, stats: Record<string, string[]>, level: n
 }
 
 /** Стиль фону для іконки класового вміння зі спрайта icone.jpg.
- *  Спрайт — іконки 32px (53 колонки × 10 рядків). Масштабуємо до 40px плитки. */
+ *  Спрайт — іконки 32px (53 колонки × 10 рядків). Показуємо без
+ *  масштабування (плитка .skl-tile теж 32px), інакше мило. */
 export function classIconStyle(icon: number, page: number): string {
-  const s = 40; // розмір плитки
   return (
     `background-image:url(${SKILLS_ASSET}icone.jpg);` +
-    `background-size:${(1696 / 32) * s}px ${(320 / 32) * s}px;` +
-    `background-position:-${icon * s}px -${(page - 1) * s}px;`
+    `background-position:-${icon * 32}px -${(page - 1) * 32}px;`
   );
 }
 
 /** Стиль фону для іконки джина (кроп genie2.png за формулою afficheicone).
- *  Оригінал показує іконку у вікні 32px (крок сітки 40px містить 8px відступу),
- *  тож беремо 32px і масштабуємо до 40px плитки (×1.25). */
+ *  Іконка у спрайті — вікно 32px (крок сітки 40px містить 8px відступу).
+ *  Показуємо без масштабування (плитка .skl-tile-g теж 32px), інакше мило. */
 export function genieIconStyle(page: number, posx: number, posy: number): string {
-  const k = 40 / 32; // 32px-вікно → 40px-плитка
   const x = page === 2 ? 581 + 40 * posx : 40 + 40 * posx;
   const y = page === 2 ? 72 + 40 * posy : 55 + 40 * posy;
   return (
     `background-image:url(${SKILLS_ASSET}genie2.png);` +
-    `background-size:${840 * k}px ${420 * k}px;` +
-    `background-position:-${x * k}px -${y * k}px;`
+    `background-position:-${x}px -${y}px;`
   );
 }
 

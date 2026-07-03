@@ -1174,9 +1174,39 @@
     <section class="tab-panel" data-panel="genie" role="tabpanel">
       <header class="section-head">
         <span class="eyebrow">Скілбаза</span>
-        <h2>Уміння джина</h2>
-        <p>Усі вміння джина. Деякі прокачуються по рівнях — обери рівень для перерахунку чисел.</p>
+        <h2>Джинн: уміння та калькулятор білда</h2>
+        <p>
+          Клікай уміння в сітці — вони додаються в білд (до 8, лише один
+          початковий навик). Калькулятор рахує мінімальний рівень джина,
+          потрібну удачу та вимоги спорідненості стихій. Недоступні за
+          рівнем, удачею чи фільтрами вміння пригасають.
+        </p>
       </header>
+
+      <div class="card calc-card gc-card">
+        <form class="grid-form" autocomplete="off" onsubmit="return false">
+          <div class="field">
+            <label for="gcLevel">Рівень джина</label>
+            <input type="number" id="gcLevel" min="1" max="105" step="1" placeholder="105" />
+            <small class="hint">Порожньо — без обмеження</small>
+          </div>
+          <div class="field">
+            <label for="gcLucky">Удача (Lucky)</label>
+            <input type="number" id="gcLucky" min="0" max="100" step="1" placeholder="91" />
+            <small class="hint">Порожньо — 91 (на 8 умінь)</small>
+          </div>
+          <div class="field">
+            <label for="gcClass">Клас персонажа</label>
+            <select id="gcClass"></select>
+          </div>
+          <div class="field">
+            <label for="gcTerrain">Місцевість</label>
+            <select id="gcTerrain"></select>
+          </div>
+        </form>
+        <div id="gcResult" class="result" aria-live="polite"></div>
+      </div>
+
       <div class="card skl-toolbar">
         <input type="search" id="sklGenieSearch" class="skl-search" placeholder="Пошук вміння джина…" />
       </div>
