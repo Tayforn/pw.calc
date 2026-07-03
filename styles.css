@@ -1203,7 +1203,7 @@ html[data-theme='light'] .doll-pick-name .gx-0, html[data-theme='light'] .doll-t
 .doll-addon-del:hover { color: var(--bad); }
 
 /* Темізація інпутів/селектів у попапах ляльки (вони не у .field) */
-.doll-picker input, .doll-picker select, .doll-editor input, .doll-editor select {
+.doll-picker input, .doll-picker select, .doll-editor input, .doll-editor select, .doll-titles input {
   background-color: rgba(255, 255, 255, 0.03); border: 1px solid var(--line-2); color: var(--text);
   border-radius: 8px; padding: 6px 9px; font: inherit; font-size: 13px; color-scheme: dark; accent-color: var(--accent);
 }
@@ -1213,7 +1213,7 @@ html[data-theme='light'] .doll-pick-name .gx-0, html[data-theme='light'] .doll-t
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'><path d='M1 1.5L6 6.5L11 1.5' stroke='%239ea0c0' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   background-repeat: no-repeat; background-position: right 8px center;
 }
-.doll-picker input:focus, .doll-picker select:focus, .doll-editor input:focus, .doll-editor select:focus {
+.doll-picker input:focus, .doll-picker select:focus, .doll-editor input:focus, .doll-editor select:focus, .doll-titles input:focus {
   outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(227, 185, 94, 0.15);
 }
 .doll-picker select option, .doll-editor select option { background: var(--bg-2); color: var(--text); }
@@ -1268,19 +1268,47 @@ html[data-theme='light'] .doll-pick-name .gx-0, html[data-theme='light'] .doll-t
 
 .doll-stats-title { margin: 0 0 14px; font-size: 17px; }
 .doll-stats-title .muted { font-weight: 400; font-size: 13px; }
-.doll-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
-.doll-stat-group h4 {
-  margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
-  color: var(--accent); border-bottom: 1px solid var(--line-2); padding-bottom: 5px;
+/* Парна таблиця характеристик (порядок 1:1 з mypers): 2 колонки, зебра по візуальних рядках */
+.doll-stats2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 26px; }
+.doll-stats2 .doll-stat { padding: 3px 8px; border-radius: 5px; }
+.doll-stats2 .doll-stat:nth-child(4n + 1), .doll-stats2 .doll-stat:nth-child(4n + 2) { background: rgba(255, 255, 255, 0.03); }
+html[data-theme='light'] .doll-stats2 .doll-stat:nth-child(4n + 1),
+html[data-theme='light'] .doll-stats2 .doll-stat:nth-child(4n + 2) { background: rgba(0, 0, 0, 0.04); }
+@media (max-width: 560px) { .doll-stats2 { grid-template-columns: 1fr; } }
+/* Шапка картки «Бафи | Титули»: сегмент-перемикач + підказка */
+.doll-mods-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+.doll-mods-hint { font-size: 12.5px; }
+/* Титули — симетрична сітка: пари полів колонками (атака | захист | мітк/ухил | здоровʼя) */
+.doll-titles {
+  display: grid; grid-template-rows: repeat(2, auto); grid-auto-flow: column;
+  gap: 8px 30px; justify-content: start;
 }
+.doll-title-f {
+  display: grid; grid-template-columns: 84px 96px; align-items: center; gap: 8px;
+  font-size: 12.5px; color: var(--text-dim); white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .doll-titles { grid-template-rows: none; grid-auto-flow: row; grid-template-columns: repeat(2, auto); justify-content: start; }
+}
+/* Перевірка дамага — згорнута за замовчуванням (details) */
+.doll-dmg-details > summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; user-select: none;
+}
+.doll-dmg-details > summary::-webkit-details-marker { display: none; }
+.doll-dmg-details > summary::before {
+  content: ''; width: 8px; height: 8px; flex: 0 0 auto;
+  border-right: 2px solid var(--text-mute); border-bottom: 2px solid var(--text-mute);
+  transform: rotate(-45deg); transition: transform 0.15s ease; margin-top: -2px;
+}
+.doll-dmg-details[open] > summary::before { transform: rotate(45deg); margin-top: -5px; }
+.doll-dmg-details > summary .doll-stats-title { margin: 0; }
+.doll-dmg-details[open] > summary { margin-bottom: 14px; }
+.doll-dmg-details > summary:hover .doll-stats-title { color: var(--accent); }
 .doll-stat { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; font-size: 13px; }
 .doll-stat span { color: var(--text-mute); }
 .doll-stat b { color: var(--text); font-variant-numeric: tabular-nums; }
-/* Атрибут, змінений спорядженням: зелений + приріст до чистих статів */
-.doll-stat b.up { color: var(--good); }
-/* Бейдж «+N від речей» біля інпутів атрибутів у шапці */
+/* Бейдж «+N (разом)» біля інпутів атрибутів у шапці — бонус від речей */
 .doll-attr-plus { color: var(--good); margin-left: 5px; font-weight: 600; }
-.doll-stat b.up i { font-style: normal; font-weight: 400; font-size: 11.5px; opacity: 0.85; }
 
 .doll-gems { display: flex; flex-direction: column; gap: 10px; }
 .doll-gem-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }

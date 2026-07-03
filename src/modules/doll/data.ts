@@ -102,7 +102,7 @@ export const ADDON_OPTIONS: Array<{ code: string; label: string }> = [
   { code: 'ab_gq', label: 'Маг. захист' },
   { code: 'ad', label: 'Рівень атаки' },
   { code: 'sx', label: 'Рівень захисту' },
-  { code: 'ae', label: 'Меткість' },
+  { code: 'ae', label: 'Міткість' },
   { code: 'qe', label: 'Ухилення' },
   { code: 'cl', label: 'Швидкість' },
   { code: 'ci', label: 'Час співу (%)' },
@@ -121,7 +121,7 @@ export const BUFFS: Array<{ key: string; label: string }> = [
   { key: 'xk', label: 'Маг. захист' },
   { key: 'fw', label: 'Макс. HP' },
   { key: 'jk', label: 'Шанс криту' },
-  { key: 'bx', label: 'Меткість' },
+  { key: 'bx', label: 'Міткість' },
   { key: 'br', label: 'Ухилення' },
 ];
 
@@ -277,7 +277,7 @@ export const MP_MAG: Record<string, number> = {
   by: 9, ej: 9, paladin: 9, ya: 7, rl: 12, js: 11, fx: 11, uf: 11, gunner: 11,
   ga: 14, ij: 14, sj: 14, rg: 14, he: 14,
 };
-// Меткість / ухилення = коеф × Спритність (на клас).
+// Міткість / ухилення = коеф × Спритність (на клас).
 export const ACC_DEX: Record<string, number> = {
   by: 10, ej: 10, paladin: 10, ya: 8, rl: 7, js: 8, fx: 8, rg: 8, uf: 8, gunner: 8,
   ga: 5, ij: 5, sj: 5, he: 5,

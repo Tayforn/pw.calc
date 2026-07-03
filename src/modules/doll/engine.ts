@@ -29,6 +29,8 @@ export interface CharStats {
   crit: number; // %
   speed: number; // швидкість руху, м/с (база класу + речі + бафи, кап 15)
   aps: number; // атак/сек (0 = без зброї)
+  stealth: number; // скритність (0 без бафа uu; з бафом — рівень + uu)
+  detect: number; // виявлення (рівень + баф uu_detect)
   attr: { str: number; vit: number; dex: number; mag: number }; // ефективні
 }
 
@@ -94,7 +96,7 @@ export function computeChar(inp: CharInput, t: Totals, buffs: Record<string, num
   const mpBase = (MP_MAG[cls] ?? 11) * (vu.tx + 2 * (hf - 1)) + (t.mp || 0);
   const mpPct = (t.cc || 0) + bf('vd') - bf('ef');
 
-  // Меткість/ухилення (mypers ev/yp): flat зі споряди (+gs_ae баф), % — допи _eg + бафи.
+  // Міткість/ухилення (mypers ev/yp): flat зі споряди (+gs_ae баф), % — допи _eg + бафи.
   const acc =
     ((ACC_DEX[cls] ?? 8) * vu.uy + (t.ae || 0) + bf('gs_ae')) *
     (1 + ((t.ae_eg || 0) + bf('bx') - bf('yr')) / 100);
@@ -122,6 +124,10 @@ export function computeChar(inp: CharInput, t: Totals, buffs: Record<string, num
     s = 0.05 * r(s / 0.05);
     aps = s > 0 ? Math.min(5, 1 / s) : 5;
   }
+
+  // Скритність (mypers lv) / виявлення (mypers bn): від рівня і бафів uu / uu_detect.
+  const stealth = bf('uu') ? hf + bf('uu') : buffs.pka ? hf + 1 : 0;
+  const detect = hf + bf('uu_detect');
 
   // Фіз. атака (mypers rl): множник e = nl(атрибут) + hd (%-бафи yh/xp + за типом зброї),
   // плоскі бафи gs_oi_av додаються ДО множення.
@@ -189,6 +195,8 @@ export function computeChar(inp: CharInput, t: Totals, buffs: Record<string, num
     crit,
     speed: Number(speed.toFixed(1)),
     aps: Number(aps.toFixed(2)),
+    stealth: r(stealth),
+    detect: r(detect),
     attr: { str: vu.om, vit: vu.lf, dex: vu.uy, mag: vu.tx },
   };
 }

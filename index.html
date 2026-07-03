@@ -1031,22 +1031,29 @@
       </div>
 
       <div class="card calc-card">
-        <h3 class="doll-stats-title">Бафи
-          <span class="muted">(чекбокс — активувати; клік по іконці — налаштування; «+» — додати)</span>
-        </h3>
-        <div class="doll-buffs" id="dollBuffs"></div>
+        <div class="doll-mods-head">
+          <div class="segmented" role="tablist" aria-label="Модифікатори">
+            <input type="radio" id="dollModTabBuffs" name="dollModTab" value="buffs" checked />
+            <label for="dollModTabBuffs">Бафи</label>
+            <input type="radio" id="dollModTabTitles" name="dollModTab" value="titles" />
+            <label for="dollModTabTitles">Титули</label>
+          </div>
+          <span class="muted doll-mods-hint" id="dollModsHint">чекбокс — активувати; клік по іконці — налаштування; «+» — додати</span>
+        </div>
+        <div id="dollModBuffs">
+          <div class="doll-buffs" id="dollBuffs"></div>
+        </div>
+        <div id="dollModTitles" hidden>
+          <div class="doll-titles" id="dollTitles"></div>
+        </div>
       </div>
 
       <div class="doll-main">
         <div class="card calc-card doll-main-stats">
           <h3 class="doll-stats-title">Характеристики персонажа
-            <span class="muted">(база + спорядження + камені + заточка + сети + стани)</span>
+            <span class="muted">(база + спорядження + камені + заточка + сети + титули + стани)</span>
           </h3>
-          <div class="doll-stats" id="dollSummary"></div>
-          <p class="muted" style="margin:12px 0 0;font-size:12.5px">
-            Розрахунок за формулами PW (атака, захист із % зрізання, HP/MP, меткість,
-            ухилення, крит) з урахуванням каменів, заточки, бонусів сетів і станів.
-          </p>
+          <div class="doll-stats2" id="dollSummary"></div>
         </div>
         <div class="doll-main-eq">
           <div class="card calc-card">
@@ -1062,23 +1069,27 @@
       </div>
 
       <div class="card calc-card doll-dmg-section" id="dollDmgSection">
-        <h3 class="doll-stats-title">Перевірка дамага
-          <span class="muted">(налаштуй суперника й перевір урон по ньому)</span>
-        </h3>
-        <div class="doll-opp-panel" id="dollOpp"></div>
-        <div class="doll-compare-actions">
-          <button type="button" class="btn btn-primary" id="dollCheckDmg">Перевірити дамаг</button>
-          <button type="button" class="btn btn-ghost" id="dollResetOpp">Скинути суперника</button>
-        </div>
-        <div class="doll-dmg-body">
-          <h4 class="doll-skills-h">Скіли класу <span class="muted">(клікни по скілу — урон додасться в лог)</span></h4>
-          <div class="doll-skill-grid" id="dollSkillGrid"></div>
-          <div class="doll-dmg-loghead">
-            <h4 class="doll-skills-h">Лог урону</h4>
-            <button type="button" class="btn btn-ghost" id="dollClearLog">Очистити</button>
+        <details class="doll-dmg-details">
+          <summary>
+            <h3 class="doll-stats-title">Перевірка дамага
+              <span class="muted">(налаштуй суперника й перевір урон по ньому)</span>
+            </h3>
+          </summary>
+          <div class="doll-opp-panel" id="dollOpp"></div>
+          <div class="doll-compare-actions">
+            <button type="button" class="btn btn-primary" id="dollCheckDmg">Перевірити дамаг</button>
+            <button type="button" class="btn btn-ghost" id="dollResetOpp">Скинути суперника</button>
           </div>
-          <div class="doll-dmg-log" id="dollDmgLog"></div>
-        </div>
+          <div class="doll-dmg-body">
+            <h4 class="doll-skills-h">Скіли класу <span class="muted">(клікни по скілу — урон додасться в лог)</span></h4>
+            <div class="doll-skill-grid" id="dollSkillGrid"></div>
+            <div class="doll-dmg-loghead">
+              <h4 class="doll-skills-h">Лог урону</h4>
+              <button type="button" class="btn btn-ghost" id="dollClearLog">Очистити</button>
+            </div>
+            <div class="doll-dmg-log" id="dollDmgLog"></div>
+          </div>
+        </details>
       </div>
 
       <div class="card calc-card">

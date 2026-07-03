@@ -68,6 +68,7 @@ interface DollState {
   buffCfg: Record<string, { on: boolean; lvl: number; side: string }>; // id бафа → налаштування
   extraBuffs: number[]; // додані вручну (через пошук) бафи інших класів
   backpack: Array<BackpackEntry | null>; // інвентар (позиційний, не враховується)
+  titles: Record<string, number>; // «Титули» — сумарні доповнення (mypers ik), кап 3000 на поле
 }
 
 const state: DollState = {
@@ -86,6 +87,7 @@ const state: DollState = {
   buffCfg: {},
   extraBuffs: [],
   backpack: [],
+  titles: {},
 };
 
 function save(): void {
@@ -137,6 +139,18 @@ function meetsReq(it: Item, gear: Record<string, number> = gearAttr): ReqCheck {
   return { ok: lvl && str && dex && mag && cls, lvl, str, dex, mag, cls };
 }
 
+// «Титули» — поля сумарних доповнень (порядок як у mypers) і кап значення (mypers titleLimit).
+const TITLE_LIMIT = 3000;
+const TITLE_FIELDS: Array<{ code: string; label: string }> = [
+  { code: 'ld', label: 'Фіз. атака' },
+  { code: 'xq', label: 'Маг. атака' },
+  { code: 'wf', label: 'Фіз. захист' },
+  { code: 'ab_gq', label: 'Маг. захист' },
+  { code: 'ae', label: 'Міткість' },
+  { code: 'qe', label: 'Ухилення' },
+  { code: 'hp', label: 'Здоровʼя' },
+];
+
 const ATTR_BASE = 5; // базове значення кожного атрибута
 /** Доступно вільних очок статів: 5 за рівень (понад 1-й) мінус витрачені. */
 function availPoints(): number {
@@ -181,6 +195,53 @@ function renderDoll(): void {
   renderDmgLog();
   renderBackpack();
   updateAvail();
+}
+
+// ---------- Титули (сумарні доповнення, mypers ik) ----------
+
+/** Перемальовує інпути титулів зі state (initTitles вішає делегований change один раз). */
+function renderTitles(): void {
+  const box = $('dollTitles');
+  if (!box) return;
+  box.innerHTML = TITLE_FIELDS.map((fd) => {
+    const v = Math.round(Number(state.titles[fd.code]) || 0) || 0;
+    return (
+      '<label class="doll-title-f"><span>' + fd.label + '</span>' +
+      '<input type="number" min="0" max="' + TITLE_LIMIT + '" step="1" data-title="' + fd.code + '" value="' + v + '"></label>'
+    );
+  }).join('');
+}
+const MOD_HINTS: Record<string, string> = {
+  buffs: 'чекбокс — активувати; клік по іконці — налаштування; «+» — додати',
+  titles: 'сумарні доповнення від титулів — вводяться вручну, як у грі; кап 3000',
+};
+/** Перемикач «Бафи | Титули» в одній картці. */
+function initModTabs(): void {
+  document.querySelectorAll<HTMLInputElement>('input[name="dollModTab"]').forEach((r) => {
+    r.addEventListener('change', () => {
+      if (!r.checked) return;
+      const buffs = $('dollModBuffs');
+      const titles = $('dollModTitles');
+      if (buffs) buffs.hidden = r.value !== 'buffs';
+      if (titles) titles.hidden = r.value !== 'titles';
+      const hint = $('dollModsHint');
+      if (hint) hint.textContent = MOD_HINTS[r.value] || '';
+    });
+  });
+}
+
+function initTitles(): void {
+  renderTitles();
+  $('dollTitles')?.addEventListener('change', (e) => {
+    const inp = (e.target as HTMLElement).closest<HTMLInputElement>('input[data-title]');
+    if (!inp || !inp.dataset.title) return;
+    const v = Math.max(0, Math.min(TITLE_LIMIT, Math.round(Number(inp.value) || 0)));
+    inp.value = String(v);
+    if (v) state.titles[inp.dataset.title] = v;
+    else delete state.titles[inp.dataset.title];
+    save();
+    renderDoll();
+  });
 }
 
 // ---------- Характеристики (агрегація зі спорядження) ----------
@@ -303,6 +364,20 @@ function aggregateStats(active: ReadonlySet<string>): Record<string, number> {
       }
     }
   }
+  // «Титули» (mypers ik): ручні сумарні доповнення — вливаються в тотали як стати речей.
+  for (const [code, raw] of Object.entries(state.titles)) {
+    const v = Math.min(TITLE_LIMIT, Math.max(0, Math.round(Number(raw) || 0)));
+    if (!v) continue;
+    if (code === 'ld') {
+      add('ld_min', v);
+      add('ld_max', v);
+    } else if (code === 'xq') {
+      add('xq_min', v);
+      add('xq_max', v);
+    } else {
+      applyStat(add, code, v); // ab_gq розкладеться на 5 стихій, решта — flat
+    }
+  }
   // Бонуси комплектів (сетів): рахуємо деталі за спільним ps, додаємо zn для порогів ≤ к-сті.
   const sd = getSets();
   if (sd) {
@@ -398,16 +473,11 @@ function renderSummary(t: Record<string, number>): void {
   const f = (n: number) => Math.round(n).toLocaleString('uk');
   const rng = (rr: { min: number; max: number }) => f(rr.min) + '–' + f(rr.max);
   const row = (l: string, v: string) => '<div class="doll-stat"><span>' + l + '</span><b>' + v + '</b></div>';
-  // Атрибут із бонусом від спорядження: підсвітка зеленим + скільки додалося до чистих статів
-  const attrRow = (l: string, total: number, bonus: number) =>
-    bonus
-      ? '<div class="doll-stat"><span>' + l + '</span><b class="up">' + f(total) +
-        ' <i>(' + (bonus > 0 ? '+' : '−') + f(Math.abs(bonus)) + ')</i></b></div>'
-      : row(l, f(total));
   const ELEM_LABEL: Record<string, string> = { lw: 'Метал', mo: 'Дерево', dn: 'Вода', vt: 'Вогонь', sp: 'Земля' };
-  const elemRows = Object.entries(c.elem)
-    .map(([k, e]) => row('  ' + ELEM_LABEL[k], f(e.def) + ' (−' + e.perc.toFixed(1) + '%)'))
-    .join('');
+  const elemRow = (k: string) => {
+    const e = c.elem[k];
+    return row(ELEM_LABEL[k], f(e.def) + ' (−' + e.perc.toFixed(1) + '%)');
+  };
 
   // Зведене значення стата: спорядження (t) + бафи (ib).
   const g = (...keys: string[]): number => keys.reduce((s, k) => s + (t[k] || 0) + (ib[k] || 0), 0);
@@ -426,53 +496,32 @@ function renderSummary(t: Record<string, number>): void {
   const hpRec = g('cx', 'bl'); // віднов. HP/сек
   const mpRec = g('mp_recovery', 'vl'); // віднов. MP/сек
   const pct = (n: number) => (n > 0 ? '+' : '') + f(n) + '%';
-  box.innerHTML =
-    '<div class="doll-stat-group"><h4>Бій</h4>' +
-    row('Фіз. атака', rng(c.physAtk)) +
-    row('Маг. атака', rng(c.magAtk)) +
-    row('Рівень атаки', f(atkLvl)) +
-    row('Шанс криту', c.crit + '%') +
-    row('Крит. урон', critDmg + '%') +
-    row('Атак/сек', c.aps ? c.aps.toFixed(2) : '—') +
-    row('Час співу', pct(channel)) +
-    row('Фіз. пробивання', pct(physPen)) +
-    row('Маг. пробивання', pct(magPen)) +
-    '</div>' +
-    '<div class="doll-stat-group"><h4>Захист</h4>' +
-    row('Фіз. захист', f(c.physDef) + ' (−' + c.physDefPerc.toFixed(1) + '%)') +
-    row('Маг. захист (сер.)', f(c.magDef) + ' (−' + c.magDefPerc.toFixed(1) + '%)') +
-    elemRows +
-    row('Рівень захисту', f(defLvl)) +
-    row('Зменш. фіз. урону', pct(physDmgRed)) +
-    row('Зменш. маг. урону', pct(magDmgRed)) +
-    '</div>' +
-    '<div class="doll-stat-group"><h4>Здоровʼя / Мана</h4>' +
-    row('Здоровʼя', f(c.hp)) +
-    row('Мана', f(c.mp)) +
-    row('Віднов. HP/сек', f(hpRec)) +
-    row('Віднов. MP/сек', f(mpRec)) +
-    '</div>' +
-    '<div class="doll-stat-group"><h4>Основні</h4>' +
-    row('Меткість', f(c.acc)) +
-    row('Ухилення', f(c.eva)) +
-    row('Швидкість', c.speed.toFixed(1) + ' м/с') +
-    row('Бойовий дух', f(spirit)) +
-    row('Сила духу', f(soulforce)) +
-    row('Урон монстрам', f(mobDmg)) +
-    row('Захист від монстрів', f(mobDef)) +
-    '</div>' +
-    '<div class="doll-stat-group"><h4>Атрибути</h4>' +
-    attrRow('Сила', c.attr.str, t.om || 0) +
-    attrRow('Тілобудова', c.attr.vit, t.lf || 0) +
-    attrRow('Спритність', c.attr.dex, t.uy || 0) +
-    attrRow('Інтелект', c.attr.mag, t.tx || 0) +
-    '</div>';
+  // Пари рядків «ліва | права» — порядок 1:1 з таблицею mypers (+ HP/MP зверху).
+  const pairs: string[][] = [
+    [row('Здоровʼя', f(c.hp)), row('Мана', f(c.mp))],
+    [row('Віднов. HP/сек', f(hpRec)), row('Віднов. MP/сек', f(mpRec))],
+    [row('Фіз. атака', rng(c.physAtk)), row('Фіз. захист', f(c.physDef) + ' (−' + c.physDefPerc.toFixed(1) + '%)')],
+    [row('Маг. атака', rng(c.magAtk)), row('Маг. захист (сер.)', f(c.magDef) + ' (−' + c.magDefPerc.toFixed(1) + '%)')],
+    [row('Шанс криту', c.crit + '%'), elemRow('lw')],
+    [row('Атак/сек', c.aps ? c.aps.toFixed(2) : '—'), elemRow('mo')],
+    [row('Час співу', pct(channel)), elemRow('dn')],
+    [row('Міткість', f(c.acc)), elemRow('vt')],
+    [row('Ухилення', f(c.eva)), elemRow('sp')],
+    [row('Рівень атаки', f(atkLvl)), row('Рівень захисту', f(defLvl))],
+    [row('Зменш. фіз. урону', pct(physDmgRed)), row('Зменш. маг. урону', pct(magDmgRed))],
+    [row('Швидкість', c.speed.toFixed(1) + ' м/с'), row('Крит. урон', critDmg + '%')],
+    [row('Бойовий дух', f(spirit)), row('Сила духу', f(soulforce))],
+    [row('Скритність', f(c.stealth)), row('Виявлення', f(c.detect))],
+    [row('Урон монстрам', f(mobDmg)), row('Захист від монстрів', f(mobDef))],
+    [row('Фіз. пробивання', pct(physPen)), row('Маг. пробивання', pct(magPen))],
+  ];
+  box.innerHTML = pairs.flat().join('');
 
-  // Бейдж «+N» біля інпутів атрибутів у шапці (чистий стат + бонус від речей).
+  // Бейдж «+N (разом)» біля інпутів атрибутів у шапці (чистий стат + бонус від речей).
   const attrPlus = (id: string, base: number, bonus: number) => {
     const el = $(id);
     if (!el) return;
-    el.textContent = bonus ? '+' + f(bonus) : '';
+    el.textContent = bonus ? '+' + f(bonus) + ' (' + f(base + bonus) + ')' : '';
     el.title = bonus ? f(base) + ' чистих + ' + f(bonus) + ' від речей = ' + f(base + bonus) : '';
   };
   attrPlus('dollStrPlus', state.str, t.om || 0);
@@ -622,12 +671,12 @@ function renderEditor(): void {
 const CODE_LABEL: Record<string, string> = {
   hp: 'Здоровʼя', mp: 'Мана', om: 'Сила', lf: 'Тілобудова', uy: 'Спритність', tx: 'Інтелект',
   wf: 'Фіз. захист', ab_gq: 'Маг. захист', ld: 'Фіз. атака', xq: 'Маг. атака',
-  ad: 'Рівень атаки', sx: 'Рівень захисту', ae: 'Меткість', qe: 'Ухилення', cl: 'Швидкість',
+  ad: 'Рівень атаки', sx: 'Рівень захисту', ae: 'Міткість', qe: 'Ухилення', cl: 'Швидкість',
   ci: 'Час співу', mr: 'Бойовий дух', mk: 'Сила духу', ed: 'Шанс криту', wz: 'Захист від монстрів',
   su: 'Урон монстрам', bu: 'Зменш. фіз. урону', ia: 'Зменш. маг. урону', pec: 'Фіз. пробивання', kdn: 'Маг. пробивання',
   lw_eq: 'Захист: метал', mo_eq: 'Захист: дерево', dn_eq: 'Захист: вода', vt_eq: 'Захист: вогонь', sp_eq: 'Захист: земля',
   co: 'Макс. HP', cc: 'Макс. MP', cp: 'Міцність', exp: 'Досвід', jk: 'Шанс криту',
-  ae_eg: 'Меткість', qe_eg: 'Ухилення', wf_eg: 'Фіз. захист', ab_gq_eg: 'Маг. захист', cl_eg: 'Швидкість',
+  ae_eg: 'Міткість', qe_eg: 'Ухилення', wf_eg: 'Фіз. захист', ab_gq_eg: 'Маг. захист', cl_eg: 'Швидкість',
   cx: 'Віднов. HP', mp_recovery: 'Віднов. MP', max_oi_av: 'Макс. фіз. атака', max_xq: 'Макс. маг. атака',
   bonus_hf: 'Бонус рівня', mana: 'Мана', sy: 'Атак/сек', fp: 'Дальність', xn: 'Пауза між атаками', vln: 'Бойовий дух',
   ct: 'Вимоги по талантах', // «Требование по талантам −N%» — display-only, як у mypers
@@ -757,7 +806,7 @@ interface OppMob {
   physAtkMax: number;
   magAtkMin: number;
   magAtkMax: number;
-  acc: number; // меткість
+  acc: number; // міткість
   eva: number; // ухилення
   physDef: number; // фіз. захист (сире значення)
   lw: number; // метал
@@ -839,16 +888,20 @@ function atkLevelMult(q: number, w: number): number {
 
 /**
  * Урон скіла по мобу (формула mypers `ghk`/`vyp`):
- *   атака × множник рівня (oza) × множник рівня атаки (L) + плоский урон скіла,
- *   мінус % захисту мішені. Крит = урон × (крит. множник / 100).
+ *   (атака × thw × oza + плоский урон скіла) × L (рівні атаки/захисту) × lvz (дух)
+ *   × csf (урон монстрам) × (1 − % захисту мішені). Крит = урон × (крит. множник / 100).
  */
-function skillDamage(me: CharStats, mob: OppMob, sk: SkillDef, critMult: number, atkLvl: number): SkillDmg {
+function skillDamage(me: CharStats, mob: OppMob, sk: SkillDef, critMult: number, atkLvl: number, spirit = 0, mobDmg = 0): SkillDmg {
   const hfMult = levelMult(state.level || 1, mob.level || 1);
   const L = atkLevelMult(atkLvl, 0); // редактор моба не має рівня захисту → 0
+  const lvz = (4000 + spirit) / 4000; // бойовий дух (mypers lvz; у моба mr = 0)
+  const csf = 1 + (3 * mobDmg) / (300 + mobDmg); // «урон монстрам» (mypers csf; bc моба = 0)
   const red = sk.mag ? oppMagReductionPerc(mob) : oppReductionPerc(mob, 'phys');
   const atk = sk.mag ? me.magAtk : me.physAtk;
   const z = 1 - red / 100;
-  const calc = (base: number) => Math.max(0, Math.round((base * (sk.thw || 1) * hfMult * L + sk.flat) * z));
+  // Як у mypers: L/lvz/csf множать усю суму (включно з плоским уроном), oza — лише атаку.
+  const calc = (base: number) =>
+    Math.max(0, Math.round((base * (sk.thw || 1) * hfMult + sk.flat) * L * lvz * csf * z));
   const min = calc(atk.min);
   const max = calc(atk.max);
   return { min, max, critMin: Math.round(min * critMult), critMax: Math.round(max * critMult) };
@@ -880,7 +933,7 @@ function renderOpponent(): void {
     field('Макс. фіз. атака', 'physAtkMax') +
     field('Мін. маг. атака', 'magAtkMin') +
     field('Макс. маг. атака', 'magAtkMax') +
-    field('Меткість', 'acc') +
+    field('Міткість', 'acc') +
     field('Ухилення', 'eva') +
     '</div>' +
     '<div class="doll-opp-col"><div class="doll-opp-col-h">Захист</div>' +
@@ -938,7 +991,9 @@ function logSkillDamage(skillId: number): void {
   else if (sk.id === 330 || sk.id === 331) critMult = 1.3;
   // Рівень атаки: спорядження (ad) + бафи (gs_ad/−vh_ad).
   const atkLvl = (t.ad || 0) + (ib.ad || 0) + (ib.gs_ad || 0) - (ib.vh_ad || 0);
-  const d = skillDamage(me, mob, sk, critMult, atkLvl);
+  const spirit = (t.mr || 0) + (t.vln || 0) + (ib.mr || 0) + (ib.vln || 0); // бойовий дух
+  const mobDmg = (t.su || 0) + (t.qgc || 0) + (ib.su || 0) + (ib.qgc || 0); // урон монстрам
+  const d = skillDamage(me, mob, sk, critMult, atkLvl, spirit, mobDmg);
   const f = (n: number) => Math.round(n).toLocaleString('uk');
   dmgLog.unshift(
     '<div class="doll-dmg-line">' +
@@ -1251,12 +1306,14 @@ function resetAll(): void {
   state.buffCfg = {};
   state.extraBuffs = [];
   state.backpack = [];
+  state.titles = {};
   state.str = ATTR_BASE;
   state.dex = ATTR_BASE;
   state.vit = ATTR_BASE;
   state.mag = ATTR_BASE;
   save();
   syncHeader();
+  renderTitles();
   renderDoll();
 }
 
@@ -1799,6 +1856,8 @@ export function dollInit(): void {
   if (tipEl && tipEl.parentElement !== document.body) document.body.appendChild(tipEl);
   load();
   void initHeader();
+  initModTabs();
+  initTitles();
   renderDoll();
   void loadSets().then(() => renderDoll()); // підвантажити дані сетів і перерахувати
   void loadBuffs().then(() => renderDoll()); // підвантажити дані бафів
