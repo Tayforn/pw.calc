@@ -114,17 +114,27 @@ interface ReqCheck {
   str: boolean;
   dex: boolean;
   mag: boolean;
+  cls: boolean;
+}
+/** Класове обмеження речі: hi — масив sm-ід класів (XZ), яким річ доступна.
+ *  Порожній/відсутній або повний (всі 14) — обмеження немає. */
+function classRestriction(it: Item): number[] | null {
+  const hi = (it as Record<string, unknown>).hi;
+  if (!Array.isArray(hi) || hi.length === 0 || hi.length >= 14) return null;
+  return hi as number[];
 }
 /** Бонуси атрибутів (om/uy/lf/tx) від активного спорядження — кеш останнього computeStats. */
 let gearAttr: Record<string, number> = {};
-/** Чи відповідає персонаж вимогам речі (рівень + Сила/Спритн/Інт).
+/** Чи відповідає персонаж вимогам речі (рівень + Сила/Спритн/Інт + клас).
  *  Атрибути — з урахуванням бонусів від речей (як у грі: трактат +45 інт дозволяє зброю з 297). */
 function meetsReq(it: Item, gear: Record<string, number> = gearAttr): ReqCheck {
   const lvl = state.level >= (Number(it.oj) || 0);
   const str = state.str + (gear.om || 0) >= (Number(it.om_uo) || 0);
   const dex = state.dex + (gear.uy || 0) >= (Number(it.uy_uo) || 0);
   const mag = state.mag + (gear.tx || 0) >= (Number((it as Record<string, unknown>).tx_uo) || 0);
-  return { ok: lvl && str && dex && mag, lvl, str, dex, mag };
+  const cr = classRestriction(it);
+  const cls = !cr || cr.includes(XZ[state.cls] || 0);
+  return { ok: lvl && str && dex && mag && cls, lvl, str, dex, mag, cls };
 }
 
 const ATTR_BASE = 5; // базове значення кожного атрибута
@@ -401,7 +411,6 @@ function renderSummary(t: Record<string, number>): void {
 
   // Зведене значення стата: спорядження (t) + бафи (ib).
   const g = (...keys: string[]): number => keys.reduce((s, k) => s + (t[k] || 0) + (ib[k] || 0), 0);
-  const aps = t.sy || 0;
   const critDmg = 200 + g('gs_crit_rage_ghk'); // база 200% + бонуси крит. урону
   const atkLvl = g('ad', 'gs_ad'); // рівень атаки (спорядження + бафи)
   const defLvl = g('sx', 'gs_sx'); // рівень захисту
@@ -412,7 +421,6 @@ function renderSummary(t: Record<string, number>): void {
   const channel = g('ci') - g('re') + g('xj'); // час співу % (re швидше, xj повільніше)
   const spirit = g('mr', 'vln'); // бойовий дух
   const soulforce = g('mk'); // сила духу
-  const speed = g('cl', 'gs_cl'); // швидкість руху (бонус)
   const mobDmg = g('su', 'qgc'); // урон монстрам
   const mobDef = g('wz', 'wkl'); // захист від монстрів
   const hpRec = g('cx', 'bl'); // віднов. HP/сек
@@ -425,7 +433,7 @@ function renderSummary(t: Record<string, number>): void {
     row('Рівень атаки', f(atkLvl)) +
     row('Шанс криту', c.crit + '%') +
     row('Крит. урон', critDmg + '%') +
-    row('Атак/сек', aps ? aps.toFixed(2) : '—') +
+    row('Атак/сек', c.aps ? c.aps.toFixed(2) : '—') +
     row('Час співу', pct(channel)) +
     row('Фіз. пробивання', pct(physPen)) +
     row('Маг. пробивання', pct(magPen)) +
@@ -447,7 +455,7 @@ function renderSummary(t: Record<string, number>): void {
     '<div class="doll-stat-group"><h4>Основні</h4>' +
     row('Меткість', f(c.acc)) +
     row('Ухилення', f(c.eva)) +
-    row('Швидкість', pct(speed)) +
+    row('Швидкість', c.speed.toFixed(1) + ' м/с') +
     row('Бойовий дух', f(spirit)) +
     row('Сила духу', f(soulforce)) +
     row('Урон монстрам', f(mobDmg)) +
@@ -621,17 +629,25 @@ const CODE_LABEL: Record<string, string> = {
   co: 'Макс. HP', cc: 'Макс. MP', cp: 'Міцність', exp: 'Досвід', jk: 'Шанс криту',
   ae_eg: 'Меткість', qe_eg: 'Ухилення', wf_eg: 'Фіз. захист', ab_gq_eg: 'Маг. захист', cl_eg: 'Швидкість',
   cx: 'Віднов. HP', mp_recovery: 'Віднов. MP', max_oi_av: 'Макс. фіз. атака', max_xq: 'Макс. маг. атака',
-  bonus_hf: 'Бонус рівня', mana: 'Мана', sy: 'Атак/сек', fp: 'Дальність', xn: 'Інтервал', vln: 'Бойовий дух',
+  bonus_hf: 'Бонус рівня', mana: 'Мана', sy: 'Атак/сек', fp: 'Дальність', xn: 'Пауза між атаками', vln: 'Бойовий дух',
+  ct: 'Вимоги по талантах', // «Требование по талантам −N%» — display-only, як у mypers
 };
 const codeLabel = (c: string): string => CODE_LABEL[c] || c;
 
 // Коди-відсотки та коди зі знаком «−» (для відображення допів у тултіпі).
-const PCT_CODES = new Set(['ed', 'bu', 'ia', 'exp', 'co', 'cc', 'cp', 'jk', 'ae_eg', 'qe_eg', 'wf_eg', 'ab_gq_eg', 'cl_eg']);
+const PCT_CODES = new Set(['ed', 'bu', 'ia', 'exp', 'co', 'cc', 'cp', 'jk', 'ae_eg', 'qe_eg', 'wf_eg', 'ab_gq_eg', 'cl_eg', 'ct']);
 const MINUS_CODES = new Set(['ci', 'ct', 'xn']);
 function propLine(code: string, val: unknown): string {
-  const sign = MINUS_CODES.has(code) ? '−' : '+';
+  let sign = MINUS_CODES.has(code) ? '−' : '+';
+  let v: unknown = val;
+  const n = Number(val);
+  if (Number.isFinite(n) && n < 0) {
+    // від'ємне значення обертає знак (напр. ct:-10 → «+10%»)
+    sign = sign === '−' ? '+' : '−';
+    v = Math.abs(n);
+  }
   const suf = PCT_CODES.has(code) ? '%' : code === 'xn' ? ' сек' : '';
-  return codeLabel(code) + ' ' + sign + val + suf;
+  return codeLabel(code) + ' ' + sign + v + suf;
 }
 
 // ---------- Поточні характеристики / історія / опонент ----------
@@ -1299,6 +1315,9 @@ function statLines(it: Item): string {
   if (it.xq) out.push('Маг. атака: ' + range(it.xq));
   if (it.sy) out.push('Атак/сек: ' + it.sy);
   if (typeof o.fp === 'number' && o.fp) out.push('Дальність: ' + o.fp + ' м');
+  if (o.cu != null && o.cu !== '') out.push('Звичайний політ: ' + escHtml(String(o.cu)));
+  if (o.cwr != null && o.cwr !== '') out.push('Прискорений політ: ' + escHtml(String(o.cwr)));
+  if (Array.isArray(o.ta_hf)) out.push('Рівень зброї: ' + o.ta_hf[0] + '–' + o.ta_hf[1]);
   if (typeof it.wf === 'number' && it.wf) out.push('Фіз. захист +' + it.wf);
   const ab = it.ab_gq;
   if (typeof ab === 'number' && ab) out.push('Маг. захист +' + ab);
@@ -1311,13 +1330,8 @@ function statLines(it: Item): string {
   if (typeof it.hp === 'number' && it.hp) out.push('Здоровʼя +' + it.hp);
   if (typeof o.mana === 'number' && o.mana) out.push('Мана +' + o.mana);
   if (typeof it.qe === 'number' && it.qe) out.push('Ухилення +' + it.qe);
-  // фіксовані допи (nw.wu)
-  const nw = it.nw as { wu?: Array<{ type?: string; val?: unknown }> } | undefined;
-  if (nw && Array.isArray(nw.wu)) for (const w of nw.wu) if (w && w.type) out.push(propLine(w.type, w.val));
-  // абілка
-  if (it.ac) out.push('<span class="doll-tip-abil">⚔ ' + escHtml(lbl('taAddons', it.ac as string)) + '</span>');
 
-  // Вимоги (червоним — якщо не виконано).
+  // Вимоги (червоним — якщо не виконано); порядок як у mypers — після базових стат.
   const req = meetsReq(it);
   const reqLine = (text: string, ok: boolean) => '<div' + (ok ? '' : ' class="doll-tip-bad"') + '>' + text + '</div>';
   const reqs: string[] = [];
@@ -1325,6 +1339,17 @@ function statLines(it: Item): string {
   if (Number(it.om_uo)) reqs.push(reqLine('Требуєма Сила: ' + it.om_uo, req.str));
   if (Number(it.uy_uo)) reqs.push(reqLine('Требуєма Спритність: ' + it.uy_uo, req.dex));
   if (Number(o.tx_uo)) reqs.push(reqLine('Требуємий Інтелект: ' + o.tx_uo, req.mag));
+  if (Number(o.reputa_uo)) reqs.push('<div>Требуєма репутація: ' + Number(o.reputa_uo).toLocaleString('uk') + '</div>');
+  const cr = classRestriction(it);
+  if (cr) reqs.push(reqLine('Клас: ' + cr.map((n) => CLASS_BY_SM[n] || n).join(', '), req.cls));
+
+  // Фіксовані допи (nw.wu) — підсвічені, після вимог (як у mypers).
+  const adds: string[] = [];
+  const nw = it.nw as { wu?: Array<{ type?: string; val?: unknown }> } | undefined;
+  if (nw && Array.isArray(nw.wu))
+    for (const w of nw.wu) if (w && w.type) adds.push('<div class="doll-tip-add">' + propLine(w.type, w.val) + '</div>');
+  // абілка
+  if (it.ac) adds.push('<div class="doll-tip-abil">⚔ ' + escHtml(lbl('taAddons', it.ac as string)) + '</div>');
 
   // Комплект (сет).
   let setLine = '';
@@ -1339,8 +1364,9 @@ function statLines(it: Item): string {
 
   return (
     out.map((s) => '<div>' + s + '</div>').join('') +
-    (reqs.length ? '<div class="doll-tip-sep"></div>' + reqs.join('') : '') +
-    setLine
+    reqs.join('') +
+    adds.join('') +
+    (setLine ? '<div class="doll-tip-sep"></div>' + setLine : '')
   );
 }
 
@@ -1444,12 +1470,14 @@ function pickerRowHtml(it: Item, cat: string): string {
   let meta = '';
   if (!pickerGem) {
     const oj = Number(it.oj) || 0;
-    if (oj) {
-      const ok = state.level >= oj;
-      meta = '<span class="doll-pick-req' + (ok ? '' : ' bad') + '">Треб. ур.: ' + oj + '</span>';
-    } else if (Number(it.hf)) {
-      meta = '<span class="doll-pick-req">Рівень ' + it.hf + '</span>';
-    }
+    const cr = classRestriction(it);
+    const crTxt = cr ? cr.map((n) => CLASS_BY_SM[n] || n).join(', ') : '';
+    const ok = meetsReq(it).ok; // рівень + стати (з бонусами речей) + клас
+    const parts: string[] = [];
+    if (oj) parts.push('Треб. ур.: ' + oj);
+    else if (Number(it.hf)) parts.push('Рівень ' + it.hf);
+    if (crTxt) parts.push(crTxt);
+    if (parts.length) meta = '<span class="doll-pick-req' + (ok ? '' : ' bad') + '">' + parts.join(' · ') + '</span>';
   }
   return (
     '<button type="button" class="doll-pick-row" data-id="' + it.id + '">' +

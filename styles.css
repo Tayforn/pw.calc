@@ -1143,6 +1143,9 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
 .doll-tip[hidden] { display: none; }
 .doll-tip-name { font-weight: 700; color: var(--text); margin-bottom: 4px; }
 .doll-tip-abil { color: var(--accent); margin-top: 4px; display: block; }
+/* Фіксовані допи предмета — блакитні, як подсветка в mypers/грі (data-колір, виняток із золотого акценту) */
+.doll-tip-add { color: #6fa8ff; }
+html[data-theme='light'] .doll-tip-add { color: #2f6bd8; }
 .doll-tip-bad { color: #ff8a8a; font-weight: 600; }
 .doll-tip-sep { height: 1px; background: var(--line-2); margin: 6px 0; }
 .doll-tip-type { color: var(--text-mute); }
