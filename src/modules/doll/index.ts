@@ -51,6 +51,9 @@ interface BackpackEntry {
   gems: Array<Item | null>;
   refine: number;
   addons: Array<{ type: string; val: number }>;
+  engrave?: Array<{ type: string; val: number }>; // гравіювання (ручні стати, mypers item_engrave)
+  wdf?: Item | null; // руна шліфовки (зброя)
+  crystal?: Item | null; // кристал (зброя)
 }
 
 interface DollState {
@@ -66,6 +69,9 @@ interface DollState {
   gems: Record<string, Array<Item | null>>; // slot → камені в гніздах
   refine: Record<string, number>; // slot → рівень заточки (0..12)
   addons: Record<string, Array<{ type: string; val: number }>>; // slot → кастомні допи
+  engrave: Record<string, Array<{ type: string; val: number }>>; // slot → гравіювання
+  wdf: Record<string, Item | null>; // slot → руна шліфовки (зброя)
+  crystal: Record<string, Item | null>; // slot → кристал (зброя)
   buffCfg: Record<string, { on: boolean; lvl: number; side: string }>; // id бафа → налаштування
   extraBuffs: number[]; // додані вручну (через пошук) бафи інших класів
   backpack: Array<BackpackEntry | null>; // інвентар (позиційний, не враховується)
@@ -85,6 +91,9 @@ const state: DollState = {
   gems: {},
   refine: {},
   addons: {},
+  engrave: {},
+  wdf: {},
+  crystal: {},
   buffCfg: {},
   extraBuffs: [],
   backpack: [],
@@ -373,6 +382,13 @@ function aggregateStats(active: ReadonlySet<string>): Record<string, number> {
     }
     // Заточка (+N): бонуси головної стати за gh (книги — власна таблиця + порогові допи).
     for (const b of refineBonuses(it, state.refine[slot] || 0, slot === 'qn')) applyStat(add, b.type, b.val);
+    // Гравіювання (ручні стати, mypers item_engrave).
+    for (const a of state.engrave[slot] || []) if (a && a.type) applyStat(add, a.type, num(a.val));
+    // Шліфовка (руна) і кристал — стати з nw.wu (mypers wdfDops/crystalDops).
+    for (const sp of [state.wdf[slot], state.crystal[slot]]) {
+      const wu = (sp?.nw as { wu?: Array<{ type?: string; val?: unknown }> } | undefined)?.wu;
+      if (Array.isArray(wu)) for (const w of wu) if (w && w.type) applyStat(add, w.type, num(w.val));
+    }
   }
   // «Титули» (mypers ik): ручні сумарні доповнення — вливаються в тотали як стати речей.
   for (const [code, raw] of Object.entries(state.titles)) {
@@ -572,7 +588,7 @@ function renderStats(): void {
 
 type EditorTarget = { kind: 'slot'; slot: string } | { kind: 'bp'; idx: number };
 let editorTarget: EditorTarget | null = null;
-let editorTab: 'gems' | 'addons' = 'gems';
+let editorTab: 'gems' | 'addons' | 'engrave' = 'gems';
 let dragSrc: { kind: 'slot'; slot: string } | { kind: 'bp'; idx: number } | null = null;
 
 function edItem(): Item | null {
@@ -627,9 +643,41 @@ function edAddons(): Array<{ type: string; val: number }> {
   return e.addons;
 }
 
+/** Гравіювання поточної речі редактора (порожній список за замовчуванням). */
+function edEngrave(): Array<{ type: string; val: number }> {
+  if (!editorTarget) return [];
+  if (editorTarget.kind === 'slot') {
+    if (!Array.isArray(state.engrave[editorTarget.slot])) state.engrave[editorTarget.slot] = [];
+    return state.engrave[editorTarget.slot];
+  }
+  const e = state.backpack[editorTarget.idx];
+  if (!e) return [];
+  if (!Array.isArray(e.engrave)) e.engrave = [];
+  return e.engrave;
+}
+/** Руна шліфовки / кристал поточної речі (лише зброя). */
+function edSpecial(kind: 'wdf' | 'crystal'): Item | null {
+  if (!editorTarget) return null;
+  if (editorTarget.kind === 'slot') return state[kind][editorTarget.slot] || null;
+  return state.backpack[editorTarget.idx]?.[kind] || null;
+}
+function edSetSpecial(kind: 'wdf' | 'crystal', it: Item | null): void {
+  if (!editorTarget) return;
+  if (editorTarget.kind === 'slot') state[kind][editorTarget.slot] = it;
+  else {
+    const e = state.backpack[editorTarget.idx];
+    if (e) e[kind] = it;
+  }
+}
+/** Чи це зброя (слоти шліфовки/кристала є лише на зброї, як у mypers). */
+function edIsWeapon(): boolean {
+  return edCat() === 'ta';
+}
+
 function openEditor(target: EditorTarget): void {
   editorTarget = target;
-  editorTab = 'gems';
+  // Речі без гнізд (кільця/намисто/пояс/книги…) відкриваються одразу на «Характеристиках».
+  editorTab = maxSockets(edCat()) > 0 ? 'gems' : 'addons';
   renderEditor();
   const m = $('dollEditor');
   if (m) m.hidden = false;
@@ -666,10 +714,27 @@ function renderEditor(): void {
       '<button type="button" class="btn btn-ghost" id="dollEdToBp">У рюкзак</button>' +
       '<button type="button" class="btn btn-ghost" id="dollEdRemove">Зняти</button>';
 
+  // Вкладка «Камені» — лише для речей із гніздами (кільця/намисто/пояс її не мають).
   const tabs =
     '<div class="doll-ed-tabs">' +
-    '<button type="button" class="doll-ed-tab' + (editorTab === 'gems' ? ' active' : '') + '" data-tab="gems">Камені</button>' +
-    '<button type="button" class="doll-ed-tab' + (editorTab === 'addons' ? ' active' : '') + '" data-tab="addons">Характеристики</button></div>';
+    (max > 0
+      ? '<button type="button" class="doll-ed-tab' + (editorTab === 'gems' ? ' active' : '') + '" data-tab="gems">Камені</button>'
+      : '') +
+    '<button type="button" class="doll-ed-tab' + (editorTab === 'addons' ? ' active' : '') + '" data-tab="addons">Характеристики</button>' +
+    '<button type="button" class="doll-ed-tab' + (editorTab === 'engrave' ? ' active' : '') + '" data-tab="engrave">Гравіювання</button></div>';
+
+  // Рядок редаговних статів — спільна розмітка для «Характеристики» і «Гравіювання»
+  // (обробники визначають список за активною вкладкою — edCurList).
+  const statRows = (list: Array<{ type: string; val: number }>) =>
+    list
+      .map((a, i) => {
+        const sel =
+          '<select class="doll-addon-type" data-i="' + i + '">' +
+          ADDON_OPTIONS.map((o) => '<option value="' + o.code + '"' + (o.code === a.type ? ' selected' : '') + '>' + escHtml(o.label) + '</option>').join('') +
+          '</select>';
+        return '<div class="doll-addon-row">' + sel + '<input type="number" class="doll-addon-val" data-i="' + i + '" value="' + a.val + '"><button type="button" class="doll-addon-del" data-i="' + i + '">✕</button></div>';
+      })
+      .join('');
 
   let body = '';
   if (editorTab === 'gems') {
@@ -685,17 +750,28 @@ function renderEditor(): void {
         .join('');
       body = '<div class="doll-sockets">' + cells + '</div>';
     }
+    // Шліфовка (руна) і кристал — лише на зброї (як у mypers).
+    if (edIsWeapon()) {
+      const specialRow = (kind: 'wdf' | 'crystal', label: string) => {
+        const sp = edSpecial(kind);
+        return (
+          '<div class="doll-special-row"><span class="doll-special-l">' + label + '</span>' +
+          '<button type="button" class="doll-special-pick" data-special="' + kind + '">' +
+          (sp ? escHtml(sp.name) : 'обрати…') + '</button>' +
+          (sp ? '<button type="button" class="doll-addon-del" data-special-del="' + kind + '">✕</button>' : '') +
+          '</div>'
+        );
+      };
+      body += '<div class="doll-specials">' + specialRow('wdf', 'Шліфовка') + specialRow('crystal', 'Кристал') + '</div>';
+    }
+  } else if (editorTab === 'addons') {
+    body = '<div class="doll-addons">' + statRows(edAddons()) +
+      '</div><button type="button" class="btn btn-ghost" id="dollEdAddAddon">+ Дод. характеристику</button>';
   } else {
-    const addonRows = edAddons()
-      .map((a, i) => {
-        const sel =
-          '<select class="doll-addon-type" data-i="' + i + '">' +
-          ADDON_OPTIONS.map((o) => '<option value="' + o.code + '"' + (o.code === a.type ? ' selected' : '') + '>' + escHtml(o.label) + '</option>').join('') +
-          '</select>';
-        return '<div class="doll-addon-row">' + sel + '<input type="number" class="doll-addon-val" data-i="' + i + '" value="' + a.val + '"><button type="button" class="doll-addon-del" data-i="' + i + '">✕</button></div>';
-      })
-      .join('');
-    body = '<div class="doll-addons">' + addonRows + '</div><button type="button" class="btn btn-ghost" id="dollEdAddAddon">+ Дод. характеристику</button>';
+    body =
+      '<p class="muted" style="margin:0 0 8px;font-size:12px">Гравіювання — додаткові стати речі (вибиваються в грі різцями).</p>' +
+      '<div class="doll-addons">' + statRows(edEngrave()) +
+      '</div><button type="button" class="btn btn-ghost" id="dollEdAddEngrave">+ Дод. гравіювання</button>';
   }
 
   box.innerHTML = head + '<div class="doll-ed-acts">' + acts + '</div>' + tabs + '<div class="doll-ed-tabbody">' + body + '</div>';
@@ -1337,6 +1413,9 @@ function resetAll(): void {
   state.gems = {};
   state.refine = {};
   state.addons = {};
+  state.engrave = {};
+  state.wdf = {};
+  state.crystal = {};
   state.buffCfg = {};
   state.extraBuffs = [];
   state.backpack = [];
@@ -1363,25 +1442,29 @@ function edSetRefine(n: number): void {
   save();
   renderDoll();
 }
-function edAddAddon(): void {
-  edAddons().push({ type: ADDON_OPTIONS[0].code, val: 0 });
+/** Активний список редаговних статів: «Характеристики» або «Гравіювання» (за вкладкою). */
+function edCurList(): Array<{ type: string; val: number }> {
+  return editorTab === 'engrave' ? edEngrave() : edAddons();
+}
+function edAddStat(): void {
+  edCurList().push({ type: ADDON_OPTIONS[0].code, val: 0 });
   save();
   renderEditor();
 }
 function edSetAddonType(i: number, type: string): void {
-  const a = edAddons();
+  const a = edCurList();
   if (a[i]) a[i].type = type;
   save();
   renderDoll();
 }
 function edSetAddonVal(i: number, val: number): void {
-  const a = edAddons();
+  const a = edCurList();
   if (a[i]) a[i].val = Number(val) || 0;
   save();
   renderDoll();
 }
 function edDelAddon(i: number): void {
-  edAddons().splice(i, 1);
+  edCurList().splice(i, 1);
   save();
   renderEditor();
   renderDoll();
@@ -1389,17 +1472,41 @@ function edDelAddon(i: number): void {
 
 // ---------- Тултіп предмета ----------
 
-/** Контекст надітої/складованої речі для тултіпа: камені, заточка, слот. */
+/** Контекст надітої/складованої речі для тултіпа: камені, заточка, гравіювання, шліфовка. */
 interface TipCtx {
   gems?: Array<Item | null>;
   refine?: number;
   isBook?: boolean;
   isWeapon?: boolean;
+  engrave?: Array<{ type: string; val: number }>;
+  wdf?: Item | null;
+  crystal?: Item | null;
 }
 
 /** Контекст тултіпа для надітої речі слота. */
 function slotTipCtx(key: string): TipCtx {
-  return { gems: state.gems[key], refine: state.refine[key] || 0, isBook: key === 'qn', isWeapon: key === 'ta' };
+  return {
+    gems: state.gems[key],
+    refine: state.refine[key] || 0,
+    isBook: key === 'qn',
+    isWeapon: key === 'ta',
+    engrave: state.engrave[key],
+    wdf: state.wdf[key],
+    crystal: state.crystal[key],
+  };
+}
+
+/** Контекст тултіпа для речі з рюкзака. */
+function bpTipCtx(ent: BackpackEntry): TipCtx {
+  return {
+    gems: ent.gems,
+    refine: ent.refine || 0,
+    isBook: ent.slot === 'qn',
+    isWeapon: ent.slot === 'ta',
+    engrave: ent.engrave,
+    wdf: ent.wdf,
+    crystal: ent.crystal,
+  };
 }
 
 function statLines(it: Item, ctx?: TipCtx): string {
@@ -1480,6 +1587,21 @@ function statLines(it: Item, ctx?: TipCtx): string {
     }
   }
 
+  // Шліфовка (руна) і кристал зброї: імʼя + стати з nw.wu.
+  const specialLine = (sp: Item | null | undefined, ico: string, label: string) => {
+    if (!sp) return;
+    const wu = (sp.nw as { wu?: Array<{ type?: string; val?: unknown }> } | undefined)?.wu || [];
+    const stats = wu.filter((w) => w && w.type).map((w) => propLine(String(w.type), w.val)).join(', ');
+    adds.push('<div class="doll-tip-wdf">' + ico + ' ' + label + ': ' + escHtml(sp.name) + (stats ? ' — ' + stats : '') + '</div>');
+  };
+  specialLine(ctx?.wdf, '⛭', 'Шліфовка');
+  specialLine(ctx?.crystal, '❖', 'Кристал');
+  // Гравіювання — окремий блок (як «гравировка:» у mypers).
+  if (ctx?.engrave?.length) {
+    adds.push('<div class="doll-tip-sep"></div><div class="doll-tip-type">Гравіювання:</div>');
+    for (const a of ctx.engrave) if (a && a.type) adds.push('<div class="doll-tip-eng">' + propLine(a.type, a.val) + '</div>');
+  }
+
   // Комплект (сет): назва (маю/всього), список речей із наявністю, бонуси з підсвіткою активних.
   let setLine = '';
   if (o.ps != null) {
@@ -1525,15 +1647,14 @@ function statLines(it: Item, ctx?: TipCtx): string {
 }
 
 function showTip(target: HTMLElement, it: Item, cat = '', ctx?: TipCtx): void {
-  // Заточка + рівень — одним nowrap-блоком у кінці назви («+10 · ур. 16»):
-  // не розривається на різні рядки залежно від довжини імені.
-  const meta: string[] = [];
-  if (ctx?.refine) meta.push('<span class="doll-tip-refn">+' + ctx.refine + '</span>');
-  if (it.hf != null) meta.push('<span class="muted">ур. ' + it.hf + '</span>');
-  const metaHtml = meta.length
-    ? ' <span class="doll-tip-meta">' + meta.join('<span class="muted"> · </span>') + '</span>'
-    : '';
-  showTooltip(target, '<div class="doll-tip-name">' + itemNameHtml(it, cat) + metaHtml + '</div>' + statLines(it, ctx));
+  // Заточка «+10» — завжди в рядку назви (nbsp не дає їй відірватись від останнього
+  // слова); рівень «ур. 16» — завжди окремим рядком під назвою.
+  const refSuf = ctx?.refine ? '&nbsp;<span class="doll-tip-refn">+' + ctx.refine + '</span>' : '';
+  const lvlLine = it.hf != null ? '<div class="doll-tip-lvl muted">ур. ' + it.hf + '</div>' : '';
+  showTooltip(
+    target,
+    '<div class="doll-tip-name">' + itemNameHtml(it, cat) + refSuf + '</div>' + lvlLine + statLines(it, ctx),
+  );
 }
 function hideTip(): void {
   hideTooltip();
@@ -1572,6 +1693,7 @@ let pickerSlot: SlotDef | null = null;
 let pickerItems: Item[] = [];
 let pickerCat = '';
 let pickerGem: { idx: number } | null = null; // режим вибору каменя (ціль — у редакторі)
+let pickerSpecial: 'wdf' | 'crystal' | null = null; // режим вибору руни шліфовки / кристала
 
 /** Розбір грейду предмета з поля tv → {tier (колір gx-N), stars} — точно як у mypers (we). */
 function itemGrade(it: Item, cat = ''): { tier: number; stars: number } {
@@ -1611,7 +1733,7 @@ function pickerReqLvl(it: Item): number {
 
 function pickerRowHtml(it: Item, cat: string): string {
   let meta = '';
-  if (!pickerGem) {
+  if (!pickerGem && !pickerSpecial) {
     const oj = Number(it.oj) || 0;
     const cr = classRestriction(it);
     const crTxt = cr ? cr.map((n) => CLASS_BY_SM[n] || n).join(', ') : '';
@@ -1646,12 +1768,24 @@ function renderPickerList(q: string): void {
   const m = q.trim().toLowerCase().match(/^(\d+)\s*(.*)$/);
   const lvlQ = m ? Number(m[1]) : null;
   const nameQ = m ? m[2].trim() : q.trim().toLowerCase();
-  const types = pickerGem ? new Set<string>() : activeArmorTypes();
-  const fitOnly = !pickerGem && !!$<HTMLInputElement>('dollPickFit')?.checked;
+  const types = pickerGem || pickerSpecial ? new Set<string>() : activeArmorTypes();
+  const fitOnly = !pickerGem && !pickerSpecial && !!$<HTMLInputElement>('dollPickFit')?.checked;
+  // Фільтр каменів — правила mypers: камінь не вище рівня речі; для броні/зброї — лише
+  // «generic»-камені (спец-камені типу «Камень гор/ада/созвездий» там не пропонуються).
+  const gemHost = pickerGem ? edItem() : null;
+  const gemHostCat = pickerGem ? edCat() : '';
+  const gemHostHf = Number(gemHost?.hf) || 0;
+  const gemOk = (g: Item): boolean => {
+    if (!pickerGem) return true;
+    if (gemHostHf && (Number(g.hf) || 0) > gemHostHf) return false;
+    if (['ft', 'rv', 'tg', 'rx', 'ta', 'wy', 'mj'].includes(gemHostCat) && g.pg !== 'generic') return false;
+    return true;
+  };
   // Дедуплікація: один запис на унікальний предмет (назва+іконка+рівень) —
   // прибирає дублі-варіанти (особливо польоти, де та сама модель дублюється по расах).
   const seen = new Set<string>();
   const rows = pickerItems.filter((it) => {
+    if (!gemOk(it)) return false;
     if (lvlQ != null && pickerReqLvl(it) !== lvlQ) return false;
     if (nameQ && !it.name.toLowerCase().includes(nameQ)) return false;
     if (types.size && !types.has(it.ir as string)) return false;
@@ -1684,13 +1818,13 @@ async function openModal(title: string, cat: string, hasCurrent: boolean): Promi
   if (search) search.value = '';
   // Фільтр придатності/сортування — лише для речей (для каменів не має сенсу).
   const ctl = document.querySelector<HTMLElement>('.doll-pick-ctl');
-  if (ctl) ctl.hidden = !!pickerGem;
+  if (ctl) ctl.hidden = !!(pickerGem || pickerSpecial);
   if (unequip) {
     unequip.hidden = !hasCurrent;
-    unequip.textContent = pickerGem ? 'Прибрати камінь' : 'Зняти';
+    unequip.textContent = pickerGem ? 'Прибрати камінь' : pickerSpecial ? 'Прибрати' : 'Зняти';
   }
   const bp = $('dollPickBackpack');
-  if (bp) bp.hidden = !(hasCurrent && !pickerGem);
+  if (bp) bp.hidden = !(hasCurrent && !pickerGem && !pickerSpecial);
   modal.hidden = false;
   const list = $('dollPickList');
   if (list) list.innerHTML = '<div class="muted" style="padding:18px;text-align:center">Завантаження…</div>';
@@ -1700,7 +1834,7 @@ async function openModal(title: string, cat: string, hasCurrent: boolean): Promi
   // кільця→металеве/дорогоцінне, політ→раси; книги тощо — без чекбоксів).
   const typesBox = $('dollPickTypes');
   if (typesBox) {
-    const irs = pickerGem ? [] : [...new Set(pickerItems.map((it) => it.ir).filter((x): x is string => !!x))];
+    const irs = pickerGem || pickerSpecial ? [] : [...new Set(pickerItems.map((it) => it.ir).filter((x): x is string => !!x))];
     if (irs.length > 1) {
       typesBox.innerHTML = irs
         .map((ir) => '<label><input type="checkbox" name="dollPickType" value="' + escHtml(ir) + '"> ' + escHtml(lbl('lbls', ir)) + '</label>')
@@ -1726,8 +1860,17 @@ async function openPicker(slotKey: string): Promise<void> {
 /** Гем-пікер відкривається з редактора речі; пише в гнізда поточної цілі. */
 async function openGemPicker(idx: number): Promise<void> {
   pickerGem = { idx };
+  pickerSpecial = null;
   pickerSlot = null;
   await openModal('Камінь — гніздо ' + (idx + 1), 'ob', !!edGems()[idx]);
+}
+
+/** Пікер руни шліфовки / кристала (зброя) — з редактора речі. */
+async function openSpecialPicker(kind: 'wdf' | 'crystal'): Promise<void> {
+  pickerSpecial = kind;
+  pickerGem = null;
+  pickerSlot = null;
+  await openModal(kind === 'wdf' ? 'Шліфовка (руна)' : 'Кристал', kind, !!edSpecial(kind));
 }
 
 function closePicker(): void {
@@ -1735,6 +1878,7 @@ function closePicker(): void {
   if (modal) modal.hidden = true;
   pickerSlot = null;
   pickerGem = null;
+  pickerSpecial = null;
 }
 
 function equip(id: number): void {
@@ -1748,6 +1892,14 @@ function equip(id: number): void {
     renderDoll();
     return;
   }
+  if (pickerSpecial) {
+    edSetSpecial(pickerSpecial, it);
+    save();
+    closePicker();
+    renderEditor();
+    renderDoll();
+    return;
+  }
   if (pickerSlot) {
     const slot = pickerSlot.slot;
     state.equipped[slot] = it;
@@ -1755,6 +1907,9 @@ function equip(id: number): void {
     state.gems[slot] = n > 0 ? new Array(n).fill(null) : [];
     state.refine[slot] = 0;
     state.addons[slot] = [];
+    state.engrave[slot] = [];
+    state.wdf[slot] = null;
+    state.crystal[slot] = null;
   }
   save();
   renderDoll();
@@ -1770,11 +1925,16 @@ function unequip(): void {
     renderDoll();
     return;
   }
+  if (pickerSpecial) {
+    edSetSpecial(pickerSpecial, null);
+    save();
+    closePicker();
+    renderEditor();
+    renderDoll();
+    return;
+  }
   if (pickerSlot) {
-    delete state.equipped[pickerSlot.slot];
-    delete state.gems[pickerSlot.slot];
-    delete state.refine[pickerSlot.slot];
-    delete state.addons[pickerSlot.slot];
+    clearSlot(pickerSlot.slot);
   }
   save();
   renderDoll();
@@ -1798,6 +1958,9 @@ function entryFromSlot(slot: string): BackpackEntry | null {
     gems: state.gems[slot] || [],
     refine: state.refine[slot] || 0,
     addons: state.addons[slot] || [],
+    engrave: state.engrave[slot] || [],
+    wdf: state.wdf[slot] || null,
+    crystal: state.crystal[slot] || null,
   };
 }
 function clearSlot(slot: string): void {
@@ -1805,6 +1968,9 @@ function clearSlot(slot: string): void {
   delete state.gems[slot];
   delete state.refine[slot];
   delete state.addons[slot];
+  delete state.engrave[slot];
+  delete state.wdf[slot];
+  delete state.crystal[slot];
 }
 function firstFreeCell(): number {
   for (let i = 0; i < INV_SIZE; i++) if (!state.backpack[i]) return i;
@@ -1837,6 +2003,9 @@ function fromBackpack(idx: number): void {
   state.gems[slot] = e.gems;
   state.refine[slot] = e.refine;
   state.addons[slot] = e.addons || [];
+  state.engrave[slot] = e.engrave || [];
+  state.wdf[slot] = e.wdf || null;
+  state.crystal[slot] = e.crystal || null;
   state.backpack[idx] = null;
   save();
   renderDoll();
@@ -1866,6 +2035,9 @@ function equipFromBp(idx: number, targetSlot: string): void {
   state.gems[targetSlot] = e.gems;
   state.refine[targetSlot] = e.refine;
   state.addons[targetSlot] = e.addons || [];
+  state.engrave[targetSlot] = e.engrave || [];
+  state.wdf[targetSlot] = e.wdf || null;
+  state.crystal[targetSlot] = e.crystal || null;
   state.backpack[idx] = occ; // витіснена річ лягає в звільнену комірку
   save();
   renderDoll();
@@ -2047,7 +2219,7 @@ export function dollInit(): void {
     }
     const tab = target.closest<HTMLElement>('.doll-ed-tab');
     if (tab?.dataset.tab) {
-      editorTab = tab.dataset.tab as 'gems' | 'addons';
+      editorTab = tab.dataset.tab as 'gems' | 'addons' | 'engrave';
       renderEditor();
       return;
     }
@@ -2056,18 +2228,35 @@ export function dollInit(): void {
       void openGemPicker(Number(sock.dataset.gidx));
       return;
     }
+    // Шліфовка/кристал: вибір руни або зняття.
+    const spDel = target.closest<HTMLElement>('[data-special-del]');
+    if (spDel?.dataset.specialDel) {
+      edSetSpecial(spDel.dataset.specialDel as 'wdf' | 'crystal', null);
+      save();
+      renderEditor();
+      renderDoll();
+      return;
+    }
+    const spPick = target.closest<HTMLElement>('.doll-special-pick');
+    if (spPick?.dataset.special) {
+      void openSpecialPicker(spPick.dataset.special as 'wdf' | 'crystal');
+      return;
+    }
     const del = target.closest<HTMLElement>('.doll-addon-del');
     if (del?.dataset.i != null) {
       edDelAddon(Number(del.dataset.i));
       return;
     }
-    if (target.id === 'dollEdAddAddon') edAddAddon();
+    if (target.id === 'dollEdAddAddon' || target.id === 'dollEdAddEngrave') edAddStat();
     else if (target.id === 'dollEdRemove' && editorTarget?.kind === 'slot') {
       const s = editorTarget.slot;
       delete state.equipped[s];
       delete state.gems[s];
       delete state.refine[s];
       delete state.addons[s];
+      delete state.engrave[s];
+      delete state.wdf[s];
+      delete state.crystal[s];
       save();
       closeEditor();
       renderDoll();
@@ -2257,12 +2446,7 @@ export function dollInit(): void {
       // Тач: перший тап — тултіп, другий — редактор.
       if (
         touchTipGate(cell, () =>
-          showTip(cell, ent.item, ent.cat, {
-            gems: ent.gems,
-            refine: ent.refine || 0,
-            isBook: ent.slot === 'qn',
-            isWeapon: ent.slot === 'ta',
-          }),
+          showTip(cell, ent.item, ent.cat, bpTipCtx(ent)),
         )
       )
         return;
@@ -2275,12 +2459,7 @@ export function dollInit(): void {
     if (cell?.dataset.bp != null) {
       const ent = state.backpack[Number(cell.dataset.bp)];
       if (ent)
-        showTip(cell, ent.item, ent.cat, {
-          gems: ent.gems,
-          refine: ent.refine || 0,
-          isBook: ent.slot === 'qn',
-          isWeapon: ent.slot === 'ta',
-        });
+        showTip(cell, ent.item, ent.cat, bpTipCtx(ent));
     }
   });
   $('dollBackpack')?.addEventListener('mouseout', (e) => {
