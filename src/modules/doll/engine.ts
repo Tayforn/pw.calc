@@ -136,16 +136,11 @@ export function computeChar(inp: CharInput, t: Totals, buffs: Record<string, num
   const pi = (t.ld_min || 0) + bf('gs_oi_av');
   const ps = (t.ld_max || 0) + (t.max_oi_av || 0) + bf('gs_oi_av');
   const pe = vu[pAttr] / 100 + 1 + physPct / 100;
-  const pe0 = vu[pAttr] / 100 + 1; // без %-бафів — для flat-атаки з речей (кільця/томи…)
-  const flpMin = t.flat_ld_min || 0;
-  const flpMax = t.flat_ld_max || 0;
   const pa = nm(pAttr, sm);
   const pl = r(vu[pAttr] / 3);
-  // %-бафи атаки (yh/sq…) множать зброю + рівневу частину; flat-джерела (біжутерія,
-  // томи, сети, титули) масштабуються лише атрибутом — так поводиться гра.
   const physAtk: Range = {
-    min: r(pi * pe + flpMin * pe0 + r(hf * pa) * pe - ((pi + flpMin + r(hf * pa)) / 100) * pl) || 1,
-    max: r(ps * pe + flpMax * pe0 + r(hf * pa) * pe - ((ps + flpMax + r(hf * pa)) / 100) * pl) || 1,
+    min: r(pi * pe + r(hf * pa) * pe - ((pi + r(hf * pa)) / 100) * pl) || 1,
+    max: r(ps * pe + r(hf * pa) * pe - ((ps + r(hf * pa)) / 100) * pl) || 1,
   };
 
   // Маг. атака (mypers gl): множник a = nl(tx) + hd (%-бафи sq/so), плоскі gs_xq — до множення.
@@ -153,14 +148,11 @@ export function computeChar(inp: CharInput, t: Totals, buffs: Record<string, num
   const mi = (t.xq_min || 0) + bf('gs_xq');
   const ms = (t.xq_max || 0) + (t.max_xq || 0) + bf('gs_xq');
   const ma = vu.tx / 100 + 1 + magPct / 100;
-  const ma0 = vu.tx / 100 + 1; // без %-бафів — для flat-атаки з речей
-  const flmMin = t.flat_xq_min || 0;
-  const flmMax = t.flat_xq_max || 0;
   const me = nm('tx', sm);
   const mn = uaTx(sm, vu.tx);
   const magAtk: Range = {
-    min: r(ma * mi + ma0 * flmMin) + r(r(hf * me) * ma + mn) || 1,
-    max: r(ma * ms + ma0 * flmMax) + r(r(hf * me) * ma + mn) || 1,
+    min: r(ma * mi) + r(r(hf * me) * ma + mn) || 1,
+    max: r(ma * ms) + r(r(hf * me) * ma + mn) || 1,
   };
 
   // Фіз. захист (mypers qv): ts(ЗАХИСТ СПОРЯДИ, Тіло, Сила, коеф) — тобто захист речей

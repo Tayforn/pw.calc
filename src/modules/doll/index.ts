@@ -364,17 +364,10 @@ function aggregateStats(active: ReadonlySet<string>): Record<string, number> {
     const key = STAT_ALIAS[k] || k;
     t[key] = (t[key] || 0) + v;
   };
-  // Атака НЕ зі зброї (кільця/томи/сети/титули…) — в окремі flat_-ключі: у грі
-  // %-бафи атаки (sq/yh…) множать лише зброю + рівневу частину, а flat-джерела — ні.
-  const addFlatAtk = (k: string, v: number): void => {
-    const key = STAT_ALIAS[k] || k;
-    if (key === 'ld_min' || key === 'ld_max' || key === 'xq_min' || key === 'xq_max') add('flat_' + key, v);
-    else add(k, v);
-  };
   for (const slot in state.equipped) {
     const it = state.equipped[slot];
     if (!active.has(slot)) continue; // непридатна річ (не вистачає рівня/статів) — не враховується
-    const addS = slot === 'ta' ? add : addFlatAtk; // зброя — «бафована» атака, решта — flat
+    const addS = add;
     if (typeof it.sy === 'number') t.sy = Math.max(t.sy || 0, it.sy); // АПС — з предмета
     // Властивості речі (редаговані per-instance; якщо не задані — з бази предмета).
     const ad = state.addons[slot];
@@ -403,13 +396,13 @@ function aggregateStats(active: ReadonlySet<string>): Record<string, number> {
     const v = Math.min(TITLE_LIMIT, Math.max(0, Math.round(Number(raw) || 0)));
     if (!v) continue;
     if (code === 'ld') {
-      addFlatAtk('ld_min', v);
-      addFlatAtk('ld_max', v);
+      add('ld_min', v);
+      add('ld_max', v);
     } else if (code === 'xq') {
-      addFlatAtk('xq_min', v);
-      addFlatAtk('xq_max', v);
+      add('xq_min', v);
+      add('xq_max', v);
     } else {
-      applyStat(addFlatAtk, code, v); // ab_gq розкладеться на 5 стихій, решта — flat
+      applyStat(add, code, v); // ab_gq розкладеться на 5 стихій, решта — flat
     }
   }
   // Бонуси комплектів (сетів): рахуємо деталі за спільним ps, додаємо zn для порогів ≤ к-сті.
@@ -425,11 +418,11 @@ function aggregateStats(active: ReadonlySet<string>): Record<string, number> {
           if (b.type === 'ab_gq') {
             for (const e of ELEM) add(e, b.val);
           } else if (b.type === 'ld') {
-            addFlatAtk('ld_min', b.val);
-            addFlatAtk('ld_max', b.val);
+            add('ld_min', b.val);
+            add('ld_max', b.val);
           } else if (b.type === 'xq') {
-            addFlatAtk('xq_min', b.val);
-            addFlatAtk('xq_max', b.val);
+            add('xq_min', b.val);
+            add('xq_max', b.val);
           } else {
             add(b.type, b.val);
           }
