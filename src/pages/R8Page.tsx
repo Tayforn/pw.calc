@@ -1,4 +1,4 @@
-// Сторінка «r8» — розмітка 1:1 з index.html; логіка — legacy-модуль (див. src/app/legacyInit.ts).
+// Сторінка «r8» (Р8 бонуси) — статична довідкова таблиця, без legacy-логіки.
 export default function R8Page() {
   return (
     <>
