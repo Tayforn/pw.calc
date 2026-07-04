@@ -235,9 +235,10 @@ export interface SkillDef {
   id: number;
   an: number;
   name: string;
-  thw: number; // множник базової атаки (к-сть «ударів зброї»)
-  flat: number; // плоский урон скіла
-  mag: number; // 1 = магічний скіл
+  pm: number; // множник фіз. атаки (thw/jee + половинні + %)
+  mm: number; // множник маг. атаки (dll/jka/vxq/zdb/jgr/uux + %)
+  flat: number; // плоский урон скіла (cpg/nmp + стихійні флети)
+  mag: number; // 1 = редукція за маг./стихійним захистом цілі
 }
 let skills: Record<string, SkillDef[]> | null = null;
 export async function loadSkills(): Promise<void> {

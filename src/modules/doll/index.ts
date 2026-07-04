@@ -364,30 +364,38 @@ function aggregateStats(active: ReadonlySet<string>): Record<string, number> {
     const key = STAT_ALIAS[k] || k;
     t[key] = (t[key] || 0) + v;
   };
+  // Атака НЕ зі зброї (кільця/томи/сети/титули…) — в окремі flat_-ключі: у грі
+  // %-бафи атаки (sq/yh…) множать лише зброю + рівневу частину, а flat-джерела — ні.
+  const addFlatAtk = (k: string, v: number): void => {
+    const key = STAT_ALIAS[k] || k;
+    if (key === 'ld_min' || key === 'ld_max' || key === 'xq_min' || key === 'xq_max') add('flat_' + key, v);
+    else add(k, v);
+  };
   for (const slot in state.equipped) {
     const it = state.equipped[slot];
     if (!active.has(slot)) continue; // непридатна річ (не вистачає рівня/статів) — не враховується
+    const addS = slot === 'ta' ? add : addFlatAtk; // зброя — «бафована» атака, решта — flat
     if (typeof it.sy === 'number') t.sy = Math.max(t.sy || 0, it.sy); // АПС — з предмета
     // Властивості речі (редаговані per-instance; якщо не задані — з бази предмета).
     const ad = state.addons[slot];
     const stats = ad && ad.length ? ad : flattenItemStats(it);
-    for (const a of stats) if (a && a.type) applyStat(add, a.type, num(a.val));
+    for (const a of stats) if (a && a.type) applyStat(addS, a.type, num(a.val));
     // Камені в гніздах (у зброї діє obDops[0], інакше — obDops[1]).
     const ob = state.gems[slot];
     if (Array.isArray(ob)) {
       for (const g of ob) {
         const dop = g && gemDop(g, slot === 'ta');
-        if (dop) applyStat(add, dop[0], dop[1]);
+        if (dop) applyStat(addS, dop[0], dop[1]);
       }
     }
     // Заточка (+N): бонуси головної стати за gh (книги — власна таблиця + порогові допи).
-    for (const b of refineBonuses(it, state.refine[slot] || 0, slot === 'qn')) applyStat(add, b.type, b.val);
+    for (const b of refineBonuses(it, state.refine[slot] || 0, slot === 'qn')) applyStat(addS, b.type, b.val);
     // Гравіювання (ручні стати, mypers item_engrave).
-    for (const a of state.engrave[slot] || []) if (a && a.type) applyStat(add, a.type, num(a.val));
+    for (const a of state.engrave[slot] || []) if (a && a.type) applyStat(addS, a.type, num(a.val));
     // Шліфовка (руна) і кристал — стати з nw.wu (mypers wdfDops/crystalDops).
     for (const sp of [state.wdf[slot], state.crystal[slot]]) {
       const wu = (sp?.nw as { wu?: Array<{ type?: string; val?: unknown }> } | undefined)?.wu;
-      if (Array.isArray(wu)) for (const w of wu) if (w && w.type) applyStat(add, w.type, num(w.val));
+      if (Array.isArray(wu)) for (const w of wu) if (w && w.type) applyStat(addS, w.type, num(w.val));
     }
   }
   // «Титули» (mypers ik): ручні сумарні доповнення — вливаються в тотали як стати речей.
@@ -395,13 +403,13 @@ function aggregateStats(active: ReadonlySet<string>): Record<string, number> {
     const v = Math.min(TITLE_LIMIT, Math.max(0, Math.round(Number(raw) || 0)));
     if (!v) continue;
     if (code === 'ld') {
-      add('ld_min', v);
-      add('ld_max', v);
+      addFlatAtk('ld_min', v);
+      addFlatAtk('ld_max', v);
     } else if (code === 'xq') {
-      add('xq_min', v);
-      add('xq_max', v);
+      addFlatAtk('xq_min', v);
+      addFlatAtk('xq_max', v);
     } else {
-      applyStat(add, code, v); // ab_gq розкладеться на 5 стихій, решта — flat
+      applyStat(addFlatAtk, code, v); // ab_gq розкладеться на 5 стихій, решта — flat
     }
   }
   // Бонуси комплектів (сетів): рахуємо деталі за спільним ps, додаємо zn для порогів ≤ к-сті.
@@ -417,11 +425,11 @@ function aggregateStats(active: ReadonlySet<string>): Record<string, number> {
           if (b.type === 'ab_gq') {
             for (const e of ELEM) add(e, b.val);
           } else if (b.type === 'ld') {
-            add('ld_min', b.val);
-            add('ld_max', b.val);
+            addFlatAtk('ld_min', b.val);
+            addFlatAtk('ld_max', b.val);
           } else if (b.type === 'xq') {
-            add('xq_min', b.val);
-            add('xq_max', b.val);
+            addFlatAtk('xq_min', b.val);
+            addFlatAtk('xq_max', b.val);
           } else {
             add(b.type, b.val);
           }
@@ -1007,13 +1015,13 @@ function skillDamage(me: CharStats, mob: OppMob, sk: SkillDef, critMult: number,
   const lvz = (4000 + spirit) / 4000; // бойовий дух (mypers lvz; у моба mr = 0)
   const csf = 1 + (3 * mobDmg) / (300 + mobDmg); // «урон монстрам» (mypers csf; bc моба = 0)
   const red = sk.mag ? oppMagReductionPerc(mob) : oppReductionPerc(mob, 'phys');
-  const atk = sk.mag ? me.magAtk : me.physAtk;
   const z = 1 - red / 100;
-  // Як у mypers: L/lvz/csf множать усю суму (включно з плоским уроном), oza — лише атаку.
-  const calc = (base: number) =>
-    Math.max(0, Math.round((base * (sk.thw || 1) * hfMult + sk.flat) * L * lvz * csf * z));
-  const min = calc(atk.min);
-  const max = calc(atk.max);
+  // Як у mypers vyp: атакова частина = фіз×pm + маг×mm (×oza), плоска — без oza;
+  // L/lvz/csf множать усю суму.
+  const calc = (p: number, m: number) =>
+    Math.max(0, Math.round(((p * (sk.pm || 0) + m * (sk.mm || 0)) * hfMult + sk.flat) * L * lvz * csf * z));
+  const min = calc(me.physAtk.min, me.magAtk.min);
+  const max = calc(me.physAtk.max, me.magAtk.max);
   return { min, max, critMin: Math.round(min * critMult), critMax: Math.round(max * critMult) };
 }
 
@@ -1324,10 +1332,13 @@ function closeBuffPick(): void {
   const m = $('dollBuffPick');
   if (m) m.hidden = true;
 }
+// Класи, відсутні на сервері (призрак/жнець/паладин/стрілок) — не пропонуємо в пікері бафів.
+const BUFF_PICK_HIDDEN = new Set([11, 12, 13, 14]);
 function renderBuffPickClasses(): void {
   const box = $('dollBuffPickClasses');
   if (!box) return;
   box.innerHTML = Object.keys(CLASS_BY_SM)
+    .filter((sm) => !BUFF_PICK_HIDDEN.has(Number(sm)))
     .map((sm) => {
       const n = Number(sm);
       return '<label><input type="checkbox" data-bclass="' + n + '"' + (buffPickClasses.has(n) ? ' checked' : '') + '> ' + escHtml(CLASS_BY_SM[n]) + '</label>';
@@ -1340,12 +1351,14 @@ function renderBuffPickList(q: string): void {
   const bd = getBuffs();
   if (!bd) return;
   const nameQ = q.trim().toLowerCase();
-  const seen = new Set<number>();
+  // Дедуп за назвою: спільні бафи («Тисяча вітрів»…) є в КОЖНОМУ класі під різними id.
+  const seen = new Set<string>();
   const rows: string[] = [];
   for (const sm of buffPickClasses) {
+    if (BUFF_PICK_HIDDEN.has(sm)) continue;
     for (const b of bd[String(sm)] || []) {
-      if (seen.has(b.id)) continue;
-      seen.add(b.id);
+      if (seen.has(b.name)) continue;
+      seen.add(b.name);
       if (nameQ && !b.name.toLowerCase().includes(nameQ)) continue;
       rows.push(
         '<button type="button" class="doll-buffpick-row" data-addbuff="' + b.id + '">' +
@@ -2346,6 +2359,16 @@ export function dollInit(): void {
     }
     const add = t.closest<HTMLElement>('[data-addbuff]');
     if (add?.dataset.addbuff) addBuff(Number(add.dataset.addbuff));
+  });
+  // Тултіп бафа при наведенні в пікері (повна інфа: рівень, параметри, опис).
+  $('dollBuffPick')?.addEventListener('mouseover', (e) => {
+    const row = (e.target as HTMLElement).closest<HTMLElement>('[data-addbuff]');
+    if (!row?.dataset.addbuff) return;
+    const b = getBuffById(Number(row.dataset.addbuff));
+    if (b) showBuffTip(row, b);
+  });
+  $('dollBuffPick')?.addEventListener('mouseout', (e) => {
+    if ((e.target as HTMLElement).closest('[data-addbuff]')) hideTip();
   });
   $('dollBuffPickClasses')?.addEventListener('change', (e) => {
     const cb = (e.target as HTMLElement).closest<HTMLInputElement>('[data-bclass]');
