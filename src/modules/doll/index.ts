@@ -3,6 +3,7 @@
 // =========================================================
 
 import { escHtml } from '../../utils/format';
+import { showTooltip, hideTooltip } from '../../utils/tooltip';
 import { computeChar, defPerc, type CharStats } from './engine';
 import {
   SLOTS,
@@ -108,6 +109,21 @@ function load(): void {
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T | null;
 
+// Тач-екрани (без hover): перший тап по речі показує тултіп, другий — виконує дію.
+const COARSE_PTR = window.matchMedia('(pointer: coarse)').matches;
+let touchTipFor: HTMLElement | null = null;
+/** true → лише показали тултіп (перший тап); дію виконає повторний тап по тому ж елементу. */
+function touchTipGate(el: HTMLElement, show: () => void): boolean {
+  if (!COARSE_PTR) return false;
+  if (touchTipFor === el) {
+    touchTipFor = null;
+    return false;
+  }
+  touchTipFor = el;
+  show();
+  return true;
+}
+
 // ---------- Вимоги речей / бюджет статів ----------
 
 interface ReqCheck {
@@ -175,7 +191,7 @@ function slotHtml(slot: SlotDef): string {
   const tip = slot.label + (it ? ': ' + it.name : '');
   return (
     '<div class="doll-slot' + filled + bad + '" data-slot="' + slot.slot + '" tabindex="0" role="button" ' +
-    'draggable="' + (it ? 'true' : 'false') + '" title="' + escHtml(tip) + '" aria-label="' + escHtml(tip) + '">' +
+    'draggable="' + (it ? 'true' : 'false') + '" aria-label="' + escHtml(tip) + '">' +
     '<span class="doll-cell">' + cellInner(slot) + '</span>' +
     '<span class="doll-slot-label">' + escHtml(slot.label) + '</span>' +
     '</div>'
@@ -250,6 +266,39 @@ function num(v: unknown): number {
   return typeof v === 'number' ? v : Number(v) || 0;
 }
 
+/** Бонуси заточки речі на рівні lvl: [{type, val}] («av» → ld/xq за наявністю; книги — свої пороги). */
+function refineBonuses(it: Item, lvl: number, isBook: boolean): Array<{ type: string; val: number }> {
+  const out: Array<{ type: string; val: number }> = [];
+  const gh = it.gh as unknown;
+  if (lvl > 0 && Array.isArray(gh) && typeof gh[1] === 'number') {
+    const rv = refineVal(gh[1], lvl, isBook);
+    const types = Array.isArray(gh[0]) ? (gh[0] as string[]) : [String(gh[0])];
+    for (const rt of types) {
+      if (rt === 'av') {
+        if (Array.isArray(it.ld) || num(it.ld)) out.push({ type: 'ld', val: rv });
+        if (Array.isArray(it.xq) || num(it.xq)) out.push({ type: 'xq', val: rv });
+      } else out.push({ type: rt, val: rv });
+    }
+  }
+  // Бонуси заточки книг (mypers ghAddons.qn): кумулятивні пороги +3/+6/+9/+12.
+  if (isBook && lvl > 0) {
+    for (const thr in QN_REFINE_ADDONS) {
+      if (Number(thr) > lvl) continue;
+      for (const [code, val] of Object.entries(QN_REFINE_ADDONS[Number(thr)])) out.push({ type: code, val });
+    }
+  }
+  return out;
+}
+
+/** Дієвий доп каменя в контексті слота (у зброї obDops[0], інакше obDops[1]). */
+function gemDop(g: Item, isWeapon: boolean): [string, number] | null {
+  const dops = g.obDops as unknown;
+  if (!Array.isArray(dops)) return null;
+  const pick = (isWeapon ? dops[0] : dops[1]) || dops[0];
+  if (!Array.isArray(pick)) return null;
+  return [String(pick[0]), parseFloat(String(pick[1])) || 0];
+}
+
 /** Додати стат до тоталів з урахуванням діапазонів/стихій. */
 function applyStat(add: (k: string, v: number) => void, type: string, v: number): void {
   if (type === 'ld') {
@@ -318,51 +367,12 @@ function aggregateStats(active: ReadonlySet<string>): Record<string, number> {
     const ob = state.gems[slot];
     if (Array.isArray(ob)) {
       for (const g of ob) {
-        const dops = g && (g.obDops as unknown);
-        if (!Array.isArray(dops)) continue;
-        const pick = (slot === 'ta' ? dops[0] : dops[1]) || dops[0];
-        if (Array.isArray(pick)) applyStat(add, String(pick[0]), parseFloat(String(pick[1])) || 0);
+        const dop = g && gemDop(g, slot === 'ta');
+        if (dop) applyStat(add, dop[0], dop[1]);
       }
     }
-    // Заточка (+N): бонус головної стати за типом gh[0] (книги мають власну таблицю поправок).
-    const lvl = state.refine[slot] || 0;
-    const gh = it.gh as unknown;
-    const isBook = slot === 'qn';
-    if (lvl > 0 && Array.isArray(gh) && typeof gh[1] === 'number') {
-      const rv = refineVal(gh[1], lvl, isBook);
-      const types = Array.isArray(gh[0]) ? (gh[0] as string[]) : [String(gh[0])];
-      for (const rt of types) {
-        if (rt === 'av') {
-          if (Array.isArray(it.ld) || num(it.ld)) {
-            add('ld_min', rv);
-            add('ld_max', rv);
-          }
-          if (Array.isArray(it.xq) || num(it.xq)) {
-            add('xq_min', rv);
-            add('xq_max', rv);
-          }
-        } else {
-          applyStat(add, rt, rv);
-        }
-      }
-    }
-    // Бонуси заточки книг (mypers ghAddons.qn): кумулятивні пороги +3/+6/+9/+12.
-    if (isBook && lvl > 0) {
-      for (const thr in QN_REFINE_ADDONS) {
-        if (Number(thr) > lvl) continue;
-        for (const [code, val] of Object.entries(QN_REFINE_ADDONS[Number(thr)])) {
-          if (code === 'ld') {
-            add('ld_min', val);
-            add('ld_max', val);
-          } else if (code === 'xq') {
-            add('xq_min', val);
-            add('xq_max', val);
-          } else {
-            add(code, val);
-          }
-        }
-      }
-    }
+    // Заточка (+N): бонуси головної стати за gh (книги — власна таблиця + порогові допи).
+    for (const b of refineBonuses(it, state.refine[slot] || 0, slot === 'qn')) applyStat(add, b.type, b.val);
   }
   // «Титули» (mypers ik): ручні сумарні доповнення — вливаються в тотали як стати речей.
   for (const [code, raw] of Object.entries(state.titles)) {
@@ -452,6 +462,14 @@ function setPieceCount(active: ReadonlySet<string>): Record<string, number> {
   return c;
 }
 
+/** Значення зведення з попереднього рендера (label → текст) — для фліш-підсвітки змін. */
+let prevSummary: Record<string, string> = {};
+/** Перше число з тексту стата («1 019–1 367», «−12%», «5.0 м/с», «297 (+45)»). */
+function statNum(s: string): number {
+  const m = s.replace(/[ \s]/g, '').replace(/−/g, '-').match(/-?\d+(?:[.,]\d+)?/);
+  return m ? parseFloat(m[0].replace(',', '.')) : NaN;
+}
+
 /** Підсумок персонажа: повний розрахунок стат (база + спорядження). */
 function renderSummary(t: Record<string, number>): void {
   const box = $('dollSummary');
@@ -504,7 +522,8 @@ function renderSummary(t: Record<string, number>): void {
     [row('Маг. атака', rng(c.magAtk)), row('Маг. захист (сер.)', f(c.magDef) + ' (−' + c.magDefPerc.toFixed(1) + '%)')],
     [row('Шанс криту', c.crit + '%'), elemRow('lw')],
     [row('Атак/сек', c.aps ? c.aps.toFixed(2) : '—'), elemRow('mo')],
-    [row('Час співу', pct(channel)), elemRow('dn')],
+    // Час співу — з мінусом: додатне значення СКОРОЧУЄ час активації
+    [row('Час співу', (channel > 0 ? '−' : channel < 0 ? '+' : '') + f(Math.abs(channel)) + '%'), elemRow('dn')],
     [row('Міткість', f(c.acc)), elemRow('vt')],
     [row('Ухилення', f(c.eva)), elemRow('sp')],
     [row('Рівень атаки', f(atkLvl)), row('Рівень захисту', f(defLvl))],
@@ -516,6 +535,21 @@ function renderSummary(t: Record<string, number>): void {
     [row('Фіз. пробивання', pct(physPen)), row('Маг. пробивання', pct(magPen))],
   ];
   box.innerHTML = pairs.flat().join('');
+
+  // Фліш-підсвітка змінених стат (зелений — виріс, червоний — впав) відносно попереднього рендера.
+  const cur: Record<string, string> = {};
+  box.querySelectorAll<HTMLElement>('.doll-stat').forEach((el) => {
+    const label = el.querySelector('span')?.textContent || '';
+    const val = el.querySelector('b')?.textContent || '';
+    cur[label] = val;
+    const old = prevSummary[label];
+    if (old != null && old !== val) {
+      const a = statNum(old);
+      const b = statNum(val);
+      if (!Number.isNaN(a) && !Number.isNaN(b) && a !== b) el.classList.add(b > a ? 'flash-up' : 'flash-down');
+    }
+  });
+  prevSummary = cur;
 
   // Бейдж «+N (разом)» біля інпутів атрибутів у шапці (чистий стат + бонус від речей).
   const attrPlus = (id: string, base: number, bonus: number) => {
@@ -1355,7 +1389,20 @@ function edDelAddon(i: number): void {
 
 // ---------- Тултіп предмета ----------
 
-function statLines(it: Item): string {
+/** Контекст надітої/складованої речі для тултіпа: камені, заточка, слот. */
+interface TipCtx {
+  gems?: Array<Item | null>;
+  refine?: number;
+  isBook?: boolean;
+  isWeapon?: boolean;
+}
+
+/** Контекст тултіпа для надітої речі слота. */
+function slotTipCtx(key: string): TipCtx {
+  return { gems: state.gems[key], refine: state.refine[key] || 0, isBook: key === 'qn', isWeapon: key === 'ta' };
+}
+
+function statLines(it: Item, ctx?: TipCtx): string {
   const o = it as Record<string, unknown>;
   const out: string[] = [];
   // Зброя — діапазон «мін–макс», біжутерія/пояси/боєприпаси/томи — плоский бонус «+N».
@@ -1407,15 +1454,54 @@ function statLines(it: Item): string {
     for (const w of nw.wu) if (w && w.type) adds.push('<div class="doll-tip-add">' + propLine(w.type, w.val) + '</div>');
   // абілка
   if (it.ac) adds.push('<div class="doll-tip-abil">⚔ ' + escHtml(lbl('taAddons', it.ac as string)) + '</div>');
+  // Заточка й камені надітої речі — стан конкретного екземпляра.
+  if (ctx?.refine) {
+    for (const b of refineBonuses(it, ctx.refine, !!ctx.isBook))
+      adds.push('<div class="doll-tip-ref">Заточка +' + ctx.refine + ': ' + propLine(b.type, b.val) + '</div>');
+  }
+  if (ctx?.gems) {
+    for (const g of ctx.gems) {
+      if (!g) continue;
+      const dop = gemDop(g, !!ctx.isWeapon);
+      adds.push(
+        '<div class="doll-tip-gem">◆ ' + escHtml(g.name) + (dop ? ' — ' + propLine(dop[0], dop[1]) : '') + '</div>',
+      );
+    }
+  }
 
-  // Комплект (сет).
+  // Комплект (сет): назва (маю/всього), список речей із наявністю, бонуси з підсвіткою активних.
   let setLine = '';
   if (o.ps != null) {
     const sd = getSets();
     const set = sd ? sd[String(o.ps)] : null;
     if (set) {
-      const minK = Object.keys(set.zn).map(Number).sort((a, b) => a - b)[0];
-      setLine = '<div class="doll-tip-set">' + escHtml(set.name) + (minK ? ' (' + minK + ')' : '') + '</div>';
+      const active = computeActiveSlots();
+      const have = setPieceCount(active)[String(o.ps)] || 0;
+      const total = set.pieces || set.xh?.length || 0;
+      // Ключі надітих (активних) речей: категорія + id — для позначення наявних деталей.
+      const worn = new Set<string>();
+      for (const slot of active) {
+        const eq = state.equipped[slot];
+        const cat = SLOTS.find((s) => s.slot === slot)?.cat || '';
+        if (eq) worn.add(cat + ':' + eq.id);
+      }
+      const pieces = (set.xh || [])
+        .map((p) => {
+          const has = worn.has(p.qo + ':' + p.id);
+          return '<div class="doll-tip-setp' + (has ? ' on' : '') + '">' + (has ? '✓ ' : '· ') + escHtml(p.name) + '</div>';
+        })
+        .join('');
+      const bonuses = Object.keys(set.zn)
+        .map(Number)
+        .sort((a, b) => a - b)
+        .map((k) => {
+          const b = set.zn[String(k)];
+          const on = k <= have;
+          return '<div class="doll-tip-setb' + (on ? ' on' : '') + '">' + k + ' дет.: ' + propLine(b.type, b.val) + '</div>';
+        })
+        .join('');
+      setLine =
+        '<div class="doll-tip-set">' + escHtml(set.name) + ' (' + have + '/' + total + ')</div>' + pieces + bonuses;
     }
   }
 
@@ -1427,29 +1513,21 @@ function statLines(it: Item): string {
   );
 }
 
-function showTip(target: HTMLElement, it: Item, cat = ''): void {
-  const tip = $('dollTip');
-  if (!tip) return;
+function showTip(target: HTMLElement, it: Item, cat = '', ctx?: TipCtx): void {
   const lvl = it.hf != null ? ' · ур. ' + it.hf : '';
-  tip.innerHTML =
-    '<div class="doll-tip-name">' + itemNameHtml(it, cat) + '<span class="muted">' + lvl + '</span></div>' +
-    statLines(it);
-  tip.hidden = false;
-  const r = target.getBoundingClientRect();
-  const top = window.scrollY + r.bottom + 8;
-  let left = window.scrollX + r.left;
-  left = Math.min(left, window.scrollX + window.innerWidth - tip.offsetWidth - 12);
-  tip.style.top = top + 'px';
-  tip.style.left = Math.max(8, left) + 'px';
+  // Заточка — в кінці рядка назви, як у mypers: «Шлем героя +4»
+  const refSuf = ctx?.refine ? ' <span class="doll-tip-refn">+' + ctx.refine + '</span>' : '';
+  showTooltip(
+    target,
+    '<div class="doll-tip-name">' + itemNameHtml(it, cat) + refSuf + '<span class="muted">' + lvl + '</span></div>' +
+      statLines(it, ctx),
+  );
 }
 function hideTip(): void {
-  const tip = $('dollTip');
-  if (tip) tip.hidden = true;
+  hideTooltip();
 }
 
 function showBuffTip(target: HTMLElement, b: BuffDef): void {
-  const tip = $('dollTip');
-  if (!tip) return;
   const c = buffCfgFor(b.id);
   const lvl = Math.min(buffMaxLevel(b), c.lvl); // ефективний рівень (з капом)
   // Параметри масштабуються за рівнем/стороною (формула mypers hs).
@@ -1468,16 +1546,12 @@ function showBuffTip(target: HTMLElement, b: BuffDef): void {
     .filter((e) => e.val)
     .map((e) => buffDesc(e.type, e.val))
     .join('. ');
-  tip.innerHTML =
+  showTooltip(
+    target,
     '<div class="doll-tip-name">' + escHtml(b.name) + '</div>' +
-    out.join('') +
-    (desc ? '<div class="doll-tip-sep"></div><div>' + escHtml(desc) + '</div>' : '');
-  tip.hidden = false;
-  const r = target.getBoundingClientRect();
-  let left = window.scrollX + r.left;
-  left = Math.min(left, window.scrollX + window.innerWidth - tip.offsetWidth - 12);
-  tip.style.top = window.scrollY + r.bottom + 8 + 'px';
-  tip.style.left = Math.max(8, left) + 'px';
+      out.join('') +
+      (desc ? '<div class="doll-tip-sep"></div><div>' + escHtml(desc) + '</div>' : ''),
+  );
 }
 
 // ---------- Браузер предметів (пікер) ----------
@@ -1561,6 +1635,7 @@ function renderPickerList(q: string): void {
   const lvlQ = m ? Number(m[1]) : null;
   const nameQ = m ? m[2].trim() : q.trim().toLowerCase();
   const types = pickerGem ? new Set<string>() : activeArmorTypes();
+  const fitOnly = !pickerGem && !!$<HTMLInputElement>('dollPickFit')?.checked;
   // Дедуплікація: один запис на унікальний предмет (назва+іконка+рівень) —
   // прибирає дублі-варіанти (особливо польоти, де та сама модель дублюється по расах).
   const seen = new Set<string>();
@@ -1568,6 +1643,7 @@ function renderPickerList(q: string): void {
     if (lvlQ != null && pickerReqLvl(it) !== lvlQ) return false;
     if (nameQ && !it.name.toLowerCase().includes(nameQ)) return false;
     if (types.size && !types.has(it.ir as string)) return false;
+    if (fitOnly && !meetsReq(it).ok) return false;
     const o = it as Record<string, unknown>;
     // Включаємо tv (грейд) у ключ — щоб варіанти ★/★★/★★★ не злипались.
     const key = it.name + '|' + o.an + '|' + (it.oj ?? '') + '|' + (o.tv ?? '');
@@ -1575,6 +1651,10 @@ function renderPickerList(q: string): void {
     seen.add(key);
     return true;
   });
+  // Сортування за рівнем (стабільне; порожнє значення — порядок як у даних).
+  const sort = $<HTMLSelectElement>('dollPickSort')?.value || '';
+  if (sort === 'lvl-asc') rows.sort((a, b) => pickerReqLvl(a) - pickerReqLvl(b));
+  else if (sort === 'lvl-desc') rows.sort((a, b) => pickerReqLvl(b) - pickerReqLvl(a));
   list.innerHTML =
     rows.slice(0, 400).map((it) => pickerRowHtml(it, pickerCat)).join('') ||
     '<div class="muted" style="padding:18px;text-align:center">Нічого не знайдено.</div>';
@@ -1590,6 +1670,9 @@ async function openModal(title: string, cat: string, hasCurrent: boolean): Promi
   const unequip = $('dollPickUnequip');
   if (tEl) tEl.textContent = title;
   if (search) search.value = '';
+  // Фільтр придатності/сортування — лише для речей (для каменів не має сенсу).
+  const ctl = document.querySelector<HTMLElement>('.doll-pick-ctl');
+  if (ctl) ctl.hidden = !!pickerGem;
   if (unequip) {
     unequip.hidden = !hasCurrent;
     unequip.textContent = pickerGem ? 'Прибрати камінь' : 'Зняти';
@@ -1747,6 +1830,19 @@ function fromBackpack(idx: number): void {
   renderDoll();
 }
 
+/** ПКМ по речі в рюкзаку: вдягнути в її слот; якщо зайнято — свап (витіснена лягає в комірку). */
+function bpEquipSwap(idx: number): void {
+  const e = state.backpack[idx];
+  if (!e) return;
+  let slot = e.slot;
+  // Кільця: якщо рідний слот зайнятий, а другий вільний — беремо вільний.
+  if (e.cat === 'oq' && state.equipped[slot]) {
+    const other = slot === 'cr' ? 'cd' : 'cr';
+    if (!state.equipped[other]) slot = other;
+  }
+  equipFromBp(idx, slot);
+}
+
 /** Вдягнути річ із комірки рюкзака у конкретний слот (drag), якщо тип збігається. */
 function equipFromBp(idx: number, targetSlot: string): void {
   const e = state.backpack[idx];
@@ -1782,7 +1878,7 @@ function renderBackpack(): void {
     if (e) {
       cells.push(
         '<button type="button" class="doll-bp-cell is-filled' + (meetsReq(e.item).ok ? '' : ' is-bad') +
-          '" draggable="true" data-bp="' + i + '" title="' + escHtml(e.item.name) + '">' +
+          '" draggable="true" data-bp="' + i + '" aria-label="' + escHtml(e.item.name) + '">' +
           '<span class="doll-cell"><span class="doll-icon" style="' + iconStyle(e.item, e.cat, state.gender) + '"></span></span></button>',
       );
     } else {
@@ -1850,10 +1946,6 @@ export function dollInit(): void {
   const panel = document.querySelector('[data-panel="doll"]');
   if (!panel) return;
   document.documentElement.style.setProperty('--doll-cell-bg', "url('" + ASSET_BASE + "items/item-cells.png')");
-  // Тултіп — у body: усередині панелі спозиційований предок зсуває absolute-координати
-  // (showTip рахує їх від документа), і тултіп опинявся не біля курсора / за екраном.
-  const tipEl = $('dollTip');
-  if (tipEl && tipEl.parentElement !== document.body) document.body.appendChild(tipEl);
   load();
   void initHeader();
   initModTabs();
@@ -1871,7 +1963,13 @@ export function dollInit(): void {
   const grid = $('dollGrid');
   grid?.addEventListener('click', (e) => {
     const slot = (e.target as HTMLElement).closest<HTMLElement>('.doll-slot');
-    if (slot?.dataset.slot) slotClick(slot.dataset.slot);
+    if (!slot?.dataset.slot) return;
+    const key = slot.dataset.slot;
+    const it = state.equipped[key];
+    // Тач: перший тап по надітій речі — тултіп, другий — редактор.
+    if (it && touchTipGate(slot, () => showTip(slot, it, SLOTS.find((s) => s.slot === key)?.cat || '', slotTipCtx(key))))
+      return;
+    slotClick(key);
   });
   grid?.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
@@ -1885,16 +1983,36 @@ export function dollInit(): void {
   // Тултіп при наведенні на заповнений слот.
   grid?.addEventListener('mouseover', (e) => {
     if (dragSrc) return; // під час перетягування тултіп не показуємо
-    const slot = (e.target as HTMLElement).closest<HTMLElement>('.doll-slot.is-filled');
-    if (slot?.dataset.slot) {
-      const it = state.equipped[slot.dataset.slot];
-      const cat = SLOTS.find((s) => s.slot === slot.dataset.slot)?.cat || '';
-      if (it) showTip(slot, it, cat);
+    const slot = (e.target as HTMLElement).closest<HTMLElement>('.doll-slot');
+    if (!slot?.dataset.slot) return;
+    const key = slot.dataset.slot;
+    const it = state.equipped[key];
+    const cat = SLOTS.find((s) => s.slot === key)?.cat || '';
+    if (it) {
+      showTip(slot, it, cat, slotTipCtx(key));
+    } else {
+      // Порожній слот — тултіп із назвою слота.
+      const def = SLOTS.find((s) => s.slot === key);
+      if (!def) return;
+      showTooltip(
+        slot,
+        '<div class="doll-tip-name">' + escHtml(def.label) + '</div>' +
+          '<span class="doll-tip-type">Порожній слот — клікни, щоб обрати річ</span>',
+      );
     }
   });
   grid?.addEventListener('mouseout', (e) => {
-    if (!(e.target as HTMLElement).closest('.doll-slot.is-filled')) return;
+    if (!(e.target as HTMLElement).closest('.doll-slot')) return;
     hideTip();
+  });
+  // ПКМ по надітій речі — зняти в першу вільну комірку рюкзака (браузерне меню не відкриваємо).
+  grid?.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    const slot = (e.target as HTMLElement).closest<HTMLElement>('.doll-slot');
+    if (slot?.dataset.slot && state.equipped[slot.dataset.slot]) {
+      hideTip();
+      toBackpack(slot.dataset.slot);
+    }
   });
 
   // Редактор речі: кліки (вкладки, гнізда, к-сть гнізд, дії, видалити доп).
@@ -2082,9 +2200,16 @@ export function dollInit(): void {
   const pickerSearchVal = () => $<HTMLInputElement>('dollPickSearch')?.value ?? '';
   $('dollPickSearch')?.addEventListener('input', () => renderPickerList(pickerSearchVal()));
   $('dollPickTypes')?.addEventListener('change', () => renderPickerList(pickerSearchVal()));
+  $('dollPickFit')?.addEventListener('change', () => renderPickerList(pickerSearchVal()));
+  $('dollPickSort')?.addEventListener('change', () => renderPickerList(pickerSearchVal()));
   $('dollPickList')?.addEventListener('click', (e) => {
     const row = (e.target as HTMLElement).closest<HTMLElement>('.doll-pick-row');
-    if (row?.dataset.id) equip(Number(row.dataset.id));
+    if (!row?.dataset.id) return;
+    // Тач: перший тап — тултіп речі, другий — вдягнути.
+    const it = pickerItems.find((x) => Number(x.id) === Number(row.dataset.id));
+    if (it && touchTipGate(row, () => showTip(row, it, pickerCat))) return;
+    hideTip();
+    equip(Number(row.dataset.id));
   });
   // Тултіп речі при наведенні в списку пошуку.
   $('dollPickList')?.addEventListener('mouseover', (e) => {
@@ -2105,6 +2230,19 @@ export function dollInit(): void {
   $('dollBackpack')?.addEventListener('click', (e) => {
     const cell = (e.target as HTMLElement).closest<HTMLElement>('.doll-bp-cell.is-filled');
     if (cell?.dataset.bp != null && state.backpack[Number(cell.dataset.bp)]) {
+      const ent = state.backpack[Number(cell.dataset.bp)]!;
+      // Тач: перший тап — тултіп, другий — редактор.
+      if (
+        touchTipGate(cell, () =>
+          showTip(cell, ent.item, ent.cat, {
+            gems: ent.gems,
+            refine: ent.refine || 0,
+            isBook: ent.slot === 'qn',
+            isWeapon: ent.slot === 'ta',
+          }),
+        )
+      )
+        return;
       openEditor({ kind: 'bp', idx: Number(cell.dataset.bp) });
     }
   });
@@ -2113,11 +2251,26 @@ export function dollInit(): void {
     const cell = (e.target as HTMLElement).closest<HTMLElement>('.doll-bp-cell');
     if (cell?.dataset.bp != null) {
       const ent = state.backpack[Number(cell.dataset.bp)];
-      if (ent) showTip(cell, ent.item, ent.cat);
+      if (ent)
+        showTip(cell, ent.item, ent.cat, {
+          gems: ent.gems,
+          refine: ent.refine || 0,
+          isBook: ent.slot === 'qn',
+          isWeapon: ent.slot === 'ta',
+        });
     }
   });
   $('dollBackpack')?.addEventListener('mouseout', (e) => {
     if ((e.target as HTMLElement).closest('.doll-bp-cell')) hideTip();
+  });
+  // ПКМ по речі в рюкзаку — вдягнути (свап, якщо слот зайнятий); браузерне меню не відкриваємо.
+  $('dollBackpack')?.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    const cell = (e.target as HTMLElement).closest<HTMLElement>('.doll-bp-cell');
+    if (cell?.dataset.bp != null && state.backpack[Number(cell.dataset.bp)]) {
+      hideTip();
+      bpEquipSwap(Number(cell.dataset.bp));
+    }
   });
 
   // Drag-and-drop: персонаж ↔ інвентар (вільне розміщення по комірках).

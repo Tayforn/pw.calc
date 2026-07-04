@@ -129,6 +129,7 @@ export interface SetDef {
   name: string;
   zn: Record<string, { type: string; val: number }>; // поріг (к-сть деталей) → бонус
   pieces: number;
+  xh?: Array<{ qo: string; id: number; name: string }>; // деталі сета (категорія + id + імʼя)
 }
 let sets: Record<string, SetDef> | null = null;
 export async function loadSets(): Promise<Record<string, SetDef>> {

@@ -23,6 +23,9 @@
 
 * { box-sizing: border-box; }
 
+/* hidden-атрибут завжди ховає елемент — інакше класи з display (напр. .btn) його перебивають */
+[hidden] { display: none !important; }
+
 html, body {
   margin: 0;
   padding: 0;
@@ -213,6 +216,10 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
 .partner-logo:hover {
   border-color: rgba(227, 185, 94, 0.4);
   background: rgba(227, 185, 94, 0.08);
+}
+/* На вузьких екранах партнер-лого тіснить індикатор голди — ховаємо */
+@media (max-width: 520px) {
+  .partner-logo { display: none; }
 }
 
 .header-meta { font-size: 13.5px; color: var(--text-dim); }
@@ -661,7 +668,11 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
   display: flex;
   flex-direction: column;
   gap: 8px;
+  /* дозволяємо полю стискатись у вузьких grid-колонках (інакше інпут із
+     внутрішньою мін-шириною вилазить за край картки на мобільних) */
+  min-width: 0;
 }
+.field input, .field select { min-width: 0; }
 .field label {
   font-size: 13px;
   color: var(--text-dim);
@@ -940,14 +951,16 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   border-bottom: 1px solid var(--line);
 }
 .data-table th {
-  background: rgba(255, 255, 255, 0.03);
+  /* липне ПІД сайт-хедером (висота — з JS у --header-h); фон непрозорий, щоб рядки не просвічували */
+  background: var(--bg-2);
   color: var(--text-dim);
   font-weight: 600;
   font-size: 12.5px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   position: sticky;
-  top: 0;
+  top: var(--header-h, 64px);
+  z-index: 2;
 }
 .data-table tbody tr:hover { background: rgba(227, 185, 94, 0.05); }
 
@@ -1124,9 +1137,12 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   border-color: rgba(227, 185, 94, 0.35); background: rgba(227, 185, 94, 0.05); outline: none;
 }
 .doll-cell {
-  width: 32px; height: 32px; flex: none; position: relative; display: block;
+  /* 34×34 із border-box: контент рівно 32px — іконка/спрайт НЕ накривають правий/нижній бордер,
+     тож підсвітка рамки рівномірна з усіх боків */
+  width: 34px; height: 34px; flex: none; position: relative; display: block;
   border: 1px solid var(--line-2); border-radius: 5px;
   background: var(--doll-cell-bg, var(--bg-1)) -160px 0 no-repeat; /* плейн порожня рамка */
+  background-origin: content-box; background-clip: content-box;
   box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.4);
 }
 .doll-slot.is-filled .doll-cell { border-color: rgba(227, 185, 94, 0.55); }
@@ -1146,6 +1162,14 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
 /* Фіксовані допи предмета — блакитні, як подсветка в mypers/грі (data-колір, виняток із золотого акценту) */
 .doll-tip-add { color: #6fa8ff; }
 html[data-theme='light'] .doll-tip-add { color: #2f6bd8; }
+/* Заточка (+N у назві та рядок бонуса) і камені надітої речі */
+.doll-tip-refn { color: var(--accent); font-weight: 700; }
+.doll-tip-ref { color: var(--good); }
+.doll-tip-gem { color: var(--accent); }
+/* Тултіп вміння джина (/#genie): опис у підвалі */
+.doll-tip .skl-tip-text { color: var(--text-dim); }
+.doll-tip .skl-info { display: flex; justify-content: space-between; gap: 12px; }
+.doll-tip .skl-info-l { color: var(--text-mute); }
 .doll-tip-bad { color: #ff8a8a; font-weight: 600; }
 .doll-tip-sep { height: 1px; background: var(--line-2); margin: 6px 0; }
 .doll-tip-type { color: var(--text-mute); }
@@ -1166,17 +1190,31 @@ html[data-theme='light'] .doll-tip-add { color: #2f6bd8; }
 /* У світлій темі білий (gx-0) — у списку темний фон, тож лишаємо світлим лише там */
 html[data-theme='light'] .doll-pick-name .gx-0, html[data-theme='light'] .doll-tip-name .gx-0 { color: var(--text); }
 .doll-tip-set { margin-top: 6px; color: var(--accent); font-weight: 600; }
+/* Деталі сета: наявні — зелені, відсутні — приглушені; бонуси — активні підсвічені */
+.doll-tip-setp { color: var(--text-mute); }
+.doll-tip-setp.on { color: var(--good); }
+.doll-tip-setb { color: var(--text-mute); }
+.doll-tip-setb.on { color: var(--accent); }
 
 .doll-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .doll-avail .doll-avail-v { font-size: 18px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; padding-top: 4px; }
 .doll-avail .doll-avail-v.over { color: var(--bad); }
-.doll-slot.is-bad .doll-cell { border-color: rgba(255, 94, 108, 0.7); box-shadow: inset 0 0 6px rgba(255, 94, 108, 0.4); }
+/* Невалідна річ: червона заливка поверх іконки (як у mypers) + червона рамка */
+.doll-slot.is-bad .doll-cell, .doll-bp-cell.is-bad .doll-cell { border-color: rgba(255, 94, 108, 0.9); }
+.doll-slot.is-bad .doll-cell::after, .doll-bp-cell.is-bad .doll-cell::after {
+  content: ''; position: absolute; inset: 0; border-radius: 4px;
+  background: rgba(255, 50, 62, 0.45); pointer-events: none;
+}
 .doll-pick-req { display: block; font-size: 11px; color: var(--text-mute); }
 .doll-pick-req.bad { color: #ff8a8a; }
+/* Контролі пікера: «лише придатні» + сортування за рівнем */
+.doll-pick-ctl { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; font-size: 12.5px; color: var(--text-dim); }
+.doll-pick-fit { display: flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; }
+.doll-pick-ctl select { font-size: 12.5px; padding: 4px 26px 4px 8px; }
 .doll-pick-types { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; font-size: 12.5px; color: var(--text-dim); }
 .doll-pick-types label { display: flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap; }
 
-.doll-backpack { display: grid; grid-template-columns: repeat(8, 32px); gap: 8px; justify-content: center; }
+.doll-backpack { display: grid; grid-template-columns: repeat(8, 34px); gap: 8px; justify-content: center; }
 .doll-bp-cell { background: none; border: none; padding: 0; cursor: grab; }
 .doll-bp-cell.is-filled:active { cursor: grabbing; }
 .doll-bp-cell.empty { cursor: default; }
@@ -1275,6 +1313,11 @@ html[data-theme='light'] .doll-pick-name .gx-0, html[data-theme='light'] .doll-t
 html[data-theme='light'] .doll-stats2 .doll-stat:nth-child(4n + 1),
 html[data-theme='light'] .doll-stats2 .doll-stat:nth-child(4n + 2) { background: rgba(0, 0, 0, 0.04); }
 @media (max-width: 560px) { .doll-stats2 { grid-template-columns: 1fr; } }
+/* Фліш зміненого стата: зелений — виріс, червоний — впав */
+.doll-stats2 .doll-stat.flash-up b { animation: statFlashUp 1s ease-out; }
+.doll-stats2 .doll-stat.flash-down b { animation: statFlashDown 1s ease-out; }
+@keyframes statFlashUp { 0%, 60% { color: var(--good); } }
+@keyframes statFlashDown { 0%, 60% { color: var(--bad); } }
 /* Шапка картки «Бафи | Титули»: сегмент-перемикач + підказка */
 .doll-mods-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
 .doll-mods-hint { font-size: 12.5px; }
@@ -1342,10 +1385,13 @@ html[data-theme='light'] .doll-stats2 .doll-stat:nth-child(4n + 2) { background:
 .doll-buff-slot { display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .doll-buff-ic {
   width: 34px; height: 34px; padding: 0; cursor: pointer; border-radius: 5px;
-  border: 1px solid var(--line-2); background: var(--bg-1); position: relative; overflow: hidden;
+  border: 1px solid var(--line-2); position: relative; overflow: hidden;
+  /* спрайт-фон клітинки (плейн рамка), як у mypers */
+  background: var(--doll-cell-bg, var(--bg-1)) -160px 0 no-repeat;
   filter: grayscale(0.55) brightness(0.72); transition: filter .12s, border-color .12s;
 }
-.doll-buff-ic .doll-icon { position: absolute; left: 1px; top: 1px; }
+/* 34px кнопка з border-box: контент 32px — іконка рівно по центру від 0,0 */
+.doll-buff-ic .doll-icon { position: absolute; left: 0; top: 0; }
 .doll-buff-ic:hover { border-color: rgba(227, 185, 94, 0.6); filter: none; }
 .doll-buff-ic.on { filter: none; border-color: rgba(53, 224, 161, 0.6); box-shadow: 0 0 0 1px rgba(53, 224, 161, 0.4); }
 .doll-buff-ic.empty {

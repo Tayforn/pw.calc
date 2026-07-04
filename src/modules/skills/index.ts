@@ -4,6 +4,7 @@
 // =========================================================
 
 import { escHtml } from '../../utils/format';
+import { showTooltip, hideTooltip } from '../../utils/tooltip';
 import { gcInit, gcIsDisabled, gcIsPicked, gcSetSkills, gcSkillAffHtml, gcToggle } from './genieCalc';
 import {
   loadClasses,
@@ -21,6 +22,20 @@ import {
 
 // ---------- спільне ----------
 const L = (n: number) => 'Рівень ' + n;
+
+// Тач-екрани: перший тап по вмінню джина показує тултіп, другий — дію (вибір у білд).
+const COARSE_PTR = window.matchMedia('(pointer: coarse)').matches;
+let touchTipFor: HTMLElement | null = null;
+function touchTipGate(el: HTMLElement, show: () => void): boolean {
+  if (!COARSE_PTR) return false;
+  if (touchTipFor === el) {
+    touchTipFor = null;
+    return false;
+  }
+  touchTipFor = el;
+  show();
+  return true;
+}
 
 function infoRow(label: string, val: string): string {
   if (val == null || val === '' || val === '-') return '';
@@ -169,12 +184,16 @@ function renderGenieGrid(): void {
           (gcIsDisabled(s.ref) ? ' dis' : '');
         return (
           `<button type="button" class="skl-tile skl-tile-g${state}" ` +
-          `style="${genieIconStyle(s.page, s.posx, s.posy)}" data-gi="${i}" title="${escHtml(s.name)}" aria-label="${escHtml(s.name)}"></button>`
+          `style="${genieIconStyle(s.page, s.posx, s.posy)}" data-gi="${i}" aria-label="${escHtml(s.name)}"></button>`
         );
       })
       .join('') || '<p class="muted skl-empty">Нічого не знайдено.</p>';
   grid.querySelectorAll<HTMLButtonElement>('.skl-tile-g').forEach((b) =>
     b.addEventListener('click', () => {
+      const s = GENIE[+b.dataset.gi!];
+      // Тач: перший тап — тултіп, другий — вибір у білд.
+      if (s && touchTipGate(b, () => showGenieTip(b, s))) return;
+      hideGenieTip();
       curGenie = +b.dataset.gi!;
       curGenieLvl = 0;
       gcToggle(GENIE[curGenie].ref); // вибір у білд калькулятора (якщо доступне)
@@ -182,6 +201,27 @@ function renderGenieGrid(): void {
       renderGenieDetail();
     }),
   );
+}
+
+// ---------- Тултіп вміння джина (hover по іконці в сітці) ----------
+
+/** Інфа про вміння джина (початковий рівень) — той самий контент, що правий блок. */
+function genieTipHtml(s: GenieSkill): string {
+  const lvlText = s.levels > 1 ? L(1) : s.lvlLabel || 'Початковий навик';
+  return (
+    `<div class="doll-tip-name">${escHtml(s.name)} <span class="muted">· ${escHtml(lvlText)}</span></div>` +
+    infoRow('Потрібний рівень джина', s.stats['0']?.[0] ?? '') +
+    infoRow('Дух для вивчення', s.stats['1']?.[0] ?? '') +
+    gcSkillAffHtml(s.ref) +
+    `<div class="doll-tip-sep"></div><div class="skl-tip-text">${renderTpl(s.tpl, s.stats, 0)}</div>`
+  );
+}
+
+function showGenieTip(target: HTMLElement, s: GenieSkill): void {
+  showTooltip(target, genieTipHtml(s), 320);
+}
+function hideGenieTip(): void {
+  hideTooltip();
 }
 
 function renderGenieDetail(): void {
@@ -328,6 +368,19 @@ export function skillsInit(): void {
   gs?.addEventListener('input', () => {
     genieQ = gs.value;
     renderGenieGrid();
+  });
+
+  // Тултіп вміння джина при наведенні (делегування — сітка перемальовується).
+  const gGrid = document.getElementById('sklGenieGrid');
+  gGrid?.addEventListener('mouseover', (e) => {
+    const tile = (e.target as HTMLElement).closest<HTMLElement>('.skl-tile-g');
+    if (tile?.dataset.gi != null) {
+      const s = GENIE[Number(tile.dataset.gi)];
+      if (s) showGenieTip(tile, s);
+    }
+  });
+  gGrid?.addEventListener('mouseout', (e) => {
+    if ((e.target as HTMLElement).closest('.skl-tile-g')) hideGenieTip();
   });
 
   // калькулятор джина: зміна рівня/удачі/фільтрів перемальовує сітку

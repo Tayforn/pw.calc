@@ -1113,8 +1113,7 @@
         </p>
       </details>
 
-      <!-- плаваючий тултіп + модалка вибору предмета -->
-      <div class="doll-tip" id="dollTip" hidden></div>
+      <!-- модалка вибору предмета (плаваючий тултіп — спільний, src/utils/tooltip.ts) -->
       <div class="doll-picker" id="dollPicker" hidden>
         <div class="doll-picker-box card">
           <header class="doll-picker-head">
@@ -1124,6 +1123,14 @@
             <button type="button" class="doll-picker-x" id="dollPickClose" aria-label="Закрити">✕</button>
           </header>
           <input type="search" id="dollPickSearch" placeholder="80 (треб. ур.), назва…" autocomplete="off" />
+          <div class="doll-pick-ctl">
+            <label class="doll-pick-fit"><input type="checkbox" id="dollPickFit" /> лише придатні мені</label>
+            <select id="dollPickSort" aria-label="Сортування">
+              <option value="">без сортування</option>
+              <option value="lvl-asc">рівень ↑</option>
+              <option value="lvl-desc">рівень ↓</option>
+            </select>
+          </div>
           <div class="doll-pick-types" id="dollPickTypes" hidden></div>
           <p class="muted" id="dollPickCount" style="margin:8px 0 0"></p>
           <div class="doll-picker-list" id="dollPickList"></div>
