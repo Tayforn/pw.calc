@@ -2,14 +2,13 @@
 // Ініціалізація legacy-модулів (калькулятори/сторінки, що ще керують
 // своїм DOM за id). Викликається ОДИН раз після монтування React-дерева.
 // Фаза 3 міграції поступово переносить ці модулі в ідіоматичний React;
-// лишились: doll, rb (Leaflet-карта — імперативна за природою).
+// лишився: rb (Leaflet-карта — імперативна за природою).
 // =========================================================
 
 import { initClipboard } from '../utils/clipboard';
 import { initNumberSteppers } from '../utils/numberStepper';
 import { applyDefaultEggPrice } from '../settings';
 import { initEggPriceSync } from '../settings/eggPrice';
-import { dollInit } from '../modules/doll';
 import { rbInit } from '../modules/rb';
 
 export { rbActivate } from '../modules/rb';
@@ -34,7 +33,6 @@ export function initLegacyModules(): void {
   // Синхронізація спільних полів «ціна яйця» між табами (React-сторінки читають
   // значення й реагують через useEggPriceTick — тут лише DOM-синк, без ре-рендера).
   initEggPriceSync(() => {});
-  dollInit();
   rbInit();
   applyDefaultEggPrice();
 
