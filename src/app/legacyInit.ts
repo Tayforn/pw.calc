@@ -14,7 +14,6 @@ import { initRefine, renderRefine } from '../modules/refine/ui';
 import { initMonteCarlo } from '../modules/refine/montecarlo';
 import { initReverse } from '../modules/refine/budget';
 import { simInit, simRender } from '../modules/simulator';
-import { gsnInit } from '../modules/gsn';
 import { dollInit } from '../modules/doll';
 import { skillsInit } from '../modules/skills';
 import { rbInit } from '../modules/rb';
@@ -51,7 +50,7 @@ export function initLegacyModules(): void {
   initMonteCarlo(getSettings);
   initReverse(getSettings);
   simInit();
-  gsnInit();  dollInit();
+  dollInit();
   skillsInit();
   rbInit();
   applyDefaultEggPrice();
