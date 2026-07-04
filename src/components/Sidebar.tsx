@@ -5,6 +5,7 @@
 
 import type { ReactNode } from 'react';
 import { PANEL_GROUP, groupTabs } from '../app/routes';
+import { useGoldTouched } from '../app/useSettings';
 
 interface NavEntry {
   tab: string; // вкладка при кліку (для груп — перша в групі)
@@ -62,6 +63,7 @@ interface Props {
 
 export default function Sidebar({ route, onNavigate }: Props) {
   const activeGroup = PANEL_GROUP[route];
+  const goldTouched = useGoldTouched();
   return (
     <aside className="sidebar" id="appSidebar">
       <nav className="nav-primary" role="tablist" aria-label="Розділи">
@@ -75,7 +77,10 @@ export default function Sidebar({ route, onNavigate }: Props) {
           return (
             <button
               key={n.tab}
-              className={'tab' + (n.settings ? ' tab-settings' : '') + (active ? ' active' : '')}
+              className={
+                'tab' + (n.settings ? ' tab-settings' : '') + (active ? ' active' : '') +
+                (n.settings && !goldTouched ? ' needs-attention' : '')
+              }
               role="tab"
               aria-selected={active}
               title={n.settings ? n.label : undefined}

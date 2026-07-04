@@ -4,13 +4,19 @@
 // =========================================================
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import { getSettings, settingsVersion, subscribeSettings } from '../settings';
+import { getSettings, isGoldPriceTouched, settingsVersion, subscribeSettings } from '../settings';
 import type { Settings } from '../types';
 
 /** Налаштування з підпискою: компонент ре-рендериться при зміні. */
 export function useSettings(): Settings {
   useSyncExternalStore(subscribeSettings, settingsVersion);
   return getSettings();
+}
+
+/** Чи змінював користувач ціну голди (для індикатора «дефолт»/крапки-нагадування). */
+export function useGoldTouched(): boolean {
+  useSyncExternalStore(subscribeSettings, settingsVersion);
+  return isGoldPriceTouched();
 }
 
 /** Лічильник змін спільних полів «ціна яйця» (.egg-price-input синхронізуються

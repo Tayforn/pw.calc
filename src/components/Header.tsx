@@ -3,6 +3,8 @@
 // =========================================================
 
 import { routeUrl } from '../app/useRoute';
+import { useGoldTouched, useSettings } from '../app/useSettings';
+import { fmt } from '../utils/format';
 
 interface Props {
   navOpen: boolean;
@@ -20,6 +22,8 @@ function toggleTheme(): void {
 }
 
 export default function Header({ navOpen, onNavToggle }: Props) {
+  const settings = useSettings();
+  const goldTouched = useGoldTouched();
   return (
     <header className="site-header">
       <div className="container header-inner">
@@ -68,12 +72,12 @@ export default function Header({ navOpen, onNavToggle }: Props) {
         <div className="header-meta">
           <a
             href={routeUrl('settings')}
-            className="gold-indicator"
+            className={'gold-indicator' + (goldTouched ? '' : ' is-default')}
             id="goldIndicator"
             data-goto="settings"
             title="Натисни, щоб уточнити ціну голди в налаштуваннях"
           >
-            <span className="gold-indicator-text">1 <span>голда</span> = —</span>
+            <span className="gold-indicator-text">1 <span>голда</span> = {fmt(settings.goldPrice)} <span>монет</span></span>
             <span className="gold-default-badge" aria-hidden="true">дефолт</span>
           </a>
         </div>

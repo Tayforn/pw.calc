@@ -8,7 +8,7 @@
 import { updateAllBudgetHints } from '../utils/budgetHint';
 import { initClipboard } from '../utils/clipboard';
 import { initNumberSteppers } from '../utils/numberStepper';
-import { applyDefaultEggPrice, getSettings, initSettings } from '../settings';
+import { applyDefaultEggPrice, getSettings, subscribeSettings } from '../settings';
 import { initEggPriceSync } from '../settings/eggPrice';
 import { initRefine, renderRefine } from '../modules/refine/ui';
 import { initMonteCarlo } from '../modules/refine/montecarlo';
@@ -46,7 +46,7 @@ export function initLegacyModules(): void {
   });
 
   initClipboard();
-  initSettings(renderAll);
+  subscribeSettings(renderAll);
   initEggPriceSync(renderAll);
   initRefine(renderRefine);
   initMonteCarlo(getSettings);
