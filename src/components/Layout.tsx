@@ -85,11 +85,10 @@ export default function Layout() {
   );
 
   // Активація вкладок з побічними ефектами + скрол нагору (як у legacy setTab).
+  // rb — легасі-панель на Leaflet, її треба «розбудити» при показі.
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (route === 'rb') rbActivate();
-    const skl = (window as unknown as { __sklActivate?: (n: string) => void }).__sklActivate;
-    if (skl) skl(route);
   }, [route]);
 
   // Esc закриває drawer на мобільному; глобальні [data-goto]-посилання ведуть на вкладку.
