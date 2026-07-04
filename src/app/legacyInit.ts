@@ -13,7 +13,6 @@ import { initEggPriceSync } from '../settings/eggPrice';
 import { initRefine, renderRefine } from '../modules/refine/ui';
 import { initMonteCarlo } from '../modules/refine/montecarlo';
 import { initReverse } from '../modules/refine/budget';
-import { simInit, simRender } from '../modules/simulator';
 import { dollInit } from '../modules/doll';
 import { skillsInit } from '../modules/skills';
 import { rbInit } from '../modules/rb';
@@ -23,7 +22,6 @@ export { rbActivate } from '../modules/rb';
 // renderAll — викликається при зміні налаштувань, ціни яйця та форм заточки/порівняння.
 function renderAll(): void {
   renderRefine();
-  simRender();
   updateAllBudgetHints();
 }
 
@@ -48,8 +46,7 @@ export function initLegacyModules(): void {
   initEggPriceSync(renderAll);
   initRefine(renderRefine);
   initMonteCarlo(getSettings);
-  initReverse(getSettings);
-  simInit();
+  initReverse(getSettings);
   dollInit();
   skillsInit();
   rbInit();
