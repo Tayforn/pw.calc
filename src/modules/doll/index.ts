@@ -679,7 +679,7 @@ function renderEditor(): void {
         .map(
           (g, i) =>
             '<button type="button" class="doll-socket' + (g ? ' is-filled' : '') + '" data-gidx="' + i +
-            '" title="' + (g ? escHtml(g.name) : 'Порожнє гніздо') + '"><span class="doll-cell sm">' +
+            '" aria-label="' + (g ? escHtml(g.name) : 'Порожнє гніздо') + '"><span class="doll-cell sm">' +
             (g ? '<span class="doll-icon" style="' + iconStyle(g, 'ob', state.gender) + '"></span>' : '') + '</span></button>',
         )
         .join('');
@@ -1434,6 +1434,17 @@ function statLines(it: Item, ctx?: TipCtx): string {
   if (typeof it.hp === 'number' && it.hp) out.push('Здоровʼя +' + it.hp);
   if (typeof o.mana === 'number' && o.mana) out.push('Мана +' + o.mana);
   if (typeof it.qe === 'number' && it.qe) out.push('Ухилення +' + it.qe);
+  // Камінь (ob): бонуси з obDops — [0] діє у зброї, [1] у броні/біжутерії.
+  if (Array.isArray(o.obDops)) {
+    const dops = o.obDops as unknown[];
+    const d0 = Array.isArray(dops[0]) ? propLine(String(dops[0][0]), dops[0][1]) : '';
+    const d1 = Array.isArray(dops[1]) ? propLine(String(dops[1][0]), dops[1][1]) : '';
+    if (d0 && d0 === d1) out.push('<span class="doll-tip-add">' + d0 + '</span>');
+    else {
+      if (d0) out.push('<span class="doll-tip-add">У зброї: ' + d0 + '</span>');
+      if (d1) out.push('<span class="doll-tip-add">В інших речах: ' + d1 + '</span>');
+    }
+  }
 
   // Вимоги (червоним — якщо не виконано); порядок як у mypers — після базових стат.
   const req = meetsReq(it);
@@ -1514,14 +1525,15 @@ function statLines(it: Item, ctx?: TipCtx): string {
 }
 
 function showTip(target: HTMLElement, it: Item, cat = '', ctx?: TipCtx): void {
-  const lvl = it.hf != null ? ' · ур. ' + it.hf : '';
-  // Заточка — в кінці рядка назви, як у mypers: «Шлем героя +4»
-  const refSuf = ctx?.refine ? ' <span class="doll-tip-refn">+' + ctx.refine + '</span>' : '';
-  showTooltip(
-    target,
-    '<div class="doll-tip-name">' + itemNameHtml(it, cat) + refSuf + '<span class="muted">' + lvl + '</span></div>' +
-      statLines(it, ctx),
-  );
+  // Заточка + рівень — одним nowrap-блоком у кінці назви («+10 · ур. 16»):
+  // не розривається на різні рядки залежно від довжини імені.
+  const meta: string[] = [];
+  if (ctx?.refine) meta.push('<span class="doll-tip-refn">+' + ctx.refine + '</span>');
+  if (it.hf != null) meta.push('<span class="muted">ур. ' + it.hf + '</span>');
+  const metaHtml = meta.length
+    ? ' <span class="doll-tip-meta">' + meta.join('<span class="muted"> · </span>') + '</span>'
+    : '';
+  showTooltip(target, '<div class="doll-tip-name">' + itemNameHtml(it, cat) + metaHtml + '</div>' + statLines(it, ctx));
 }
 function hideTip(): void {
   hideTooltip();
@@ -2013,6 +2025,17 @@ export function dollInit(): void {
       hideTip();
       toBackpack(slot.dataset.slot);
     }
+  });
+
+  // Тултіп каменя при наведенні на заповнене гніздо в редакторі.
+  $('dollEditor')?.addEventListener('mouseover', (e) => {
+    const sock = (e.target as HTMLElement).closest<HTMLElement>('.doll-socket.is-filled');
+    if (sock?.dataset.gidx == null) return;
+    const g = edGems()[Number(sock.dataset.gidx)];
+    if (g) showTip(sock, g, 'ob', { isWeapon: editorTarget?.kind === 'slot' && editorTarget.slot === 'ta' });
+  });
+  $('dollEditor')?.addEventListener('mouseout', (e) => {
+    if ((e.target as HTMLElement).closest('.doll-socket')) hideTip();
   });
 
   // Редактор речі: кліки (вкладки, гнізда, к-сть гнізд, дії, видалити доп).

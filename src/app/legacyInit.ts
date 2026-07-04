@@ -77,12 +77,4 @@ export function initLegacyModules(): void {
 
   // Кастомні стрілки для всіх числових інпутів (після стартового рендера).
   initNumberSteppers();
-
-  // Висота липкого хедера → CSS-змінна --header-h (для sticky-заголовків таблиць).
-  const setHeaderH = (): void => {
-    const h = document.querySelector<HTMLElement>('.site-header')?.offsetHeight || 64;
-    document.documentElement.style.setProperty('--header-h', h + 'px');
-  };
-  setHeaderH();
-  window.addEventListener('resize', setHeaderH);
 }
