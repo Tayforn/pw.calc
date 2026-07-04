@@ -1160,7 +1160,22 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
 .doll-tip-add { color: #6fa8ff; }
 html[data-theme='light'] .doll-tip-add { color: #2f6bd8; }
 /* Заточка (+N у назві та рядок бонуса) і камені надітої речі */
-.doll-tip-meta { white-space: nowrap; font-weight: 400; }
+.doll-tip-lvl { font-size: 12px; margin: -2px 0 4px; }
+/* Гравіювання (бірюзовий) і шліфовка/кристал (фіолетовий) — data-кольори, як допи */
+.doll-tip-eng { color: #4fd8c9; }
+html[data-theme='light'] .doll-tip-eng { color: #0e8d80; }
+.doll-tip-wdf { color: #b48cff; }
+html[data-theme='light'] .doll-tip-wdf { color: #7a3fd8; }
+/* Рядки шліфовки/кристала в редакторі речі */
+.doll-specials { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.doll-special-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.doll-special-l { color: var(--text-mute); min-width: 74px; }
+.doll-special-pick {
+  flex: 1 1 auto; text-align: left; background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed var(--line-2); color: var(--text); border-radius: 8px;
+  padding: 7px 10px; cursor: pointer; font: inherit; font-size: 13px;
+}
+.doll-special-pick:hover { border-color: var(--accent); color: var(--accent-3, var(--accent)); }
 .doll-tip-refn { color: var(--accent); font-weight: 700; }
 .doll-tip-ref { color: var(--good); }
 .doll-tip-gem { color: var(--accent); }
@@ -1349,7 +1364,12 @@ html[data-theme='light'] .doll-stats2 .doll-stat:nth-child(4n + 2) { background:
 .doll-stat span { color: var(--text-mute); }
 .doll-stat b { color: var(--text); font-variant-numeric: tabular-nums; }
 /* Бейдж «+N (разом)» біля інпутів атрибутів у шапці — бонус від речей */
-.doll-attr-plus { color: var(--good); margin-left: 5px; font-weight: 600; }
+/* Абсолютом праворуч у лейблі: не впливає на потік — інпути не «скачуть» */
+.doll-header .field label { position: relative; white-space: nowrap; display: block; padding-right: 4px; }
+.doll-attr-plus {
+  position: absolute; right: 0; top: 1px; margin-left: 0;
+  color: var(--good); font-weight: 600; font-size: 11.5px; white-space: nowrap;
+}
 
 .doll-gems { display: flex; flex-direction: column; gap: 10px; }
 .doll-gem-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }

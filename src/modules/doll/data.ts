@@ -301,7 +301,8 @@ export const DEX_WEAPONS = new Set(['ne', 'eb', 'fo', 'firearm']);
 
 // Слоти з гніздами під камені — фіксована к-сть клітинок, як у mypers
 // (initGemCells): зброя 2, броня/біжутерія/збірник — 4.
-export const SOCKETABLE = new Set(['ta', 'ft', 'rv', 'tg', 'rx', 'vx', 'st', 'wy', 'mj', 'pp', 'oq']);
+// Кільця/намисто/пояс (oq/vx/st) гнізд не мають.
+export const SOCKETABLE = new Set(['ta', 'ft', 'rv', 'tg', 'rx', 'wy', 'mj', 'pp']);
 export function defaultSockets(cat: string): number {
   if (!SOCKETABLE.has(cat)) return 0;
   return cat === 'ta' ? 2 : 4;
