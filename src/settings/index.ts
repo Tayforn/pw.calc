@@ -29,6 +29,22 @@ const MASKED_PRICE_FIELDS: Array<keyof Settings> = ['goldPrice', 'miragePrice'];
 let settings: Settings = { ...DEFAULTS };
 let goldPriceTouched = false;
 
+// Підписка для React-сторінок (useSyncExternalStore): нотифікується при
+// будь-якій зміні налаштувань (input/reset). Версія — «снепшот» стора.
+let settingsVer = 0;
+const settingsListeners = new Set<() => void>();
+export function subscribeSettings(fn: () => void): () => void {
+  settingsListeners.add(fn);
+  return () => settingsListeners.delete(fn);
+}
+export function settingsVersion(): number {
+  return settingsVer;
+}
+function notifySettings(): void {
+  settingsVer++;
+  settingsListeners.forEach((fn) => fn());
+}
+
 export function getSettings(): Settings {
   return settings;
 }
@@ -85,6 +101,7 @@ export function initSettings(onRender: () => void): void {
       settings[id] = v;
       updateGoldIndicator();
       if (id === 'goldPrice' && !isEggPriceTouched()) applyDefaultEggPrice();
+      notifySettings();
       onRender();
     });
   }
@@ -96,6 +113,7 @@ export function initSettings(onRender: () => void): void {
       goldPriceTouched = false;
       applySettingsToInputs();
       applyDefaultEggPrice();
+      notifySettings();
       onRender();
     });
   }

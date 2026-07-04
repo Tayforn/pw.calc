@@ -14,7 +14,6 @@ import { initRefine, renderRefine } from '../modules/refine/ui';
 import { initMonteCarlo } from '../modules/refine/montecarlo';
 import { initReverse } from '../modules/refine/budget';
 import { simInit, simRender } from '../modules/simulator';
-import { renderEggs } from '../modules/shards/eggs';
 import { initCompare, renderCompare } from '../modules/shards/compare';
 import { initCraft } from '../modules/shards/craft';
 import { chestsInit } from '../modules/chests';
@@ -28,9 +27,7 @@ export { rbActivate } from '../modules/rb';
 
 // renderAll — викликається при зміні налаштувань, ціни яйця та форм заточки/порівняння.
 function renderAll(): void {
-  renderRefine();
-  renderEggs();
-  renderCompare();
+  renderRefine();  renderCompare();
   simRender();
   updateAllBudgetHints();
 }

@@ -9,7 +9,7 @@ import { getSettings } from '../../settings';
 import { getEggPrice } from '../../settings/eggPrice';
 import { STONE_META, buildPlan } from '../refine/data';
 import { ONE_STAR_EQ, RECIPES } from './data';
-import { computeEggsTable } from './eggs';
+import { computeEggsTable } from '../../lib/shards';
 
 export function initCompare(onRender: () => void): void {
   const compareForm = $('#compareForm');
@@ -24,7 +24,7 @@ export function renderCompare(): void {
   const itemTypeEl = $<HTMLInputElement>('input[name="cmpType"]:checked');
   const itemType = (itemTypeEl?.value ?? 'armor') as ItemType;
   const { cumCost, plan } = buildPlan(itemType, 'auto', settings);
-  const eggs = computeEggsTable();
+  const eggs = computeEggsTable(getEggPrice());
   const eggPrice = getEggPrice();
 
   let stoneWins = 0;
