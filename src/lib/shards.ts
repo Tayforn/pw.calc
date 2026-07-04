@@ -4,7 +4,7 @@
 
 import type { ItemType, Settings, StoneMethod } from '../types';
 import { buildPlan } from '../modules/refine/data';
-import { EGGS_FOR_LEVEL, ONE_STAR_EQ, RECIPES } from '../modules/shards/data';
+import { EGG_DROP_CRAFT, EGGS_FOR_LEVEL, ONE_STAR_EQ, RECIPES } from '../modules/shards/data';
 
 export interface EggRow {
   level: number;
@@ -116,4 +116,73 @@ export function computeCompare(itemType: ItemType, settings: Settings, eggPrice:
     orbCum12: orbCumByLevel[12],
     orbCumEggs12: orbEggsByLevel[12],
   };
+}
+
+// ---------- Крафт шарів ----------
+
+export type Counts = Record<number, number>;
+
+export interface CraftPlan {
+  needFirst: number;
+  make: Record<number, number>;
+  remains: Record<number, number>;
+}
+
+/** Симуляція відкриття яєць — випадковий дроп ★1/★2/★3 (10% — камінь). */
+export function simulateEggs(n: number): Counts {
+  const counts: Counts = { 1: 0, 2: 0, 3: 0 };
+  const weights = [
+    { lv: 1, w: EGG_DROP_CRAFT[1] },
+    { lv: 2, w: EGG_DROP_CRAFT[2] },
+    { lv: 3, w: EGG_DROP_CRAFT[3] },
+    { lv: 0, w: 0.1 },
+  ];
+  for (let i = 0; i < n; i++) {
+    const r = Math.random();
+    let acc = 0;
+    for (const { lv, w } of weights) {
+      acc += w;
+      if (r <= acc) {
+        if (lv) counts[lv]++;
+        break;
+      }
+    }
+  }
+  return counts;
+}
+
+/** План крафту: що робити, з чого, скільки бракує ★1. */
+export function buildCraftPlan(inv: Counts, targetLv: number, targetQty: number): CraftPlan {
+  const stock: Counts = {};
+  for (let i = 1; i <= 12; i++) stock[i] = inv[i] || 0;
+  const make: Record<number, number> = {};
+  for (let i = 2; i <= 12; i++) make[i] = 0;
+  let needFirst = 0;
+
+  function produce(lv: number, count: number): void {
+    if (count <= 0) return;
+    if (lv === 1) {
+      if (stock[1] >= count) stock[1] -= count;
+      else {
+        needFirst += count - stock[1];
+        stock[1] = 0;
+      }
+      return;
+    }
+    if (stock[lv] >= count) {
+      stock[lv] -= count;
+      return;
+    }
+    const need = count - stock[lv];
+    stock[lv] = 0;
+    const req = RECIPES[lv] || {};
+    for (const [sub, qty] of Object.entries(req)) produce(Number(sub), qty * need);
+    make[lv] += need;
+  }
+
+  produce(targetLv, targetQty);
+
+  const remains: Record<number, number> = {};
+  for (let i = 1; i <= 12; i++) remains[i] = stock[i];
+  return { needFirst, make, remains };
 }
