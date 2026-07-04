@@ -14,7 +14,6 @@ import { initRefine, renderRefine } from '../modules/refine/ui';
 import { initMonteCarlo } from '../modules/refine/montecarlo';
 import { initReverse } from '../modules/refine/budget';
 import { simInit, simRender } from '../modules/simulator';
-import { chestsInit } from '../modules/chests';
 import { r8sInit } from '../modules/r8sim';
 import { gsnInit } from '../modules/gsn';
 import { dollInit } from '../modules/doll';
@@ -53,7 +52,6 @@ export function initLegacyModules(): void {
   initMonteCarlo(getSettings);
   initReverse(getSettings);
   simInit();
-  chestsInit();
   r8sInit();
   gsnInit();  dollInit();
   skillsInit();
