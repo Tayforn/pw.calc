@@ -1,0 +1,14 @@
+// =========================================================
+// Футер сайту.
+// =========================================================
+
+export default function Footer() {
+  return (
+    <footer className="site-footer">
+      <div className="container footer-inner">
+        <span>© {new Date().getFullYear()} PW Хелпер · Неофіційний фанатський інструмент · by Тайфорн</span>
+        <span className="muted">Perfect World та пов'язані назви належать їхнім власникам.</span>
+      </div>
+    </footer>
+  );
+}
