@@ -951,16 +951,13 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
   border-bottom: 1px solid var(--line);
 }
 .data-table th {
-  /* липне ПІД сайт-хедером (висота — з JS у --header-h); фон непрозорий, щоб рядки не просвічували */
-  background: var(--bg-2);
+  /* без sticky: липкі заголовки наїжджали на шапки карток при скролі */
+  background: rgba(255, 255, 255, 0.03);
   color: var(--text-dim);
   font-weight: 600;
   font-size: 12.5px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  position: sticky;
-  top: var(--header-h, 64px);
-  z-index: 2;
 }
 .data-table tbody tr:hover { background: rgba(227, 185, 94, 0.05); }
 
@@ -1163,6 +1160,7 @@ tr.mc-mid td { font-weight: 700; color: #fff; }
 .doll-tip-add { color: #6fa8ff; }
 html[data-theme='light'] .doll-tip-add { color: #2f6bd8; }
 /* Заточка (+N у назві та рядок бонуса) і камені надітої речі */
+.doll-tip-meta { white-space: nowrap; font-weight: 400; }
 .doll-tip-refn { color: var(--accent); font-weight: 700; }
 .doll-tip-ref { color: var(--good); }
 .doll-tip-gem { color: var(--accent); }

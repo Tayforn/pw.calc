@@ -39,14 +39,6 @@ function renderAll(): void {
 const yearEl = $('#year');
 if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
-// Висота липкого хедера → CSS-змінна --header-h (для sticky-заголовків таблиць).
-const setHeaderH = (): void => {
-  const h = document.querySelector<HTMLElement>('.site-header')?.offsetHeight || 64;
-  document.documentElement.style.setProperty('--header-h', h + 'px');
-};
-setHeaderH();
-window.addEventListener('resize', setHeaderH);
-
 // Делеговане відкриття/закриття тултіпів (.has-tip) — у порівнянні.
 document.addEventListener('click', (e) => {
   const tip = (e.target as HTMLElement).closest<HTMLElement>('.has-tip');
