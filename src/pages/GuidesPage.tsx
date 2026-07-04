@@ -1,5 +1,90 @@
-// Сторінка «guides» — розмітка 1:1 з index.html; логіка — legacy-модуль (див. src/app/legacyInit.ts).
+// =========================================================
+// Гайди — ідіоматичний React (фаза 3 міграції; legacy guidesInit видалено).
+// Дані — window.PW_GUIDES (guides-data.js). Дıп-лінк: /guides/<id>.
+// =========================================================
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { APP_BASE } from '../app/useRoute';
+
+interface GuideCat {
+  id: string;
+  name: string;
+  emoji: string;
+}
+interface Guide {
+  id: string;
+  cat: string;
+  title: string;
+  html: string;
+  updated?: string;
+  images?: boolean;
+}
+
+function guidesData(): { guides: Guide[]; categories: GuideCat[] } {
+  return (window.PW_GUIDES as { guides: Guide[]; categories: GuideCat[] } | undefined) || { guides: [], categories: [] };
+}
+
+/** id гайда з URL: /guides/<id> або legacy-хеш #guides/<id>. */
+function guideIdFromUrl(): string | null {
+  const legacy = (location.hash || '').replace('#', '');
+  if (legacy.startsWith('guides/')) return legacy.slice(7);
+  const parts = location.pathname.split('/').filter(Boolean);
+  const i = parts.indexOf('guides');
+  return i >= 0 && parts[i + 1] ? decodeURIComponent(parts[i + 1]) : null;
+}
+
 export default function GuidesPage() {
+  const { guides, categories } = useMemo(guidesData, []);
+  const byCat = useMemo(() => {
+    const m: Record<string, Guide[]> = {};
+    for (const g of guides) (m[g.cat] = m[g.cat] || []).push(g);
+    return m;
+  }, [guides]);
+
+  const initialId = useMemo(() => {
+    const fromUrl = guideIdFromUrl();
+    return guides.some((g) => g.id === fromUrl) ? (fromUrl as string) : guides[0]?.id ?? null;
+  }, [guides]);
+
+  const [activeId, setActiveId] = useState<string | null>(initialId);
+  const [query, setQuery] = useState('');
+  const [openCat, setOpenCat] = useState<string | null>(
+    () => guides.find((g) => g.id === initialId)?.cat ?? null,
+  );
+  const contentRef = useRef<HTMLElement>(null);
+
+  const active = guides.find((g) => g.id === activeId) || null;
+  const activeCat = active ? categories.find((c) => c.id === active.cat) : null;
+  const q = query.trim().toLowerCase();
+  const matches = (g: Guide) => !q || g.title.toLowerCase().includes(q) || g.html.toLowerCase().includes(q);
+
+  const select = useCallback(
+    (id: string) => {
+      const g = guidesData().guides.find((x) => x.id === id);
+      if (!g) return;
+      setActiveId(id);
+      setOpenCat(g.cat);
+      history.replaceState(null, '', APP_BASE + 'guides/' + encodeURIComponent(id));
+      contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+    [],
+  );
+
+  // Крослінки всередині тексту гайда (<a class="guide-link" data-guide="…">).
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    const onClick = (e: MouseEvent) => {
+      const link = (e.target as HTMLElement).closest<HTMLElement>('.guide-link[data-guide]');
+      if (link?.dataset.guide) {
+        e.preventDefault();
+        select(link.dataset.guide);
+      }
+    };
+    el.addEventListener('click', onClick);
+    return () => el.removeEventListener('click', onClick);
+  }, [select]);
+
   return (
     <>
       <header className="section-head">
@@ -21,12 +106,69 @@ export default function GuidesPage() {
       <div className="guides-layout">
         <aside className="guides-sidebar" id="guidesSidebar">
           <div className="guides-search">
-            <input type="search" id="guideSearch" placeholder="Пошук гайда…" autoComplete="off" />
+            <input
+              type="search"
+              id="guideSearch"
+              placeholder="Пошук гайда…"
+              autoComplete="off"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
           </div>
-          <nav className="guides-nav" id="guidesNav" aria-label="Список гайдів"></nav>
+          <nav className="guides-nav" id="guidesNav" aria-label="Список гайдів">
+            {categories.map((c) => {
+              const list = (byCat[c.id] || []).filter(matches);
+              if (!list.length) return null;
+              const open = q ? true : c.id === openCat;
+              return (
+                <div key={c.id} className={'guides-cat' + (open ? ' open' : '')}>
+                  <button
+                    type="button"
+                    className="guides-cat-title"
+                    aria-expanded={open}
+                    onClick={() => setOpenCat(openCat === c.id ? null : c.id)}
+                  >
+                    <span className="guides-cat-ico">{c.emoji}</span>
+                    <span className="guides-cat-name">{c.name}</span>
+                    <span className="guides-cat-count">{list.length}</span>
+                    <span className="guides-cat-chevron" aria-hidden="true">▸</span>
+                  </button>
+                  <ul>
+                    {list.map((g) => (
+                      <li key={g.id}>
+                        <button
+                          type="button"
+                          className={g.id === activeId ? 'active' : undefined}
+                          onClick={() => select(g.id)}
+                        >
+                          {g.title}
+                          {g.images && <span className="guide-cam"> 📷</span>}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+            {!categories.some((c) => (byCat[c.id] || []).some(matches)) && (
+              <div className="guide-empty small">Нічого не знайдено</div>
+            )}
+          </nav>
         </aside>
-        <article className="guides-content card" id="guidesContent">
-          <div className="guide-empty">Завантаження…</div>
+        <article className="guides-content card" id="guidesContent" ref={contentRef}>
+          {active ? (
+            <>
+              <div className="guide-head">
+                {activeCat && <span className="guide-crumb">{activeCat.emoji} {activeCat.name}</span>}
+                <h3>{active.title}</h3>
+                {active.updated && <span className="guide-date">оновлено {active.updated}</span>}
+              </div>
+              {/* HTML гайдів — наш довірений контент із guides-data.js */}
+              <div className="guide-body" dangerouslySetInnerHTML={{ __html: active.html }} />
+            </>
+          ) : (
+            <div className="guide-empty">Обери гайд зі списку зліва.</div>
+          )}
         </article>
       </div>
     </>

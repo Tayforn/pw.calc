@@ -25,7 +25,6 @@ import { abilitiesInit } from '../modules/abilities';
 import { dollInit } from '../modules/doll';
 import { skillsInit } from '../modules/skills';
 import { rbInit } from '../modules/rb';
-import { guidesInit } from '../modules/guides';
 
 export { rbActivate } from '../modules/rb';
 
@@ -71,7 +70,6 @@ export function initLegacyModules(): void {
   dollInit();
   skillsInit();
   rbInit();
-  guidesInit();
   applyDefaultEggPrice();
   renderAll();
 
