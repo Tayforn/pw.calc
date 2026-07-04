@@ -1,5 +1,52 @@
-// Сторінка «abilities» — розмітка 1:1 з index.html; логіка — legacy-модуль (див. src/app/legacyInit.ts).
+// =========================================================
+// Абілки зброї — ідіоматичний React (фаза 3; legacy abilitiesInit видалено).
+// Дані — src/modules/abilities/data.ts (статичний каталог).
+// =========================================================
+
+import { useMemo, useState } from 'react';
+import { ABILITIES, type Ability, type AbilityCat } from '../modules/abilities/data';
+
+const CAT_LABEL: Record<AbilityCat, string> = { buff: 'Баф', debuff: 'Дебаф', attack: 'Атака' };
+const CAT_BADGE: Record<AbilityCat, string> = { buff: 'good', debuff: 'bad', attack: 'world' };
+
+// Показуємо лише абілки з прикладом зброї (id для перевірки в базі).
+const SHOWN = ABILITIES.filter((a) => a.ids.length > 0);
+
+/** Перша літера великою (частина назв у джерелі — з малої). */
+const cap = (s: string): string => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
+const Dash = () => <span className="muted">—</span>;
+
+function EnCell({ ab }: { ab: Ability }) {
+  if (!ab.en)
+    return <span className="abil-en-none" title="EN-назва не підтверджена (новіша абілка)">невідома</span>;
+  return (
+    <span className="abil-en" title={ab.verified ? 'звірено по pwdatabase' : 'за збігом ефекту з вікі — не звірено'}>
+      {ab.verified ? '' : '≈ '}
+      {ab.en}
+    </span>
+  );
+}
+
+const CATS: Array<{ id: 'all' | AbilityCat; label: string }> = [
+  { id: 'all', label: 'Усі' },
+  { id: 'buff', label: 'Бафи' },
+  { id: 'debuff', label: 'Дебафи' },
+  { id: 'attack', label: 'Атака' },
+];
+
 export default function AbilitiesPage() {
+  const [cat, setCat] = useState<'all' | AbilityCat>('all');
+  const [query, setQuery] = useState('');
+
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return SHOWN.filter((ab) => {
+      if (cat !== 'all' && ab.cat !== cat) return false;
+      return !q || ab.search.includes(q); // індекс містить UA + оригінал RU + EN
+    });
+  }, [cat, query]);
+
   return (
     <>
       <header className="section-head">
@@ -15,24 +62,35 @@ export default function AbilitiesPage() {
       <div className="card calc-card abil-controls">
         <div className="field">
           <label htmlFor="abilSearch">Пошук</label>
-          <input type="search" id="abilSearch" placeholder="Назва або ефект абілки…" autoComplete="off" />
+          <input
+            type="search"
+            id="abilSearch"
+            placeholder="Назва або ефект абілки…"
+            autoComplete="off"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
         </div>
         <div className="field">
           <label>Тип</label>
           <div className="segmented" role="radiogroup" aria-label="Тип абілки">
-            <input type="radio" id="abilCatAll" name="abilCat" defaultValue="all" defaultChecked />
-            <label htmlFor="abilCatAll">Усі</label>
-            <input type="radio" id="abilCatBuff" name="abilCat" defaultValue="buff" />
-            <label htmlFor="abilCatBuff">Бафи</label>
-            <input type="radio" id="abilCatDebuff" name="abilCat" defaultValue="debuff" />
-            <label htmlFor="abilCatDebuff">Дебафи</label>
-            <input type="radio" id="abilCatAttack" name="abilCat" defaultValue="attack" />
-            <label htmlFor="abilCatAttack">Атака</label>
+            {CATS.map((c) => (
+              <span key={c.id} style={{ display: 'contents' }}>
+                <input
+                  type="radio"
+                  id={'abilCat' + c.id}
+                  name="abilCat"
+                  checked={cat === c.id}
+                  onChange={() => setCat(c.id)}
+                />
+                <label htmlFor={'abilCat' + c.id}>{c.label}</label>
+              </span>
+            ))}
           </div>
         </div>
       </div>
 
-      <div className="table-wrap" style={{ marginTop: '22px' }}>
+      <div className="table-wrap" style={{ marginTop: 22 }}>
         <table className="data-table" id="abilTable">
           <thead>
             <tr>
@@ -44,10 +102,41 @@ export default function AbilitiesPage() {
               <th className="num">приклад id зброї</th>
             </tr>
           </thead>
-          <tbody id="abilTableBody"></tbody>
+          <tbody>
+            {rows.length ? (
+              rows.map((ab) => (
+                <tr key={ab.name} className="abil-row">
+                  <td>
+                    <div className="abil-name">{cap(ab.name)}</div>
+                    <div className="abil-meta">
+                      <span className={'badge ' + CAT_BADGE[ab.cat]}>{CAT_LABEL[ab.cat]}</span>
+                      <EnCell ab={ab} />
+                    </div>
+                  </td>
+                  <td>{cap(ab.desc)}</td>
+                  <td>{ab.overwrites || <Dash />}</td>
+                  <td>{ab.notes || <Dash />}</td>
+                  <td className="num">
+                    {ab.proc ? <span className={'badge' + (ab.proc.startsWith('~') ? '' : ' good')}>{ab.proc}</span> : <Dash />}
+                  </td>
+                  <td className="num">
+                    {ab.ids.length ? <span className="abil-ids" title="приклад">{ab.ids.join(', ')}</span> : <Dash />}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={6} className="muted" style={{ textAlign: 'center', padding: 24 }}>
+                  Нічого не знайдено.
+                </td>
+              </tr>
+            )}
+          </tbody>
         </table>
       </div>
-      <p className="muted" id="abilCount" style={{ marginTop: '10px' }}></p>
+      <p className="muted" style={{ marginTop: 10 }}>
+        Показано: {rows.length} з {SHOWN.length}
+      </p>
 
       <details className="note">
         <summary>Джерела та примітки</summary>
