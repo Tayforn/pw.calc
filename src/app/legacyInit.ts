@@ -1,38 +1,28 @@
 // =========================================================
-// Ініціалізація legacy-модулів (калькулятори/сторінки, що керують
-// своїм DOM за id). Викликається ОДИН раз після монтування React-дерева —
-// всі сторінки вже в DOM (панелі змонтовані постійно, як і раніше).
-// Фаза 3 міграції поступово переносить ці модулі в ідіоматичний React.
+// Ініціалізація legacy-модулів (калькулятори/сторінки, що ще керують
+// своїм DOM за id). Викликається ОДИН раз після монтування React-дерева.
+// Фаза 3 міграції поступово переносить ці модулі в ідіоматичний React;
+// лишились: doll, skills, rb.
 // =========================================================
 
-import { updateAllBudgetHints } from '../utils/budgetHint';
 import { initClipboard } from '../utils/clipboard';
 import { initNumberSteppers } from '../utils/numberStepper';
-import { applyDefaultEggPrice, getSettings, subscribeSettings } from '../settings';
+import { applyDefaultEggPrice } from '../settings';
 import { initEggPriceSync } from '../settings/eggPrice';
-import { initRefine, renderRefine } from '../modules/refine/ui';
-import { initMonteCarlo } from '../modules/refine/montecarlo';
-import { initReverse } from '../modules/refine/budget';
 import { dollInit } from '../modules/doll';
 import { skillsInit } from '../modules/skills';
 import { rbInit } from '../modules/rb';
 
 export { rbActivate } from '../modules/rb';
 
-// renderAll — викликається при зміні налаштувань, ціни яйця та форм заточки/порівняння.
-function renderAll(): void {
-  renderRefine();
-  updateAllBudgetHints();
-}
-
 let done = false;
 
-/** Разова ініціалізація всіх legacy-модулів (ідемпотентна). */
+/** Разова ініціалізація legacy-модулів (ідемпотентна). */
 export function initLegacyModules(): void {
   if (done) return;
   done = true;
 
-  // Делеговане відкриття/закриття тултіпів (.has-tip) — у порівнянні.
+  // Делеговане відкриття/закриття тултіпів (.has-tip) — у порівнянні (React-розмітка).
   document.addEventListener('click', (e) => {
     const tip = (e.target as HTMLElement).closest<HTMLElement>('.has-tip');
     document.querySelectorAll('.has-tip.is-open').forEach((el) => {
@@ -42,16 +32,13 @@ export function initLegacyModules(): void {
   });
 
   initClipboard();
-  subscribeSettings(renderAll);
-  initEggPriceSync(renderAll);
-  initRefine(renderRefine);
-  initMonteCarlo(getSettings);
-  initReverse(getSettings);
+  // Синхронізація спільних полів «ціна яйця» між табами (React-сторінки читають
+  // значення й реагують через useEggPriceTick — тут лише DOM-синк, без ре-рендера).
+  initEggPriceSync(() => {});
   dollInit();
   skillsInit();
   rbInit();
   applyDefaultEggPrice();
-  renderAll();
 
   // Кастомні стрілки для всіх числових інпутів (після стартового рендера).
   initNumberSteppers();
