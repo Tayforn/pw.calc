@@ -3832,10 +3832,12 @@ html[data-theme="light"] .partner-logo:hover {
 
 /* Крилатий щит «PW» — SVG-крест (золотий градієнт), у обох темах */
 .logo-crest { display: inline-flex; align-items: center; }
-.logo-crest svg {
+.logo-crest img {
   height: 32px;
-  width: auto;
+  width: 32px;
   display: block;
+  border-radius: 6px;
+  object-fit: cover;
   filter: drop-shadow(0 3px 5px rgba(120, 80, 20, 0.5));
 }
 

@@ -3,3 +3,7 @@ node_modules/
 dist/
 docs/
 scripts/data-src/
+
+# Джерельні великі PNG логотипа/фавікона (генеровані ассети в assets/ закомічені)
+/PW Helper Favicon.png
+/PW Helper Logo.png

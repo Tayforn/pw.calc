@@ -41,28 +41,7 @@ export default function Header({ navOpen, onNavToggle }: Props) {
         </button>
         <a href={routeUrl('refine')} data-goto="refine" className="logo">
           <span className="logo-crest" aria-hidden="true">
-            <svg viewBox="0 0 44 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="lgGold" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor="#fff0b8" />
-                  <stop offset="0.45" stopColor="#e3b95e" />
-                  <stop offset="1" stopColor="#a9742a" />
-                </linearGradient>
-                <radialGradient id="lgGlow" cx="0.5" cy="0.52" r="0.5">
-                  <stop offset="0" stopColor="#ffd86b" stopOpacity="0.6" />
-                  <stop offset="1" stopColor="#ffd86b" stopOpacity="0" />
-                </radialGradient>
-              </defs>
-              <circle cx="22" cy="27" r="23" fill="url(#lgGlow)" />
-              <path d="M13 16 L13 10 L17 13 L22 7 L27 13 L31 10 L31 16 Z" fill="url(#lgGold)" stroke="#7a5212" strokeWidth="0.7" strokeLinejoin="round" />
-              <circle cx="22" cy="6.4" r="1.5" fill="#fff4cf" />
-              <circle cx="13" cy="9.4" r="1.05" fill="#fff4cf" />
-              <circle cx="31" cy="9.4" r="1.05" fill="#fff4cf" />
-              <path d="M11 16 Q11 14.2 12.8 14.2 H31.2 Q33 14.2 33 16 V27 C33 35 22 42 22 42 C22 42 11 35 11 27 Z" fill="url(#lgGold)" stroke="#7a5212" strokeWidth="1" strokeLinejoin="round" />
-              <path d="M13 16.4 H31 V26.8 C31 32.6 22 38.8 22 38.8 C22 38.8 13 32.6 13 26.8 Z" fill="none" stroke="#fff3c8" strokeOpacity="0.55" strokeWidth="0.7" />
-              <path d="M13 16.4 H31 V20.4 C25 22.2 19 22.2 13 20.4 Z" fill="#ffffff" opacity="0.22" />
-              <text x="22" y="30" textAnchor="middle" fontFamily="Inter, sans-serif" fontSize="11.5" fontWeight="800" fill="#3a2a10" letterSpacing="0.2">PW</text>
-            </svg>
+            <img src={import.meta.env.BASE_URL + 'assets/favicon-180.png'} alt="" width={180} height={180} />
           </span>
           <span className="logo-text">Хелпер</span>
         </a>

@@ -35,6 +35,8 @@ function patched(route) {
     ...(route.keywords ? { 'name="keywords"': route.keywords } : {}),
     'property="og:title"': route.title,
     'property="og:description"': route.description,
+    // og:image/twitter:image — абсолютні (інакше на під-роутах /<route>/ шлях 404-ить).
+    ...(SITE_URL ? { 'property="og:image"': `${SITE_URL}/assets/og-image.jpg`, 'name="twitter:image"': `${SITE_URL}/assets/og-image.jpg` } : {}),
     'name="twitter:title"': route.title,
     'name="twitter:description"': route.description,
   };
