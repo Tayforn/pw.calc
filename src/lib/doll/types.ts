@@ -116,6 +116,7 @@ export interface TipCtx {
   isBook?: boolean;
   isWeapon?: boolean;
   engrave?: Array<{ type: string; val: number }>;
+  addons?: Array<{ type: string; val: number }>; // відредаговані «Характеристики» (додані понад базу — показуються)
   wdf?: Item | null;
   crystal?: Item | null;
 }

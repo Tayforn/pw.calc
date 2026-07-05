@@ -11,6 +11,7 @@ import {
   classRestriction,
   refineBonuses,
   gemDop,
+  flattenItemStats,
   computeActiveSlots,
   setPieceCount,
 } from './stats';
@@ -29,6 +30,7 @@ export const CODE_LABEL: Record<string, string> = {
   cx: 'Віднов. HP', mp_recovery: 'Віднов. MP', max_oi_av: 'Макс. фіз. атака', max_xq: 'Макс. маг. атака',
   bonus_hf: 'Бонус рівня', mana: 'Мана', sy: 'Атак/сек', fp: 'Дальність', xn: 'Пауза між атаками', vln: 'Бойовий дух',
   ct: 'Вимоги по талантах', // «Требование по талантам −N%» — display-only, як у mypers
+  ld_min: 'Фіз. атака (мін)', ld_max: 'Фіз. атака (макс)', xq_min: 'Маг. атака (мін)', xq_max: 'Маг. атака (макс)',
 };
 export const codeLabel = (c: string): string => CODE_LABEL[c] || c;
 
@@ -146,6 +148,20 @@ export function statLines(build: DollState, it: Item, gearAttr: Record<string, n
   const nw = it.nw as { wu?: Array<{ type?: string; val?: unknown }> } | undefined;
   if (nw && Array.isArray(nw.wu))
     for (const w of nw.wu) if (w && w.type) adds.push('<div class="doll-tip-add">' + propLine(w.type, w.val) + '</div>');
+  // Додані вручну характеристики (вкладка «Характеристики» = addons): показуємо ті,
+  // що йдуть ПОНАД базові стати речі (flattenItemStats: базові поля + nw.wu — вони вже
+  // відмальовані вище). Тим самим кольором добавки (як у mypers), помимо захистів.
+  if (ctx?.addons?.length) {
+    const baseCounts = new Map<string, number>();
+    for (const a of flattenItemStats(it)) baseCounts.set(a.type + '|' + a.val, (baseCounts.get(a.type + '|' + a.val) || 0) + 1);
+    for (const a of ctx.addons) {
+      if (!a || !a.type) continue;
+      const k = a.type + '|' + a.val;
+      const c = baseCounts.get(k) || 0;
+      if (c > 0) baseCounts.set(k, c - 1); // це базова стата — вже показана
+      else adds.push('<div class="doll-tip-add">' + propLine(a.type, a.val) + '</div>');
+    }
+  }
   // абілка
   if (it.ac) adds.push('<div class="doll-tip-abil">⚔ ' + escHtml(lbl('taAddons', it.ac as string)) + '</div>');
   // Заточка й камені надітої речі — стан конкретного екземпляра.
@@ -241,6 +257,7 @@ export function slotTipCtx(build: DollState, key: string): TipCtx {
     isBook: key === 'qn',
     isWeapon: key === 'ta',
     engrave: build.engrave[key],
+    addons: build.addons[key],
     wdf: build.wdf[key],
     crystal: build.crystal[key],
   };
@@ -254,6 +271,7 @@ export function bpTipCtx(ent: BackpackEntry): TipCtx {
     isBook: ent.slot === 'qn',
     isWeapon: ent.slot === 'ta',
     engrave: ent.engrave,
+    addons: ent.addons,
     wdf: ent.wdf,
     crystal: ent.crystal,
   };
