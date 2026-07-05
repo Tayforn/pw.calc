@@ -155,6 +155,36 @@ function extractRoot(html) {
   return '';
 }
 
+/** Лишити в #root тільки панель активного роута; решту (неактивні tab-panel) —
+ *  спорожнити (оболонка/сайдбар/футер лишаються). Клієнт усе одно рендерить усі
+ *  панелі свіжо; це лише для чистого per-route контенту у view-source/краулерів. */
+function stripInactivePanels(rootHtml, activeId) {
+  const open = /<section class="tab-panel[^"]*" data-panel="([^"]+)"[^>]*>/gi;
+  let out = '';
+  let last = 0;
+  let m;
+  while ((m = open.exec(rootHtml))) {
+    const id = m[1];
+    const openEnd = m.index + m[0].length;
+    // Кінець секції (з балансуванням вкладених <section>, якщо колись з'являться).
+    const sect = /<\/?section\b[^>]*>/gi;
+    sect.lastIndex = openEnd;
+    let depth = 1, closeStart = -1, closeEnd = -1, sm;
+    while ((sm = sect.exec(rootHtml))) {
+      if (sm[0][1] === '/') { if (--depth === 0) { closeStart = sm.index; closeEnd = sm.index + sm[0].length; break; } }
+      else if (!sm[0].endsWith('/>')) depth++;
+    }
+    if (closeStart < 0) return rootHtml; // несподівана розмітка — не чіпаємо
+    out += rootHtml.slice(last, m.index);
+    out += id === activeId
+      ? rootHtml.slice(m.index, closeEnd) // активна панель — цілком
+      : rootHtml.slice(m.index, openEnd) + rootHtml.slice(closeStart, closeEnd); // інші — порожні
+    last = closeEnd;
+    open.lastIndex = closeEnd;
+  }
+  return out + rootHtml.slice(last);
+}
+
 /** Вшити відрендерений контент у порожній <div id="root"></div> per-route файлу. */
 function injectRoot(file, rootHtml) {
   const html = readFileSync(file, 'utf8');
@@ -178,7 +208,7 @@ async function prerenderContent() {
         const dom = await dumpDom(browser, url);
         const root = extractRoot(dom);
         if (root && root.replace(/\s+/g, '').length > 400) {
-          injectRoot(join(DIST, route.id, 'index.html'), root);
+          injectRoot(join(DIST, route.id, 'index.html'), stripInactivePanels(root, route.id));
           ok++;
         }
       } catch (e) {
