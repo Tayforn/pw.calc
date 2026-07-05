@@ -23,7 +23,12 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
+      # History-роутинг: абсолютна база підпапки GH Pages; SITE_URL —
+      # для og:url/canonical/sitemap (див. scripts/prerender.mjs).
       - run: npm run build
+        env:
+          VITE_BASE: /pw.calc/
+          SITE_URL: https://tayforn.github.io/pw.calc
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
