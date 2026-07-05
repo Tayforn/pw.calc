@@ -1235,8 +1235,10 @@ html[data-theme='light'] .doll-pick-name .gx-0, html[data-theme='light'] .doll-t
 .doll-bp-cell.is-bad .doll-cell { border-color: rgba(255, 94, 108, 0.6); }
 .doll-fig .doll-slot[draggable='true'] { cursor: grab; }
 
-/* Редактор речі */
-.doll-editor { z-index: 78; }
+/* Редактор речі — нижче за пікер (.doll-picker=80), щоб гем/шліфовка-пікер, який
+   відкривається З редактора, лягав ЗВЕРХУ. Селектор із двох класів виграє каскад
+   у .doll-picker (однакова специфічність, але той нижче в файлі). */
+.doll-picker.doll-editor { z-index: 78; }
 .doll-editor .doll-picker-box { max-width: 380px; position: relative; }
 .doll-ed-close { position: absolute; top: 12px; right: 14px; }
 .doll-ed-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-right: 28px; }
