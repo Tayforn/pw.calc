@@ -39,9 +39,6 @@ export default function Header({ navOpen, onNavToggle }: Props) {
         >
           <span className="nav-toggle-bars"></span>
         </button>
-        <a href={routeUrl('refine')} data-goto="refine" className="logo">
-          <span className="logo-text">Хелпер</span>
-        </a>
         <a href="https://cyberpw.fun/" target="_blank" rel="noopener" className="partner-logo" title="cyberpw.fun">
           <img src={import.meta.env.BASE_URL + 'assets/logo.webp'} alt="CyberPW" />
         </a>

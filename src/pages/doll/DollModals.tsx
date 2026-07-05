@@ -406,17 +406,19 @@ export function BuffPickModal({
   const rows = useMemo(() => {
     if (!bd) return [] as Array<{ b: BuffDef; sm: number }>;
     const nameQ = q.trim().toLowerCase();
-    // Усі стани з усіх груп ("0"=глобальні), фільтр за назвою.
+    // Стани з груп ("0"=глобальні), фільтр за назвою + ФІЛЬТР за класами:
+    // класові бафи показуємо лише для ВІДМІЧЕНИХ класів; глобальні (sm=0)
+    // без класу — показуємо завжди (для них немає чекбокса).
     const all: Array<{ b: BuffDef; sm: number }> = [];
     for (const key in bd) {
       const sm = key === '0' ? 0 : Number(key);
       if (BUFF_PICK_HIDDEN.has(sm)) continue;
+      if (sm !== 0 && !classes.has(sm)) continue; // клас не відмічено — ховаємо
       for (const b of bd[key]) if (!nameQ || b.name.toLowerCase().includes(nameQ)) all.push({ b, sm });
     }
-    // Сорт: спершу класові бафи ВИБРАНИХ класів, потім усі інші (інші класи + глобальні).
-    const rank = (sm: number) => (sm !== 0 && classes.has(sm) ? 0 : 1);
-    all.sort((a, b) => rank(a.sm) - rank(b.sm) || a.sm - b.sm);
-    // Дедуп за назвою (перше входження — з пріоритетного класу).
+    // Сорт: класові за sm, глобальні (0) — в кінці списку.
+    all.sort((a, b) => (a.sm === 0 ? 1 : 0) - (b.sm === 0 ? 1 : 0) || a.sm - b.sm);
+    // Дедуп за назвою (перше входження — з меншого sm).
     const seen = new Set<string>();
     const out: Array<{ b: BuffDef; sm: number }> = [];
     for (const x of all) {
