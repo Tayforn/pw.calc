@@ -28,6 +28,7 @@ import {
   loadBuffs,
   loadSkills,
   getBuffs,
+  getDebuffs,
   getBuffById,
   getSkills,
   ASSET_BASE,
@@ -45,7 +46,7 @@ import {
   TITLE_LIMIT,
   TITLE_FIELDS,
 } from '../lib/doll/stats';
-import { deriveIb, shownBuffs, buffCfgRead, buffTipHtml } from '../lib/doll/buffs';
+import { deriveIb, shownBuffs, shownDebuffs, conflictingActive, buffCfgRead, buffTipHtml } from '../lib/doll/buffs';
 import { DEFAULT_OPP, computeSkillDamage, dmgLogLine } from '../lib/doll/damage';
 import { itemTipHtml, slotTipCtx, bpTipCtx, itemNameHtml, pickerReqLvl } from '../lib/doll/tooltip';
 import { computeSummary } from '../lib/doll/summary';
@@ -112,6 +113,7 @@ function loadHistory(): SavedBuild[] {
 const BUFF_PICK_HIDDEN = new Set([11, 12, 13, 14]);
 const MOD_HINTS: Record<string, string> = {
   buffs: 'чекбокс — активувати; клік по іконці — налаштування; «+» — додати',
+  debuffs: 'стани, що зменшують характеристики; чекбокс — активувати; «+» — додати',
   titles: 'сумарні доповнення від титулів — вводяться вручну, як у грі; кап 3000',
 };
 
@@ -136,7 +138,7 @@ export default function DollPage() {
   const [dmgCheckOn, setDmgCheckOn] = useState(false);
   const [ready, setReady] = useState(0); // тік завантаження даних (labels/sets/buffs/skills)
   const [classLabels, setClassLabels] = useState<Record<string, string>>({});
-  const [modTab, setModTab] = useState<'buffs' | 'titles'>('buffs');
+  const [modTab, setModTab] = useState<'buffs' | 'debuffs' | 'titles'>('buffs');
   const [headerKey, setHeaderKey] = useState(0); // ремонт хедер-інпутів після load/reset
   const [oppKey, setOppKey] = useState(0);
   const [buildName, setBuildName] = useState('');
@@ -148,6 +150,7 @@ export default function DollPage() {
   const [editorTab, setEditorTab] = useState<EditorTab>('gems');
   const [buffCfgId, setBuffCfgId] = useState<number | null>(null);
   const [buffPickOpen, setBuffPickOpen] = useState(false);
+  const [buffPickKind, setBuffPickKind] = useState<'buff' | 'debuff'>('buff');
   const [buffPickClasses, setBuffPickClasses] = useState<Set<number>>(new Set());
   const [buffPickQ, setBuffPickQ] = useState('');
 
@@ -504,7 +507,13 @@ export default function DollPage() {
     mutate((s) => {
       const k = String(id);
       if (!s.buffCfg[k]) s.buffCfg[k] = { on: false, lvl: 10, side: '' };
-      s.buffCfg[k].on = !s.buffCfg[k].on;
+      const turningOn = !s.buffCfg[k].on;
+      s.buffCfg[k].on = turningOn;
+      // Взаємовиключні варіанти (спільний ex-стейт): вмикання гасить конфліктні активні.
+      if (turningOn) {
+        const b = getBuffById(id);
+        if (b) for (const cid of conflictingActive(s, b)) if (s.buffCfg[String(cid)]) s.buffCfg[String(cid)].on = false;
+      }
     });
   const openBuffCfg = (id: number) => setBuffCfgId(id);
   const setBuffLvl = (spec: string) => {
@@ -549,9 +558,10 @@ export default function DollPage() {
     });
     setBuffCfgId(null);
   };
-  const openBuffPick = () => {
+  const openBuffPick = (kind: 'buff' | 'debuff') => {
     // Як на рефі: за замовчуванням відмічені класи-джерела пати-бафів —
     // Оборотень(3) + Воїн(1) + Жрець(5).
+    setBuffPickKind(kind);
     setBuffPickClasses(new Set([1, 3, 5]));
     setBuffPickQ('');
     setBuffPickOpen(true);
@@ -675,9 +685,39 @@ export default function DollPage() {
 
   // ================= Дані для рендера =================
   const buffs = shownBuffs(build);
+  const debuffs = shownDebuffs(build);
   const buffsLoaded = !!getBuffs();
   const skillList = (getSkills()?.[String(XZ[build.cls] || 1)] || []).filter((sk) => sk.name);
   const activeBuffCfg = buffCfgId != null ? getBuffById(buffCfgId) : null;
+
+  // Ряд станів (бафи або дебафи) — іконка+чекбокс на кожен + кнопка «+».
+  const stateRow = (list: BuffDef[], kind: 'buff' | 'debuff') => (
+    <div className="doll-buffs">
+      {!buffsLoaded ? (
+        <div className="muted" style={{ padding: '6px 0' }}>Завантаження…</div>
+      ) : (
+        <>
+          {list.map((b) => {
+            const on = !!build.buffCfg[String(b.id)]?.on;
+            return (
+              <div className="doll-buff-slot" key={b.id}>
+                <button type="button" className={'doll-buff-ic' + (on ? ' on' : '')}
+                  onClick={() => openBuffCfg(b.id)}
+                  onMouseOver={(e) => showTooltip(e.currentTarget, buffTipHtml(buildRef.current, b))}
+                  onMouseOut={hideTooltip}>
+                  <span className="doll-icon" style={buffIconObj(b.an)}></span>
+                </button>
+                <input type="checkbox" className="doll-buff-cb" checked={on} title="Активувати" onChange={() => toggleBuffOn(b.id)} />
+              </div>
+            );
+          })}
+          <div className="doll-buff-slot">
+            <button type="button" className="doll-buff-ic empty" title={kind === 'buff' ? 'Додати баф' : 'Додати дебаф'} onClick={() => openBuffPick(kind)}>+</button>
+          </div>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <>
@@ -724,44 +764,21 @@ export default function DollPage() {
         </div>
       </div>
 
-      {/* ---- Модифікатори: Бафи | Титули ---- */}
+      {/* ---- Модифікатори: Бафи | Дебафи | Титули ---- */}
       <div className="card calc-card">
         <div className="doll-mods-head">
           <div className="segmented" role="tablist" aria-label="Модифікатори">
             <input type="radio" id="dollModTabBuffs" name="dollModTab" value="buffs" checked={modTab === 'buffs'} onChange={() => setModTab('buffs')} />
             <label htmlFor="dollModTabBuffs">Бафи</label>
+            <input type="radio" id="dollModTabDebuffs" name="dollModTab" value="debuffs" checked={modTab === 'debuffs'} onChange={() => setModTab('debuffs')} />
+            <label htmlFor="dollModTabDebuffs">Дебафи</label>
             <input type="radio" id="dollModTabTitles" name="dollModTab" value="titles" checked={modTab === 'titles'} onChange={() => setModTab('titles')} />
             <label htmlFor="dollModTabTitles">Титули</label>
           </div>
           <span className="muted doll-mods-hint">{MOD_HINTS[modTab]}</span>
         </div>
-        <div hidden={modTab !== 'buffs'}>
-          <div className="doll-buffs">
-            {!buffsLoaded ? (
-              <div className="muted" style={{ padding: '6px 0' }}>Завантаження…</div>
-            ) : (
-              <>
-                {buffs.map((b) => {
-                  const on = !!build.buffCfg[String(b.id)]?.on;
-                  return (
-                    <div className="doll-buff-slot" key={b.id}>
-                      <button type="button" className={'doll-buff-ic' + (on ? ' on' : '')}
-                        onClick={() => openBuffCfg(b.id)}
-                        onMouseOver={(e) => showTooltip(e.currentTarget, buffTipHtml(buildRef.current, b))}
-                        onMouseOut={hideTooltip}>
-                        <span className="doll-icon" style={buffIconObj(b.an)}></span>
-                      </button>
-                      <input type="checkbox" className="doll-buff-cb" checked={on} title="Активувати" onChange={() => toggleBuffOn(b.id)} />
-                    </div>
-                  );
-                })}
-                <div className="doll-buff-slot">
-                  <button type="button" className="doll-buff-ic empty" title="Додати баф" onClick={openBuffPick}>+</button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+        <div hidden={modTab !== 'buffs'}>{stateRow(buffs, 'buff')}</div>
+        <div hidden={modTab !== 'debuffs'}>{stateRow(debuffs, 'debuff')}</div>
         <div hidden={modTab !== 'titles'}>
           <div className="doll-titles">
             {TITLE_FIELDS.map((fd) => {
@@ -1074,6 +1091,7 @@ export default function DollPage() {
       )}
       {buffPickOpen && (
         <BuffPickModal
+          kind={buffPickKind}
           classes={buffPickClasses}
           setClasses={setBuffPickClasses}
           q={buffPickQ}

@@ -2,3 +2,4 @@ discord-export/
 node_modules/
 dist/
 docs/
+scripts/data-src/

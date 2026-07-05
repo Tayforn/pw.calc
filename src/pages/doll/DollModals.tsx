@@ -20,6 +20,7 @@ import {
   buffDisplayName,
   lbl,
   getBuffs,
+  getDebuffs,
   type Item,
   type BuffDef,
 } from '../../modules/doll/data';
@@ -389,8 +390,9 @@ export function BuffCfgModal({
 
 // ============================ Пошук бафа ============================
 export function BuffPickModal({
-  classes, setClasses, q, setQ, onClose, onAdd, showBuffTip,
+  kind, classes, setClasses, q, setQ, onClose, onAdd, showBuffTip,
 }: {
+  kind: 'buff' | 'debuff';
   classes: Set<number>;
   setClasses: Dispatch<SetStateAction<Set<number>>>;
   q: string;
@@ -400,7 +402,7 @@ export function BuffPickModal({
   showBuffTip: (el: HTMLElement, b: BuffDef) => void;
 }) {
   const rows = useMemo(() => {
-    const bd = getBuffs();
+    const bd = kind === 'debuff' ? getDebuffs() : getBuffs();
     if (!bd) return [] as Array<{ b: BuffDef; sm: number }>;
     const nameQ = q.trim().toLowerCase();
     const seen = new Set<string>();
@@ -415,16 +417,16 @@ export function BuffPickModal({
       }
     }
     return out;
-  }, [classes, q]);
+  }, [kind, classes, q]);
 
   return (
     <div className="doll-picker" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="doll-picker-box card">
         <header className="doll-picker-head">
-          <h3>Додати баф</h3>
+          <h3>{kind === 'debuff' ? 'Додати дебаф' : 'Додати баф'}</h3>
           <button type="button" className="doll-picker-x doll-buffpick-x" aria-label="Закрити" onClick={onClose}>✕</button>
         </header>
-        <input type="search" placeholder="назва бафа…" autoComplete="off" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input type="search" placeholder={kind === 'debuff' ? 'назва дебафа…' : 'назва бафа…'} autoComplete="off" value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="doll-pick-types doll-buffpick-classes">
           {Object.keys(CLASS_BY_SM).filter((sm) => !BUFF_PICK_HIDDEN.has(Number(sm))).map((sm) => {
             const n = Number(sm);

@@ -151,21 +151,28 @@ export interface BuffDef {
   types: string[]; // коди ефектів (gs_oi_av, tb, fw, …)
   lm: Record<string, number>; // базові значення + параметри (oj_for_fu, ve, mp, channel, vy, vw)
   qc: Record<string, unknown>; // масштабування за рівнем (0..11, rs=світл/je=темн)
+  do_by?: number; // клас-кастер (sm); відсутній = глобальний (усім)
+  ex?: number[]; // id стейтів для взаємовиключності (варіанти: Вспышка ци/…)
 }
+// Стани згруповані за do_by ("0" = глобальні). buffs = pg=rk (бафи), debuffs = pg=hb.
 let buffs: Record<string, BuffDef[]> | null = null;
+let debuffs: Record<string, BuffDef[]> | null = null;
 let buffById: Record<number, BuffDef> | null = null;
 let fuState: Record<string, string> | null = null;
 export async function loadBuffs(): Promise<void> {
-  if (!buffs) {
-    buffs = (await (await fetch(BASE + 'data/mypers/buffs.json')).json()) as Record<string, BuffDef[]>;
-    buffById = {};
-    for (const sm in buffs) for (const b of buffs[sm]) buffById[b.id] = b;
-  }
+  if (!buffs) buffs = (await (await fetch(BASE + 'data/mypers/buffs.json')).json()) as Record<string, BuffDef[]>;
+  if (!debuffs) debuffs = (await (await fetch(BASE + 'data/mypers/debuffs.json')).json()) as Record<string, BuffDef[]>;
+  buffById = {};
+  for (const map of [buffs, debuffs]) for (const sm in map) for (const b of map[sm]) buffById[b.id] = b;
   if (!fuState) fuState = (await (await fetch(BASE + 'data/mypers/fustate.json')).json()) as Record<string, string>;
 }
 export function getBuffs(): Record<string, BuffDef[]> | null {
   return buffs;
 }
+export function getDebuffs(): Record<string, BuffDef[]> | null {
+  return debuffs;
+}
+/** Стан (баф або дебаф) за id. */
 export function getBuffById(id: number): BuffDef | null {
   return (buffById && buffById[id]) || null;
 }
