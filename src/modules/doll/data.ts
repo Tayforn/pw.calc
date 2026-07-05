@@ -157,11 +157,13 @@ export interface BuffDef {
 // Стани згруповані за do_by ("0" = глобальні). buffs = pg=rk (бафи), debuffs = pg=hb.
 let buffs: Record<string, BuffDef[]> | null = null;
 let debuffs: Record<string, BuffDef[]> | null = null;
+let buffDefaults: Record<string, number[]> | null = null; // sm → id бафів «за замовчуванням» у рядку
 let buffById: Record<number, BuffDef> | null = null;
 let fuState: Record<string, string> | null = null;
 export async function loadBuffs(): Promise<void> {
   if (!buffs) buffs = (await (await fetch(BASE + 'data/mypers/buffs.json')).json()) as Record<string, BuffDef[]>;
   if (!debuffs) debuffs = (await (await fetch(BASE + 'data/mypers/debuffs.json')).json()) as Record<string, BuffDef[]>;
+  if (!buffDefaults) buffDefaults = (await (await fetch(BASE + 'data/mypers/buff-defaults.json')).json()) as Record<string, number[]>;
   buffById = {};
   for (const map of [buffs, debuffs]) for (const sm in map) for (const b of map[sm]) buffById[b.id] = b;
   if (!fuState) fuState = (await (await fetch(BASE + 'data/mypers/fustate.json')).json()) as Record<string, string>;
@@ -171,6 +173,10 @@ export function getBuffs(): Record<string, BuffDef[]> | null {
 }
 export function getDebuffs(): Record<string, BuffDef[]> | null {
   return debuffs;
+}
+/** Курований набір бафів, що показуються в рядку за замовчуванням (sm → id). */
+export function getBuffDefaults(): Record<string, number[]> | null {
+  return buffDefaults;
 }
 /** Стан (баф або дебаф) за id. */
 export function getBuffById(id: number): BuffDef | null {

@@ -7,6 +7,7 @@ import { escHtml } from '../../utils/format';
 import {
   getBuffs,
   getDebuffs,
+  getBuffDefaults,
   getBuffById,
   buffEffects,
   buffVal,
@@ -22,54 +23,42 @@ export function buffCfgRead(build: DollState, id: number): { on: boolean; lvl: n
   return build.buffCfg[String(id)] || { on: false, lvl: 10, side: '' };
 }
 
-// Класи-джерела пати-бафів (Воїн/Оборотень/Жрець) — їхні бафи показуємо в рядку
-// для БУДЬ-ЯКОГО класу (щоб не лізти в попап за спільними пати-бафами).
-const PARTY_SM = [1, 3, 5];
-/** Стани (баф/дебаф) у рядку: свій клас (do_by==sm) + пати-класи (дедуп за назвою) +
- *  додані вручну (extraBuffs) + активні. Глобальні/інші класи — через попап. */
-function shownStates(build: DollState, data: Record<string, BuffDef[]> | null): BuffDef[] {
+/** Стани у рядку: курований базовий набір + додані вручну (extraBuffs) + активні.
+ *  Усе, чого нема в базі — додається юзером через попап. */
+function withExtraActive(build: DollState, data: Record<string, BuffDef[]> | null, base: BuffDef[]): BuffDef[] {
   if (!data) return [];
-  const sm = XZ[build.cls] || 1;
   const byId: Record<number, BuffDef> = {};
   for (const k in data) for (const b of data[k]) byId[b.id] = b;
-  const list: BuffDef[] = [];
-  const ids = new Set<number>();
-  const names = new Set<string>();
-  // Свій клас — першим (його версія спільного бафа має пріоритет), далі пати-класи.
-  for (const key of [...new Set([sm, ...PARTY_SM])]) {
-    for (const b of data[String(key)] || []) {
-      if (ids.has(b.id) || names.has(b.name)) continue;
-      list.push(b);
-      ids.add(b.id);
-      names.add(b.name);
-    }
-  }
-  // Додані вручну (по id — навіть якщо назва вже є) і активні, що ще не в переліку.
-  for (const id of build.extraBuffs) {
+  const list = [...base];
+  const ids = new Set(list.map((b) => b.id));
+  const push = (id: number) => {
     const b = byId[id];
     if (b && !ids.has(id)) {
       list.push(b);
       ids.add(id);
-      names.add(b.name);
     }
-  }
-  for (const k in build.buffCfg) {
-    if (!build.buffCfg[k].on) continue;
-    const b = byId[Number(k)];
-    if (b && !ids.has(b.id)) {
-      list.push(b);
-      ids.add(b.id);
-    }
-  }
+  };
+  for (const id of build.extraBuffs) push(id);
+  for (const k in build.buffCfg) if (build.buffCfg[k].on) push(Number(k));
   return list;
 }
-/** Бафи (pg=rk) у рядку. */
+/** Бафи (pg=rk) у рядку: курований дефолт-набір класу (свій клас спереду) + додані + активні. */
 export function shownBuffs(build: DollState): BuffDef[] {
-  return shownStates(build, getBuffs());
+  const buffs = getBuffs();
+  if (!buffs) return [];
+  const sm = XZ[build.cls] || 1;
+  const byId: Record<number, BuffDef> = {};
+  for (const k in buffs) for (const b of buffs[k]) byId[b.id] = b;
+  const defIds = getBuffDefaults()?.[String(sm)] || [];
+  const base = defIds.map((id) => byId[id]).filter((b): b is BuffDef => !!b);
+  return withExtraActive(build, buffs, base);
 }
-/** Дебафи (pg=hb) у рядку. */
+/** Дебафи (pg=hb) у рядку: дебафи свого класу (do_by==sm) + додані + активні. */
 export function shownDebuffs(build: DollState): BuffDef[] {
-  return shownStates(build, getDebuffs());
+  const debuffs = getDebuffs();
+  if (!debuffs) return [];
+  const sm = XZ[build.cls] || 1;
+  return withExtraActive(build, debuffs, debuffs[String(sm)] || []);
 }
 
 /** ib-карта зведених ефектів УСІХ увімкнених станів (бафи+дебафи) з buffCfg. */
