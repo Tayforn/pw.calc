@@ -123,6 +123,12 @@ small.hint {
     linear-gradient(to right, transparent 0, #000 6%, #000 94%, transparent 100%);
   mask-composite: intersect;
 }
+/* Біля лого обтікає лише текстовий заголовок (.section-head). Решта контенту
+   вкладки (картки — часто grid/flex, тобто BFC) МАЄ падати під лого на всю
+   ширину: інакше BFC-картка стає збоку від float-лого й «виштовхується»
+   праворуч, а її фіксована ширина (напр. форма ляльки) вилазить за екран. */
+main .tab-panel > *:not(.section-head) { clear: left; }
+
 @media (max-width: 880px) {
   .content-brand { margin: 0 14px 8px 0; padding: 6px; }
   .content-brand img { height: 84px; }
@@ -610,8 +616,11 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
   animation: fadeIn 0.25s ease-out;
 }
 .tab-panel.active { display: block; }
-/* Лялька: рівномірні відступи між блоками */
-[data-panel='doll'].active { display: flex; flex-direction: column; gap: 18px; }
+/* Лялька: рівномірні відступи між блоками. ВАЖЛИВО — block, а не flex: flex-
+   контейнер стає BFC і «виштовхується» праворуч від float-лого (його вміст
+   вилазив за екран). Як block блоки обтікають лого, як на інших сторінках. */
+[data-panel='doll'].active { display: block; }
+[data-panel='doll'].active > * + * { margin-top: 18px; }
 [data-panel='doll'] .section-head.doll-head { margin-bottom: 0; }
 [data-panel='doll'] .doll-main { margin: 0; }
 [data-panel='doll'] > .card { margin: 0; }
