@@ -111,10 +111,14 @@ export default function R8simPage() {
       for (const [nm, req] of need) if ((cnt.get(nm) || 0) < req) { all = false; break; }
       if (all) { got = true; hitRoll = r; break; }
     }
-    if (hitRoll) setLastRoll(hitRoll);
-    setHits(h);
-    setRolls((v) => v + localRolls);
-    setTotalRolls((v) => v + localRolls);
+    // Записуємо крутки лише коли збір ВИБИТО; невдале полювання (уперлось у ліміт)
+    // лічильник/статистику не чіпає — рахуються тільки успішні спроби.
+    if (got) {
+      if (hitRoll) setLastRoll(hitRoll);
+      setHits(h);
+      setRolls((v) => v + localRolls);
+      setTotalRolls((v) => v + localRolls);
+    }
     setHuntResult({ got, rolls: localRolls, prob, expected: prob > 0 ? 1 / prob : Infinity });
   };
 
