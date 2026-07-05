@@ -129,21 +129,27 @@ export default function Layout() {
       <div className="app-shell container">
         <Sidebar route={route} onNavigate={navigate} />
         <div className="content">
-          <a
-            href={routeUrl('refine')}
-            data-goto="refine"
-            className="content-brand"
-            aria-label="PW Хелпер — на головну"
-          >
-            <img
-              src={import.meta.env.BASE_URL + 'assets/logo-full.webp'}
-              alt="PW Хелпер"
-              width={480}
-              height={720}
-              decoding="async"
-            />
-          </a>
-          <SubtabsBar route={route} onNavigate={navigate} />
+          {/* окремий контейнер лише навколо шапки — щоб container-query не
+              робив .content containing-block для fixed-модалок ляльки */}
+          <div className="content-hd">
+            <div className="content-header">
+              <a
+                href={routeUrl('refine')}
+                data-goto="refine"
+                className="content-brand"
+                aria-label="PW Хелпер — на головну"
+              >
+                <img
+                  src={import.meta.env.BASE_URL + 'assets/logo-full.webp'}
+                  alt="PW Хелпер"
+                  width={480}
+                  height={720}
+                  decoding="async"
+                />
+              </a>
+              <SubtabsBar route={route} onNavigate={navigate} />
+            </div>
+          </div>
           <main>
             {ROUTES.map((r) => (
               <Panel key={r.id} id={r.id} active={r.id === route} />

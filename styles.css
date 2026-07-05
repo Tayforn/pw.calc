@@ -86,15 +86,26 @@ small.hint {
   top: 78px;
   align-self: start;
 }
-/* flow-root: контейнер утримує плаваючий бренд-бейдж усередині себе */
-.content { min-width: 0; display: flow-root; }
+.content { min-width: 0; }
 
-/* ── Бренд-бейдж із повним лого: ліворуч від табів/опису сторінки ──── */
-/* float, щоб таби й заголовок обтікали лого справа, а решта контенту нижче
-   йшла на всю ширину. Завжди видимий — не залежить від стану меню. */
+/* container-type НЕ на .content (бо layout-containment зробив би її
+   containing-block для fixed-модалок ляльки), а на окремій обгортці шапки.
+   Так .content-header реагує на ШИРИНУ КОНТЕНТУ (враховуючи стан сайдбара). */
+.content-hd { container-type: inline-size; }
+
+/* ── Шапка контенту: бренд-лого + таби розділу в одному рядку ──────── */
+/* Широко — лого ліворуч, таби поряд. Вузько (не влазять) — контейнерний
+   медіа-запит стекає: лого по центру ЗВЕРХУ, таби рядком під ним. */
+.content-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+.content-header .nav-secondary { margin-bottom: 0; }
+
 .content-brand {
-  float: left;
-  margin: 2px 20px 10px 0;
+  flex: 0 0 auto;
   padding: 8px;
   border-radius: 14px;
   border: 1px solid rgba(227, 185, 94, 0.4);
@@ -112,7 +123,7 @@ small.hint {
 .content-brand img {
   display: block;
   width: auto;
-  height: 104px;
+  height: 96px;
   /* м'яко гасимо прямокутні краї зображення в градієнт бейджа */
   -webkit-mask-image:
     linear-gradient(to bottom, transparent 0, #000 7%, #000 93%, transparent 100%),
@@ -123,14 +134,15 @@ small.hint {
     linear-gradient(to right, transparent 0, #000 6%, #000 94%, transparent 100%);
   mask-composite: intersect;
 }
-/* Біля лого обтікає лише текстовий заголовок (.section-head). Решта контенту
-   вкладки (картки — часто grid/flex, тобто BFC) МАЄ падати під лого на всю
-   ширину: інакше BFC-картка стає збоку від float-лого й «виштовхується»
-   праворуч, а її фіксована ширина (напр. форма ляльки) вилазить за екран. */
-main .tab-panel > *:not(.section-head) { clear: left; }
+
+/* Вузько: лого + таби не влазять в рядок → лого по центру над табами. */
+@container (max-width: 780px) {
+  .content-header { flex-direction: column; align-items: center; }
+  .content-header .nav-secondary { justify-content: center; flex-wrap: wrap; }
+}
 
 @media (max-width: 880px) {
-  .content-brand { margin: 0 14px 8px 0; padding: 6px; }
+  .content-brand { padding: 6px; }
   .content-brand img { height: 84px; }
 }
 
@@ -616,11 +628,8 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
   animation: fadeIn 0.25s ease-out;
 }
 .tab-panel.active { display: block; }
-/* Лялька: рівномірні відступи між блоками. ВАЖЛИВО — block, а не flex: flex-
-   контейнер стає BFC і «виштовхується» праворуч від float-лого (його вміст
-   вилазив за екран). Як block блоки обтікають лого, як на інших сторінках. */
-[data-panel='doll'].active { display: block; }
-[data-panel='doll'].active > * + * { margin-top: 18px; }
+/* Лялька: рівномірні відступи між блоками */
+[data-panel='doll'].active { display: flex; flex-direction: column; gap: 18px; }
 [data-panel='doll'] .section-head.doll-head { margin-bottom: 0; }
 [data-panel='doll'] .doll-main { margin: 0; }
 [data-panel='doll'] > .card { margin: 0; }
