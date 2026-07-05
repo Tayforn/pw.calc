@@ -562,7 +562,7 @@ export default function DollPage() {
     // Як на рефі: за замовчуванням відмічені класи-джерела пати-бафів —
     // Оборотень(3) + Воїн(1) + Жрець(5).
     setBuffPickKind(kind);
-    setBuffPickClasses(new Set([1, 3, 5]));
+    setBuffPickClasses(new Set([1, 3, 5])); // Оборотень+Воїн+Жрець — їхні бафи вгорі списку
     setBuffPickQ('');
     setBuffPickOpen(true);
   };

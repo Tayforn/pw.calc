@@ -401,23 +401,31 @@ export function BuffPickModal({
   onAdd: (id: number) => void;
   showBuffTip: (el: HTMLElement, b: BuffDef) => void;
 }) {
+  const bd = kind === 'debuff' ? getDebuffs() : getBuffs();
+  const clsLabel = (sm: number) => (sm === 0 ? 'Загальні' : CLASS_BY_SM[sm]);
   const rows = useMemo(() => {
-    const bd = kind === 'debuff' ? getDebuffs() : getBuffs();
     if (!bd) return [] as Array<{ b: BuffDef; sm: number }>;
     const nameQ = q.trim().toLowerCase();
+    // Усі стани з усіх груп ("0"=глобальні), фільтр за назвою.
+    const all: Array<{ b: BuffDef; sm: number }> = [];
+    for (const key in bd) {
+      const sm = key === '0' ? 0 : Number(key);
+      if (BUFF_PICK_HIDDEN.has(sm)) continue;
+      for (const b of bd[key]) if (!nameQ || b.name.toLowerCase().includes(nameQ)) all.push({ b, sm });
+    }
+    // Сорт: спершу класові бафи ВИБРАНИХ класів, потім усі інші (інші класи + глобальні).
+    const rank = (sm: number) => (sm !== 0 && classes.has(sm) ? 0 : 1);
+    all.sort((a, b) => rank(a.sm) - rank(b.sm) || a.sm - b.sm);
+    // Дедуп за назвою (перше входження — з пріоритетного класу).
     const seen = new Set<string>();
     const out: Array<{ b: BuffDef; sm: number }> = [];
-    for (const sm of classes) {
-      if (BUFF_PICK_HIDDEN.has(sm)) continue;
-      for (const b of bd[String(sm)] || []) {
-        if (seen.has(b.name)) continue;
-        seen.add(b.name);
-        if (nameQ && !b.name.toLowerCase().includes(nameQ)) continue;
-        out.push({ b, sm });
-      }
+    for (const x of all) {
+      if (seen.has(x.b.name)) continue;
+      seen.add(x.b.name);
+      out.push(x);
     }
     return out;
-  }, [kind, classes, q]);
+  }, [bd, classes, q]);
 
   return (
     <div className="doll-picker" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
@@ -447,7 +455,7 @@ export function BuffPickModal({
               <button type="button" key={b.id} className="doll-buffpick-row" onClick={() => onAdd(b.id)}
                 onMouseOver={(e) => showBuffTip(e.currentTarget, b)} onMouseOut={hideTooltip}>
                 <span className="doll-icon" style={buffIconObj(b.an)}></span>
-                <span className="doll-buffpick-name">{b.name}<span className="muted"> · {CLASS_BY_SM[sm]}</span></span>
+                <span className="doll-buffpick-name">{b.name}<span className="muted"> · {clsLabel(sm)}</span></span>
               </button>
             ))
           ) : (

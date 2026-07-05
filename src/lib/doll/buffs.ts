@@ -22,24 +22,45 @@ export function buffCfgRead(build: DollState, id: number): { on: boolean; lvl: n
   return build.buffCfg[String(id)] || { on: false, lvl: 10, side: '' };
 }
 
-/** Стани (баф/дебаф) у рядку: свій клас (do_by==sm) + глобальні («0») +
- *  додані вручну (extraBuffs) + активні, що ще не в переліку — усе з цього датасету. */
+// Класи-джерела пати-бафів (Воїн/Оборотень/Жрець) — їхні бафи показуємо в рядку
+// для БУДЬ-ЯКОГО класу (щоб не лізти в попап за спільними пати-бафами).
+const PARTY_SM = [1, 3, 5];
+/** Стани (баф/дебаф) у рядку: свій клас (do_by==sm) + пати-класи (дедуп за назвою) +
+ *  додані вручну (extraBuffs) + активні. Глобальні/інші класи — через попап. */
 function shownStates(build: DollState, data: Record<string, BuffDef[]> | null): BuffDef[] {
   if (!data) return [];
   const sm = XZ[build.cls] || 1;
-  const list = [...(data[String(sm)] || []), ...(data['0'] || [])];
-  const ids = new Set(list.map((b) => b.id));
   const byId: Record<number, BuffDef> = {};
   for (const k in data) for (const b of data[k]) byId[b.id] = b;
-  const push = (id: number) => {
+  const list: BuffDef[] = [];
+  const ids = new Set<number>();
+  const names = new Set<string>();
+  // Свій клас — першим (його версія спільного бафа має пріоритет), далі пати-класи.
+  for (const key of [...new Set([sm, ...PARTY_SM])]) {
+    for (const b of data[String(key)] || []) {
+      if (ids.has(b.id) || names.has(b.name)) continue;
+      list.push(b);
+      ids.add(b.id);
+      names.add(b.name);
+    }
+  }
+  // Додані вручну (по id — навіть якщо назва вже є) і активні, що ще не в переліку.
+  for (const id of build.extraBuffs) {
     const b = byId[id];
     if (b && !ids.has(id)) {
       list.push(b);
       ids.add(id);
+      names.add(b.name);
     }
-  };
-  for (const id of build.extraBuffs) push(id);
-  for (const k in build.buffCfg) if (build.buffCfg[k].on) push(Number(k));
+  }
+  for (const k in build.buffCfg) {
+    if (!build.buffCfg[k].on) continue;
+    const b = byId[Number(k)];
+    if (b && !ids.has(b.id)) {
+      list.push(b);
+      ids.add(b.id);
+    }
+  }
   return list;
 }
 /** Бафи (pg=rk) у рядку. */
