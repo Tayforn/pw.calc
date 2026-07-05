@@ -86,33 +86,34 @@ small.hint {
   top: 78px;
   align-self: start;
 }
-.content { min-width: 0; }
+/* flow-root: контейнер утримує плаваючий бренд-бейдж усередині себе */
+.content { min-width: 0; display: flow-root; }
 
-/* ── Бренд-плашка з повним лого зверху сайдбара ───────────────────── */
-.sidebar-brand {
-  display: block;
-  width: 100%;
-  max-width: 178px;
-  margin: 0 auto 16px;
-  padding: 10px;
-  border-radius: 16px;
+/* ── Бренд-бейдж із повним лого: ліворуч від табів/опису сторінки ──── */
+/* float, щоб таби й заголовок обтікали лого справа, а решта контенту нижче
+   йшла на всю ширину. Завжди видимий — не залежить від стану меню. */
+.content-brand {
+  float: left;
+  margin: 2px 20px 10px 0;
+  padding: 8px;
+  border-radius: 14px;
   border: 1px solid rgba(227, 185, 94, 0.4);
-  /* золото-бронзовий градієнт під колір фону самого зображення, щоб краї
-     лого (замасковані нижче) розчинялися в плашці, а не давали рамку */
+  /* золото-бронзовий градієнт під колір фону зображення, щоб замасковані
+     краї лого розчинялися в бейджі, а не давали видимий прямокутник */
   background: radial-gradient(115% 90% at 50% 22%, #7a6522, #46380c 82%);
-  box-shadow: 0 10px 26px -12px rgba(227, 185, 94, 0.55), inset 0 1px 0 rgba(255, 235, 180, 0.14);
+  box-shadow: 0 10px 24px -12px rgba(227, 185, 94, 0.55), inset 0 1px 0 rgba(255, 235, 180, 0.14);
   transition: transform 0.12s, box-shadow 0.15s, border-color 0.15s;
 }
-.sidebar-brand:hover {
+.content-brand:hover {
   transform: translateY(-1px);
   border-color: rgba(227, 185, 94, 0.6);
-  box-shadow: 0 14px 30px -12px rgba(227, 185, 94, 0.7), inset 0 1px 0 rgba(255, 235, 180, 0.18);
+  box-shadow: 0 14px 28px -12px rgba(227, 185, 94, 0.7), inset 0 1px 0 rgba(255, 235, 180, 0.18);
 }
-.sidebar-brand img {
+.content-brand img {
   display: block;
-  width: 100%;
-  height: auto;
-  /* м'яко гасимо прямокутні краї зображення в градієнт плашки */
+  width: auto;
+  height: 104px;
+  /* м'яко гасимо прямокутні краї зображення в градієнт бейджа */
   -webkit-mask-image:
     linear-gradient(to bottom, transparent 0, #000 7%, #000 93%, transparent 100%),
     linear-gradient(to right, transparent 0, #000 6%, #000 94%, transparent 100%);
@@ -123,8 +124,8 @@ small.hint {
   mask-composite: intersect;
 }
 @media (max-width: 880px) {
-  /* у мобільному drawer лого компактніше */
-  .sidebar-brand { max-width: 150px; margin-bottom: 12px; }
+  .content-brand { margin: 0 14px 8px 0; padding: 6px; }
+  .content-brand img { height: 84px; }
 }
 
 /* ── Згорнуте меню: контент на всю ширину (десктоп, push-модель) ───── */
