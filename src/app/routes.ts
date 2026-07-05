@@ -12,6 +12,7 @@ export interface RouteDef {
   group?: string; // група в сайдбарі (ключ NAV_GROUPS); без групи — самостійна вкладка
   title: string; // <title> сторінки
   description: string; // meta description / og:description
+  keywords?: string; // meta keywords (рос. терміни — пошук по запитах російською)
 }
 
 /** Групи сайдбара (порядок = порядок у меню). */

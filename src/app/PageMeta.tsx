@@ -16,6 +16,7 @@ export default function PageMeta({ route }: { route: string }) {
     if (!r) return;
     document.title = r.title;
     setMeta('meta[name="description"]', r.description);
+    if (r.keywords) setMeta('meta[name="keywords"]', r.keywords);
     setMeta('meta[property="og:title"]', r.title);
     setMeta('meta[property="og:description"]', r.description);
     setMeta('meta[name="twitter:title"]', r.title);

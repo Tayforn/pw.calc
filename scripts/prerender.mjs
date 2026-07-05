@@ -25,6 +25,7 @@ function patched(route) {
   html = html.replace(/<title>[^<]*<\/title>/, `<title>${esc(route.title)}</title>`);
   const metas = {
     'name="description"': route.description,
+    ...(route.keywords ? { 'name="keywords"': route.keywords } : {}),
     'property="og:title"': route.title,
     'property="og:description"': route.description,
     'name="twitter:title"': route.title,
