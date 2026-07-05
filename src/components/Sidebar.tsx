@@ -5,6 +5,7 @@
 
 import type { ReactNode } from 'react';
 import { PANEL_GROUP, groupTabs } from '../app/routes';
+import { routeUrl } from '../app/useRoute';
 import { useGoldTouched } from '../app/useSettings';
 
 interface NavEntry {
@@ -66,6 +67,16 @@ export default function Sidebar({ route, onNavigate }: Props) {
   const goldTouched = useGoldTouched();
   return (
     <aside className="sidebar" id="appSidebar">
+      <a href={routeUrl('refine')} data-goto="refine" className="sidebar-brand" aria-label="PW Хелпер — на головну">
+        <img
+          src={import.meta.env.BASE_URL + 'assets/logo-full.webp'}
+          alt="PW Хелпер"
+          width={480}
+          height={720}
+          loading="lazy"
+          decoding="async"
+        />
+      </a>
       <nav className="nav-primary" role="tablist" aria-label="Розділи">
         {NAV.map((n) => {
           const active = n.group ? n.group === activeGroup : n.tab === route;

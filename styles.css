@@ -88,6 +88,45 @@ small.hint {
 }
 .content { min-width: 0; }
 
+/* ── Бренд-плашка з повним лого зверху сайдбара ───────────────────── */
+.sidebar-brand {
+  display: block;
+  width: 100%;
+  max-width: 178px;
+  margin: 0 auto 16px;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(227, 185, 94, 0.4);
+  /* золото-бронзовий градієнт під колір фону самого зображення, щоб краї
+     лого (замасковані нижче) розчинялися в плашці, а не давали рамку */
+  background: radial-gradient(115% 90% at 50% 22%, #7a6522, #46380c 82%);
+  box-shadow: 0 10px 26px -12px rgba(227, 185, 94, 0.55), inset 0 1px 0 rgba(255, 235, 180, 0.14);
+  transition: transform 0.12s, box-shadow 0.15s, border-color 0.15s;
+}
+.sidebar-brand:hover {
+  transform: translateY(-1px);
+  border-color: rgba(227, 185, 94, 0.6);
+  box-shadow: 0 14px 30px -12px rgba(227, 185, 94, 0.7), inset 0 1px 0 rgba(255, 235, 180, 0.18);
+}
+.sidebar-brand img {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* м'яко гасимо прямокутні краї зображення в градієнт плашки */
+  -webkit-mask-image:
+    linear-gradient(to bottom, transparent 0, #000 7%, #000 93%, transparent 100%),
+    linear-gradient(to right, transparent 0, #000 6%, #000 94%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to bottom, transparent 0, #000 7%, #000 93%, transparent 100%),
+    linear-gradient(to right, transparent 0, #000 6%, #000 94%, transparent 100%);
+  mask-composite: intersect;
+}
+@media (max-width: 880px) {
+  /* у мобільному drawer лого компактніше */
+  .sidebar-brand { max-width: 150px; margin-bottom: 12px; }
+}
+
 /* ── Згорнуте меню: контент на всю ширину (десктоп, push-модель) ───── */
 @media (min-width: 881px) {
   html:not(.nav-open) .app-shell { grid-template-columns: minmax(0, 1fr); }
