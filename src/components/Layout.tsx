@@ -6,7 +6,7 @@
 
 import { memo, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { ROUTES } from '../app/routes';
-import { useRoute, routeUrl } from '../app/useRoute';
+import { useRoute } from '../app/useRoute';
 import PageMeta from '../app/PageMeta';
 import { rbActivate } from '../app/legacyInit';
 import Header from './Header';
@@ -133,20 +133,6 @@ export default function Layout() {
               робив .content containing-block для fixed-модалок ляльки */}
           <div className="content-hd">
             <div className="content-header">
-              <a
-                href={routeUrl('refine')}
-                data-goto="refine"
-                className="content-brand"
-                aria-label="PW Хелпер — на головну"
-              >
-                <img
-                  src={import.meta.env.BASE_URL + 'assets/logo-full.webp'}
-                  alt="PW Хелпер"
-                  width={480}
-                  height={720}
-                  decoding="async"
-                />
-              </a>
               <SubtabsBar route={route} onNavigate={navigate} />
             </div>
           </div>
