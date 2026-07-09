@@ -93,57 +93,16 @@ small.hint {
    Так .content-header реагує на ШИРИНУ КОНТЕНТУ (враховуючи стан сайдбара). */
 .content-hd { container-type: inline-size; }
 
-/* ── Шапка контенту: бренд-лого + таби розділу в одному рядку ──────── */
-/* Широко — лого ліворуч, таби поряд. Вузько (не влазять) — контейнерний
-   медіа-запит стекає: лого по центру ЗВЕРХУ, таби рядком під ним. */
+/* ── Шапка контенту: таби розділу (лого прибрано — воно вже є у .site-header) */
 .content-header {
   display: flex;
   align-items: center;
-  gap: 18px;
   margin-bottom: 16px;
 }
 .content-header .nav-secondary { margin-bottom: 0; }
 
-.content-brand {
-  flex: 0 0 auto;
-  padding: 8px;
-  border-radius: 14px;
-  border: 1px solid rgba(227, 185, 94, 0.4);
-  /* золото-бронзовий градієнт під колір фону зображення, щоб замасковані
-     краї лого розчинялися в бейджі, а не давали видимий прямокутник */
-  background: radial-gradient(115% 90% at 50% 22%, #7a6522, #46380c 82%);
-  box-shadow: 0 10px 24px -12px rgba(227, 185, 94, 0.55), inset 0 1px 0 rgba(255, 235, 180, 0.14);
-  transition: transform 0.12s, box-shadow 0.15s, border-color 0.15s;
-}
-.content-brand:hover {
-  transform: translateY(-1px);
-  border-color: rgba(227, 185, 94, 0.6);
-  box-shadow: 0 14px 28px -12px rgba(227, 185, 94, 0.7), inset 0 1px 0 rgba(255, 235, 180, 0.18);
-}
-.content-brand img {
-  display: block;
-  width: auto;
-  height: 96px;
-  /* м'яко гасимо прямокутні краї зображення в градієнт бейджа */
-  -webkit-mask-image:
-    linear-gradient(to bottom, transparent 0, #000 7%, #000 93%, transparent 100%),
-    linear-gradient(to right, transparent 0, #000 6%, #000 94%, transparent 100%);
-  -webkit-mask-composite: source-in;
-  mask-image:
-    linear-gradient(to bottom, transparent 0, #000 7%, #000 93%, transparent 100%),
-    linear-gradient(to right, transparent 0, #000 6%, #000 94%, transparent 100%);
-  mask-composite: intersect;
-}
-
-/* Вузько: лого + таби не влазять в рядок → лого по центру над табами. */
 @container (max-width: 780px) {
-  .content-header { flex-direction: column; align-items: center; }
   .content-header .nav-secondary { justify-content: center; flex-wrap: wrap; }
-}
-
-@media (max-width: 880px) {
-  .content-brand { padding: 6px; }
-  .content-brand img { height: 84px; }
 }
 
 /* ── Згорнуте меню: контент на всю ширину (десктоп, push-модель) ───── */
