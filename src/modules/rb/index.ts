@@ -13,6 +13,7 @@ interface WorldBoss {
   y: number;
   _ll?: any;
   _marker?: any;
+  _coordStr?: string;
   sub?: string;
   tier?: number;
 }
@@ -24,6 +25,7 @@ interface ChronoBoss {
   sub?: string;
   _ll?: any;
   _marker?: any;
+  _coordStr?: string;
   nick?: string;
 }
 type Boss = WorldBoss | ChronoBoss;
@@ -133,6 +135,177 @@ function rbSaveKills(): void {
   }
 }
 
+// --- Кастомні назви босів (перейменування, зберігається вічно в localStorage) ---
+const RB_NAMES_LS_KEY = 'pwcalc.rbNames';
+const rbNames: Record<Kind, Record<number, string>> = { world: {}, chrono: {} };
+
+function rbLoadNames(): void {
+  let saved: any = null;
+  try {
+    saved = JSON.parse(localStorage.getItem(RB_NAMES_LS_KEY) || 'null');
+  } catch (_) {
+    /* ignore */
+  }
+  rbNames.world = saved && saved.world && typeof saved.world === 'object' ? saved.world : {};
+  rbNames.chrono = saved && saved.chrono && typeof saved.chrono === 'object' ? saved.chrono : {};
+}
+
+function rbSaveNames(): void {
+  try {
+    localStorage.setItem(RB_NAMES_LS_KEY, JSON.stringify(rbNames));
+  } catch (_) {
+    /* ignore */
+  }
+}
+
+const rbDefaultLabel = (b: Boss): string => b.nick || b.name;
+
+function rbDisplayName(kind: Kind, idx: number, b: Boss): string {
+  const custom = rbNames[kind][idx];
+  return custom && custom.trim() ? custom.trim() : rbDefaultLabel(b);
+}
+
+function rbBuildPopup(kind: Kind, idx: number, b: Boss): string {
+  const label = rbDisplayName(kind, idx, b);
+  const defaultLabel = rbDefaultLabel(b);
+  const extra =
+    label !== defaultLabel
+      ? defaultLabel
+      : b.nick && b.nick !== b.name
+        ? b.nick
+        : '';
+  return (
+    '<div class="rb-pop">' +
+    (b.sub ? '<span class="rb-pop-sub t' + b.tier + '">' + escHtml(b.sub) + '</span>' : '') +
+    '<b>' + escHtml(label) + '</b>' +
+    (extra ? ' <span class="rb-pop-nick">(' + escHtml(extra) + ')</span>' : '') +
+    '<br><span class="coord" data-coord="' + b._coordStr + '" title="Натисни, щоб скопіювати">' + b._coordStr + '</span>' +
+    '</div>'
+  );
+}
+
+// Оновлює назву боса в DOM (чип у списку, мітка й попап на карті) без перебудови карти.
+function rbApplyName(kind: Kind, idx: number): void {
+  const bosses: Boss[] = kind === 'world' ? WORLD_BOSSES : CHRONO_BOSSES;
+  const b = bosses[idx];
+  if (!b) return;
+  const label = rbDisplayName(kind, idx, b);
+
+  const listEl = document.getElementById(kind === 'world' ? 'rbListWorld' : 'rbListChrono');
+  const nameEl = listEl?.querySelector('.rb-chip[data-rb="' + idx + '"] .rb-chip-name');
+  if (nameEl) nameEl.textContent = label;
+
+  if (b._marker) {
+    const iconEl = (b._marker as any)._icon as HTMLElement | undefined;
+    const lblEl = iconEl?.querySelector('.rb-lbl');
+    if (lblEl) lblEl.textContent = label;
+    b._marker.setPopupContent(rbBuildPopup(kind, idx, b));
+  }
+}
+
+// --- Модалка перейменування (замінює нативний window.prompt, стилізована під тему сайту) ---
+interface RbRenameEls {
+  overlay: HTMLElement;
+  input: HTMLInputElement;
+  title: HTMLElement;
+}
+let rbRenameEls: RbRenameEls | null = null;
+let rbRenameCtx: { kind: Kind; idx: number; b: Boss } | null = null;
+
+function rbCloseRenameModal(): void {
+  if (!rbRenameEls || !rbRenameCtx) return;
+  rbRenameEls.overlay.setAttribute('hidden', '');
+  document.body.classList.remove('modal-open');
+  rbRenameCtx = null;
+}
+
+function rbCommitRename(): void {
+  if (!rbRenameEls || !rbRenameCtx) return;
+  const { kind, idx, b } = rbRenameCtx;
+  const trimmed = rbRenameEls.input.value.trim();
+  if (trimmed && trimmed !== rbDefaultLabel(b)) rbNames[kind][idx] = trimmed;
+  else delete rbNames[kind][idx];
+  rbSaveNames();
+  rbApplyName(kind, idx);
+  rbCloseRenameModal();
+}
+
+function rbResetRename(): void {
+  if (!rbRenameCtx) return;
+  const { kind, idx } = rbRenameCtx;
+  delete rbNames[kind][idx];
+  rbSaveNames();
+  rbApplyName(kind, idx);
+  rbCloseRenameModal();
+}
+
+function rbEnsureRenameModal(): RbRenameEls {
+  if (rbRenameEls) return rbRenameEls;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay rb-rename-overlay';
+  overlay.id = 'rbRenameModal';
+  overlay.setAttribute('hidden', '');
+  overlay.innerHTML =
+    '<div class="modal rb-rename-modal" role="dialog" aria-modal="true" aria-labelledby="rbRenameTitle">' +
+    '<div class="modal-head">' +
+    '<h3 id="rbRenameTitle">Перейменувати боса</h3>' +
+    '<button type="button" class="modal-close" data-act="close" aria-label="Закрити">✕</button>' +
+    '</div>' +
+    '<div class="modal-body">' +
+    '<div class="field">' +
+    '<label for="rbRenameInput">Назва на мітці й у списку</label>' +
+    '<input type="text" id="rbRenameInput" maxlength="40" autocomplete="off" spellcheck="false">' +
+    '</div>' +
+    '</div>' +
+    '<div class="modal-foot">' +
+    '<button type="button" class="btn btn-ghost" data-act="reset">↺ Типова назва</button>' +
+    '<button type="button" class="btn btn-ghost" data-act="close">Скасувати</button>' +
+    '<button type="button" class="btn btn-primary" data-act="save">Зберегти</button>' +
+    '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+
+  const input = overlay.querySelector('#rbRenameInput') as HTMLInputElement;
+  const title = overlay.querySelector('#rbRenameTitle') as HTMLElement;
+
+  overlay.addEventListener('click', (e) => {
+    const t = e.target as HTMLElement;
+    if (t === overlay || t.closest('[data-act="close"]')) rbCloseRenameModal();
+    else if (t.closest('[data-act="save"]')) rbCommitRename();
+    else if (t.closest('[data-act="reset"]')) rbResetRename();
+  });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      rbCommitRename();
+    }
+  });
+  overlay.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    e.preventDefault();
+    e.stopPropagation();
+    rbCloseRenameModal();
+  });
+
+  rbRenameEls = { overlay, input, title };
+  return rbRenameEls;
+}
+
+function rbOpenRenameModal(kind: Kind, idx: number, b: Boss): void {
+  const els = rbEnsureRenameModal();
+  rbRenameCtx = { kind, idx, b };
+  const defaultLabel = rbDefaultLabel(b);
+  els.title.textContent = 'Перейменувати «' + defaultLabel + '»';
+  els.input.value = rbDisplayName(kind, idx, b);
+  els.input.placeholder = defaultLabel;
+  els.overlay.removeAttribute('hidden');
+  document.body.classList.add('modal-open');
+  requestAnimationFrame(() => {
+    els.input.focus();
+    els.input.select();
+  });
+}
+
 const rbBossKey = (kind: Kind, b: Boss): string =>
   kind === 'world' ? (b as WorldBoss).nick : b.name;
 const rbIsKilled = (kind: Kind, b: Boss): boolean => rbKills[kind].has(rbBossKey(kind, b));
@@ -236,31 +409,25 @@ function buildRbMap(kind: Kind): any {
         : chronoToLatLng((b as ChronoBoss).x, (b as ChronoBoss).z);
     b._ll = ll;
     lls.push(ll);
-    const label = b.nick || b.name;
-    const coordStr =
+    b._coordStr =
       kind === 'world'
         ? (b as WorldBoss).x + ' ' + (b as WorldBoss).y
         : Math.round((b as ChronoBoss).x) + ' ' + Math.round((b as ChronoBoss).z);
+    const label = rbDisplayName(kind, i, b);
     const icon = L.divIcon({
       className: 'rb-marker' + (b.tier ? ' t' + b.tier : ''),
       html: '<span class="rb-pin"></span><span class="rb-lbl">' + escHtml(label) + '</span>',
       iconSize: null,
       iconAnchor: [8, 8],
     });
-    const popup =
-      '<div class="rb-pop">' +
-      (b.sub ? '<span class="rb-pop-sub t' + b.tier + '">' + escHtml(b.sub) + '</span>' : '') +
-      '<b>' + escHtml(b.name) + '</b>' +
-      (b.nick && b.nick !== b.name ? ' <span class="rb-pop-nick">(' + escHtml(b.nick) + ')</span>' : '') +
-      '<br><span class="coord" data-coord="' + coordStr + '" title="Натисни, щоб скопіювати">' + coordStr + '</span>' +
-      '</div>';
-    b._marker = L.marker(ll, { icon }).addTo(map).bindPopup(popup);
+    b._marker = L.marker(ll, { icon }).addTo(map).bindPopup(rbBuildPopup(kind, i, b));
     listHtml +=
       '<span class="rb-chip' + (b.tier ? ' t' + b.tier : '') + '" data-rb="' + i + '">' +
       '<button type="button" class="rb-chip-go" title="Показати на карті">' +
       (b.tier ? '<span class="rb-chip-tier">' + b.tier + '</span>' : '') +
-      escHtml(label) +
+      '<span class="rb-chip-name">' + escHtml(label) + '</span>' +
       '</button>' +
+      '<button type="button" class="rb-chip-edit" title="Перейменувати боса">✎</button>' +
       '<button type="button" class="rb-chip-kill" title="Позначити вбитим / живим" aria-pressed="false">✓</button>' +
       '</span>';
   });
@@ -321,12 +488,27 @@ function buildRbMap(kind: Kind): any {
   });
   new FsCtrl().addTo(map);
 
+  // Наведення на мітку боса на карті — підсвічуємо його чип у списку.
+  const rbSetChipHl = (idx: number, on: boolean): void => {
+    const chip = listEl?.querySelector<HTMLElement>('.rb-chip[data-rb="' + idx + '"]');
+    chip?.classList.toggle('hl', on);
+  };
+  bosses.forEach((b, i) => {
+    b._marker?.on('mouseover', () => rbSetChipHl(i, true));
+    b._marker?.on('mouseout', () => rbSetChipHl(i, false));
+  });
+
   if (listEl) {
     listEl.innerHTML = listHtml;
     listEl.addEventListener('click', (e) => {
       const chip = (e.target as HTMLElement).closest<HTMLElement>('.rb-chip[data-rb]');
       if (!chip) return;
-      const b = bosses[+(chip.dataset.rb as string)];
+      const idx = +(chip.dataset.rb as string);
+      const b = bosses[idx];
+      if ((e.target as HTMLElement).closest('.rb-chip-edit')) {
+        rbOpenRenameModal(kind, idx, b);
+        return;
+      }
       if ((e.target as HTMLElement).closest('.rb-chip-kill')) {
         rbSetKilled(kind, b, !rbIsKilled(kind, b));
         rbUpdateKillUI(kind);
@@ -455,8 +637,16 @@ function toggleRbFullscreen(kind: Kind): void {
   rbRefresh(kind);
 }
 
+let rbNamesLoaded = false;
+
 export function rbActivate(): void {
   if (typeof L === 'undefined') return; // Leaflet не завантажився
+  // Гарантія на випадок, коли rbActivate() (ефект дочірнього Layout) спрацює
+  // раніше за rbInit() (ефект батьківського App) — типово при прямому заході на /rb.
+  if (!rbNamesLoaded) {
+    rbNamesLoaded = true;
+    rbLoadNames();
+  }
   if (rbCurrentCycle() !== rbKillCycle) {
     rbLoadKills();
     (Object.keys(rbMaps) as Kind[]).forEach((k) => rbMaps[k] && rbUpdateKillUI(k));
@@ -479,4 +669,5 @@ export function rbActivate(): void {
 
 export function rbInit(): void {
   rbLoadKills();
+  rbLoadNames();
 }
