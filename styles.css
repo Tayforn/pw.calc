@@ -2559,7 +2559,7 @@ html[data-theme="light"] .rb-subtab.active {
   transition: background 0.12s, color 0.12s, border-color 0.12s, opacity 0.12s;
 }
 .rb-chip:hover { border-color: rgba(227, 185, 94, 0.4); }
-.rb-chip-go, .rb-chip-kill {
+.rb-chip-go, .rb-chip-edit, .rb-chip-kill {
   font: inherit;
   border: 0;
   background: none;
@@ -2574,6 +2574,15 @@ html[data-theme="light"] .rb-subtab.active {
 .rb-chip-go:hover { color: #fff; background: rgba(227, 185, 94, 0.14); }
 /* у світлій темі білий текст на світлому золотистому фоні не читався */
 html[data-theme="light"] .rb-chip-go:hover { color: var(--accent-2); background: rgba(176, 127, 35, 0.16); }
+.rb-chip-edit {
+  padding: 5px 9px;
+  border-left: 1px solid var(--line);
+  color: var(--text-dim);
+  font-size: 12.5px;
+  line-height: 1;
+}
+.rb-chip-edit:hover { color: var(--accent-3); background: rgba(227, 185, 94, 0.14); }
+html[data-theme="light"] .rb-chip-edit:hover { color: var(--accent-2); background: rgba(176, 127, 35, 0.16); }
 .rb-chip-kill {
   padding: 5px 10px;
   border-left: 1px solid var(--line);
@@ -2586,6 +2595,12 @@ html[data-theme="light"] .rb-chip-go:hover { color: var(--accent-2); background:
 .rb-chip.killed .rb-chip-go { text-decoration: line-through; }
 .rb-chip.killed .rb-chip-kill { color: var(--good); background: rgba(53, 224, 161, 0.16); }
 .rb-marker.killed { opacity: 0.4; filter: grayscale(1); }
+/* підсвічування чипа при наведенні на його мітку на карті */
+.rb-chip.hl {
+  border-color: var(--accent);
+  background: rgba(227, 185, 94, 0.18);
+  box-shadow: 0 0 0 1px rgba(227, 185, 94, 0.45);
+}
 
 /* панель чеклиста над списком босів */
 .rb-killbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -2931,6 +2946,12 @@ body.modal-open { overflow: hidden; }
   transition: background 0.15s, color 0.15s;
 }
 .modal-close:hover { background: rgba(255, 255, 255, 0.08); color: var(--text); }
+
+/* модалка перейменування боса (РБ) — вужча за стандартну */
+/* вище за rb-мапу на весь екран (z-index: 9999) і її плаваючий чеклист (10000) */
+.rb-rename-overlay { z-index: 10001; }
+.rb-rename-modal { width: min(380px, 100%); }
+.rb-rename-modal .modal-body { padding-top: 4px; }
 
 .chest-cfg-row {
   display: grid;
