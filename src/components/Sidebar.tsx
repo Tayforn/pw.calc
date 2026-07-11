@@ -47,6 +47,10 @@ const NAV: NavEntry[] = [
     ico: <svg {...S}><path d="M12 3a8 8 0 0 0-8 8c0 2.4 1 4 2.5 5v2A1.5 1.5 0 0 0 8 19.5h8a1.5 1.5 0 0 0 1.5-1.5v-2c1.5-1 2.5-2.6 2.5-5a8 8 0 0 0-8-8z" /><circle cx="9" cy="11.5" r="1.3" /><circle cx="15" cy="11.5" r="1.3" /></svg>,
   },
   {
+    tab: 'atn', label: 'АТН',
+    ico: <svg {...S}><ellipse cx="12" cy="15.5" rx="3.4" ry="2.9" /><circle cx="6.7" cy="10.5" r="1.7" /><circle cx="10.2" cy="7.5" r="1.7" /><circle cx="13.8" cy="7.5" r="1.7" /><circle cx="17.3" cy="10.5" r="1.7" /></svg>,
+  },
+  {
     tab: 'guides', label: 'Гайди',
     ico: <svg {...S}><path d="M12 5.5C10 4 6.5 4 4 4.5v14c2.5-.5 6-.5 8 1 2-1.5 5.5-1.5 8-1v-14c-2.5-.5-6-.5-8 1z" /><path d="M12 5.5v15" /></svg>,
   },

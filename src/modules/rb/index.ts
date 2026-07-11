@@ -4,6 +4,7 @@
 
 import { $$ } from '../../utils/dom';
 import { escHtml } from '../../utils/format';
+import { createPwWorldLayer, worldMaxBounds } from '../pwmap/layers';
 
 // Розширюємо об'єкти босів runtime-полями (мітка, latlng тощо).
 interface WorldBoss {
@@ -367,18 +368,8 @@ function buildRbMap(kind: Kind): any {
   let flyZoom: number;
   if (kind === 'world') {
     map = L.map(el, { minZoom: z0.min, maxZoom: z0.max, zoomSnap: 0.5, zoomControl: true });
-    const attr = 'Карта © <a href="https://worldmap.pw/" target="_blank" rel="noopener">worldmap.pw</a>';
-    L.tileLayer('https://worldmap.pw/tiles/satmap/{z}/{x}/{y}.webp', {
-      minZoom: 0,
-      maxZoom: 18,
-      tileSize: 256,
-      attribution: attr,
-    }).addTo(map);
-    L.tileLayer('https://worldmap.pw/tiles/map/{z}/{x}/{y}.webp', {
-      minZoom: 18,
-      maxZoom: 21,
-      tileSize: 256,
-    }).addTo(map);
+    // Карта світу з клієнта гри (локальні тайли, спільний шар з АТН).
+    createPwWorldLayer().addTo(map);
     flyZoom = 18;
   } else {
     map = L.map(el, {
@@ -432,8 +423,8 @@ function buildRbMap(kind: Kind): any {
       '</span>';
   });
 
-  if (kind === 'world' && lls.length) {
-    map.setMaxBounds(L.latLngBounds(lls).pad(0.5));
+  if (kind === 'world') {
+    map.setMaxBounds(worldMaxBounds());
   }
 
   if (kind === 'chrono') {
@@ -661,6 +652,8 @@ export function rbActivate(): void {
       if (e.key !== 'Escape') return;
       const fs = document.querySelector('.rb-map.fullscreen');
       if (!fs) return;
+      // Клас .rb-map спільний з картою АТН — реагуємо лише на власні карти.
+      if (fs.id !== 'rbMapWorld' && fs.id !== 'rbMapChrono') return;
       toggleRbFullscreen(fs.id === 'rbMapWorld' ? 'world' : 'chrono');
     });
   }
