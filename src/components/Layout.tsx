@@ -8,7 +8,7 @@ import { memo, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { ROUTES } from '../app/routes';
 import { useRoute } from '../app/useRoute';
 import PageMeta from '../app/PageMeta';
-import { rbActivate } from '../app/legacyInit';
+import { rbActivate, atnActivate } from '../app/legacyInit';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import SubtabsBar from './SubtabsBar';
@@ -31,6 +31,7 @@ import SkillsPage from '../pages/SkillsPage';
 import GeniePage from '../pages/GeniePage';
 import PetsPage from '../pages/PetsPage';
 import RbPage from '../pages/RbPage';
+import AtnPage from '../pages/AtnPage';
 import GuidesPage from '../pages/GuidesPage';
 import SettingsPage from '../pages/SettingsPage';
 
@@ -51,6 +52,7 @@ const PAGES: Record<string, ReactNode> = {
   genie: <GeniePage />,
   pets: <PetsPage />,
   rb: <RbPage />,
+  atn: <AtnPage />,
   guides: <GuidesPage />,
   settings: <SettingsPage />,
 };
@@ -85,10 +87,11 @@ export default function Layout() {
   );
 
   // Активація вкладок з побічними ефектами + скрол нагору (як у legacy setTab).
-  // rb — легасі-панель на Leaflet, її треба «розбудити» при показі.
+  // rb/atn — легасі-панелі на Leaflet, їх треба «розбудити» при показі.
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (route === 'rb') rbActivate();
+    if (route === 'atn') atnActivate();
   }, [route]);
 
   // Esc закриває drawer на мобільному; глобальні [data-goto]-посилання ведуть на вкладку.

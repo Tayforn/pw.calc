@@ -10,8 +10,10 @@ import { initNumberSteppers } from '../utils/numberStepper';
 import { applyDefaultEggPrice } from '../settings';
 import { initEggPriceSync } from '../settings/eggPrice';
 import { rbInit } from '../modules/rb';
+import { atnInit } from '../modules/atn';
 
 export { rbActivate } from '../modules/rb';
+export { atnActivate } from '../modules/atn';
 
 let done = false;
 
@@ -34,6 +36,7 @@ export function initLegacyModules(): void {
   // значення й реагують через useEggPriceTick — тут лише DOM-синк, без ре-рендера).
   initEggPriceSync(() => {});
   rbInit();
+  atnInit();
   applyDefaultEggPrice();
 
   // Кастомні стрілки для всіх числових інпутів (після стартового рендера).
