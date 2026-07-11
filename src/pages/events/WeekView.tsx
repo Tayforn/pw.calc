@@ -37,9 +37,11 @@ interface Props {
   dragUi: DragUiState | null;
   onDragStart: (e: React.PointerEvent, payload: DragPayload) => void;
   onOpenEvent: (evt: EvtItem, dateKey: string) => void;
+  /** Даблклік по вільному місцю колонки — створити евент на цій даті/годині. */
+  onCreateAt: (dateKey: string, startMin: number) => void;
 }
 
-export default function WeekView({ days, events, dragUi, onDragStart, onOpenEvent }: Props) {
+export default function WeekView({ days, events, dragUi, onDragStart, onOpenEvent, onCreateAt }: Props) {
   const now = useNow();
   const todayKey = ymd(now);
   const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -71,7 +73,18 @@ export default function WeekView({ days, events, dragUi, onDragStart, onOpenEven
             const drop = dragUi?.target && dragUi.target.date === key && dragUi.target.startMin !== null ? dragUi.target : null;
             const dropDur = drop ? (dragUi!.payload.kind === 'move' ? dragUi!.payload.duration : 30) : 0;
             return (
-              <div key={key} className="evt-col" data-evt-day={key} style={{ height: 24 * HOUR_PX }}>
+              <div
+                key={key}
+                className="evt-col"
+                data-evt-day={key}
+                style={{ height: 24 * HOUR_PX }}
+                onDoubleClick={(ev) => {
+                  if ((ev.target as HTMLElement).closest('.evt-block')) return;
+                  const rect = ev.currentTarget.getBoundingClientRect();
+                  const min = Math.max(0, Math.min(1410, Math.round((ev.clientY - rect.top) / PX_PER_MIN / 5) * 5));
+                  onCreateAt(key, min);
+                }}
+              >
                 {placed.map((p) => {
                   const e = p.occ.evt;
                   const top = p.occ.startMin * PX_PER_MIN + p.stackIdx * 10;

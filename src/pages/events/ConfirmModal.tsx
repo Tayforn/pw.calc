@@ -38,7 +38,7 @@ export function useModalChrome(onClose: () => void): void {
 export default function ConfirmModal({ state, onClose }: { state: ConfirmState; onClose: () => void }) {
   useModalChrome(onClose);
   return (
-    <div className="modal-overlay" id="evtConfirmOverlay" onClick={(e) => { if ((e.target as HTMLElement).id === 'evtConfirmOverlay') onClose(); }}>
+    <div className="modal-overlay evt-overlay" id="evtConfirmOverlay" onClick={(e) => { if ((e.target as HTMLElement).id === 'evtConfirmOverlay') onClose(); }}>
       <div className="modal evt-confirm" role="dialog" aria-modal="true" aria-labelledby="evtConfirmTitle">
         <div className="modal-head">
           <h3 id="evtConfirmTitle">{state.title}</h3>

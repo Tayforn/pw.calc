@@ -4421,9 +4421,9 @@ html[data-theme="light"] .skl-tile.picked::after {
   touch-action: pan-y;
   user-select: none;
   -webkit-user-select: none;
-  transition: filter 0.12s;
 }
-.evt-block:hover { z-index: 45 !important; filter: brightness(1.12); }
+/* без filter/transition — на CPU-рендері (вимкнене апаратне прискорення) filter дорогий */
+.evt-block:hover { z-index: 45 !important; border-color: var(--accent); }
 .evt-block-t { font-size: 10px; font-weight: 700; opacity: 0.85; font-family: 'JetBrains Mono', ui-monospace, monospace; }
 .evt-block-n { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .evt-block-slim { flex-direction: row; gap: 5px; align-items: baseline; padding-top: 1px; }
@@ -4449,8 +4449,19 @@ html[data-theme="light"] .skl-tile.picked::after {
 }
 
 /* ── Drag ghost ── */
+/* Оверлеї evt-модалок без backdrop-blur: фулскрін-блюр на CPU-рендері
+   (вимкнене апаратне прискорення) дає сотні мс на кожну взаємодію в попапі */
+.evt-overlay {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(5, 4, 12, 0.84);
+}
+
 .evt-drag-ghost {
   position: fixed;
+  left: 0;
+  top: 0;
+  will-change: transform;
   z-index: 12000;
   pointer-events: none;
   display: flex;

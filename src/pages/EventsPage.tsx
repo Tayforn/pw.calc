@@ -251,7 +251,7 @@ export default function EventsPage() {
   // ---- Render ----
 
   const ghost = drag.ui && (
-    <div className="evt-drag-ghost" style={{ left: drag.ui.x + 14, top: drag.ui.y + 18 }}>
+    <div ref={drag.ghostRef} className="evt-drag-ghost" style={{ transform: `translate3d(${drag.ui.x + 14}px, ${drag.ui.y + 18}px, 0)` }}>
       {drag.ui.payload.kind === 'move' ? (
         <>
           {drag.ui.payload.emoji} {drag.ui.payload.title}
@@ -331,6 +331,7 @@ export default function EventsPage() {
               setAnchor(d);
               setView('day');
             }}
+            onCreateAt={(date) => openCreate(date)}
           />
         ) : (
           <WeekView
@@ -339,6 +340,7 @@ export default function EventsPage() {
             dragUi={drag.ui}
             onDragStart={drag.start}
             onOpenEvent={(evt, occDate) => setEditing({ evt, isNew: false, occDate })}
+            onCreateAt={openCreate}
           />
         )}
       </div>

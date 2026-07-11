@@ -2,7 +2,9 @@
 // Розклад Евентів: drag&drop на Pointer Events (HTML5 DnD не працює на тачі).
 // Миша/перо — активація після 6px руху; тач — long-press 320мс
 // (доти вертикальний скрол лишається нативним через touch-action: pan-y).
-// Координати цілей — у page-координатах, тож скрол під час drag не збиває.
+// Продуктивність: слухачі документа живуть лише під час drag-сесії;
+// привид рухається напряму через style.transform (без ререндерів React) —
+// setUi викликається тільки коли змінюється цільовий слот.
 // =========================================================
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -20,31 +22,19 @@ export interface DropTarget {
 
 export interface DragUiState {
   payload: DragPayload;
-  x: number; // clientX
-  y: number; // clientY
+  /** Координати активації — стартова позиція привида (далі рухається імперативно). */
+  x: number;
+  y: number;
   target: DropTarget | null;
 }
 
 interface TargetRect {
   date: string;
   timed: boolean; // .evt-col (тиждень/день) чи .evt-mcell (місяць)
-  left: number; // page-координати
+  left: number; // page-координати — скрол під час drag не збиває
   top: number;
   right: number;
   bottom: number;
-}
-
-interface Session {
-  payload: DragPayload;
-  pointerId: number;
-  startX: number;
-  startY: number;
-  active: boolean;
-  holdTimer: number | null;
-  rects: TargetRect[];
-  raf: number;
-  lastX: number;
-  lastY: number;
 }
 
 const MOUSE_SLOP = 6;
@@ -53,6 +43,25 @@ const HOLD_MS = 320;
 const EDGE_PX = 70;
 const EDGE_STEP = 12;
 
+const targetKey = (t: DropTarget | null) => (t ? `${t.date}|${t.startMin}` : '');
+
+function snapshotRects(): TargetRect[] {
+  const rects: TargetRect[] = [];
+  document.querySelectorAll<HTMLElement>('[data-evt-day]').forEach((el) => {
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) return;
+    rects.push({
+      date: el.dataset.evtDay!,
+      timed: el.classList.contains('evt-col'),
+      left: r.left + window.scrollX,
+      top: r.top + window.scrollY,
+      right: r.right + window.scrollX,
+      bottom: r.bottom + window.scrollY,
+    });
+  });
+  return rects;
+}
+
 interface Options {
   pxPerMin: number;
   onDrop: (payload: DragPayload, target: DropTarget) => void;
@@ -60,167 +69,153 @@ interface Options {
 
 export function useDrag({ pxPerMin, onDrop }: Options) {
   const [ui, setUi] = useState<DragUiState | null>(null);
-  const sess = useRef<Session | null>(null);
-  const activateRef = useRef<() => void>(() => {});
+  const ghostRef = useRef<HTMLDivElement | null>(null);
+  const busy = useRef(false);
+  const cleanupRef = useRef<(() => void) | null>(null);
   const onDropRef = useRef(onDrop);
   onDropRef.current = onDrop;
+  const pxRef = useRef(pxPerMin);
+  pxRef.current = pxPerMin;
 
-  const snapshotRects = () => {
-    const rects: TargetRect[] = [];
-    document.querySelectorAll<HTMLElement>('[data-evt-day]').forEach((el) => {
-      const r = el.getBoundingClientRect();
-      if (r.width === 0 || r.height === 0) return;
-      rects.push({
-        date: el.dataset.evtDay!,
-        timed: el.classList.contains('evt-col'),
-        left: r.left + window.scrollX,
-        top: r.top + window.scrollY,
-        right: r.right + window.scrollX,
-        bottom: r.bottom + window.scrollY,
-      });
-    });
-    return rects;
-  };
+  // Страховка при демонтажі сторінки посеред drag.
+  useEffect(() => () => cleanupRef.current?.(), []);
 
-  const computeTarget = useCallback(
-    (clientX: number, clientY: number): DropTarget | null => {
-      const s = sess.current;
-      if (!s) return null;
+  /** Вішається на pointerDown джерела (блок евента або кнопка «+ Евент»). */
+  const start = useCallback((e: React.PointerEvent, payload: DragPayload) => {
+    if (busy.current) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    busy.current = true;
+
+    const pointerId = e.pointerId;
+    let startX = e.clientX;
+    let startY = e.clientY;
+    let lastX = e.clientX;
+    let lastY = e.clientY;
+    let active = false;
+    let holdTimer: number | null = null;
+    let raf = 0;
+    let rects: TargetRect[] = [];
+    let lastKey = '';
+
+    const computeTarget = (clientX: number, clientY: number): DropTarget | null => {
       const px = clientX + window.scrollX;
       const py = clientY + window.scrollY;
-      const hit = s.rects.find((r) => px >= r.left && px < r.right && py >= r.top && py < r.bottom);
+      const hit = rects.find((r) => px >= r.left && px < r.right && py >= r.top && py < r.bottom);
       if (!hit) return null;
       if (!hit.timed) return { date: hit.date, startMin: null };
-      const dur = s.payload.kind === 'move' ? s.payload.duration : 30;
-      const raw = (py - hit.top) / pxPerMin;
+      const dur = payload.kind === 'move' ? payload.duration : 30;
+      const raw = (py - hit.top) / pxRef.current;
       const startMin = Math.max(0, Math.min(1440 - dur, Math.round(raw / 5) * 5));
       return { date: hit.date, startMin };
-    },
-    [pxPerMin],
-  );
-
-  useEffect(() => {
-    const preventTouch = (e: TouchEvent) => {
-      if (sess.current?.active) e.preventDefault();
     };
-    // Один раз кліком по документу після drag — гасимо синтетичний click по джерелу.
-    const suppressClick = (e: MouseEvent) => {
-      e.stopPropagation();
-      e.preventDefault();
+
+    const preventTouch = (ev: TouchEvent) => ev.preventDefault();
+
+    const suppressClick = (ev: MouseEvent) => {
+      ev.stopPropagation();
+      ev.preventDefault();
       document.removeEventListener('click', suppressClick, true);
     };
 
     const cleanup = () => {
-      const s = sess.current;
-      if (!s) return;
-      if (s.holdTimer != null) clearTimeout(s.holdTimer);
-      if (s.raf) cancelAnimationFrame(s.raf);
-      sess.current = null;
+      if (holdTimer != null) clearTimeout(holdTimer);
+      if (raf) cancelAnimationFrame(raf);
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onCancel);
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('touchmove', preventTouch);
       document.documentElement.classList.remove('evt-drag-on');
+      busy.current = false;
+      cleanupRef.current = null;
       setUi(null);
+    };
+    cleanupRef.current = cleanup;
+
+    const setGhostPos = (x: number, y: number) => {
+      const g = ghostRef.current;
+      if (g) g.style.transform = `translate3d(${x + 14}px, ${y + 18}px, 0)`;
     };
 
     const activate = () => {
-      const s = sess.current;
-      if (!s || s.active) return;
-      s.active = true;
-      s.rects = snapshotRects();
+      if (active) return;
+      active = true;
+      rects = snapshotRects();
+      // Після активації тач-жест — наш: блокуємо скрол до кінця drag.
+      document.addEventListener('touchmove', preventTouch, { passive: false });
       document.documentElement.classList.add('evt-drag-on');
       navigator.vibrate?.(10);
-      setUi({ payload: s.payload, x: s.lastX, y: s.lastY, target: computeTarget(s.lastX, s.lastY) });
+      const target = computeTarget(lastX, lastY);
+      lastKey = targetKey(target);
+      setUi({ payload, x: lastX, y: lastY, target });
     };
-    activateRef.current = activate;
 
-    const onMove = (e: PointerEvent) => {
-      const s = sess.current;
-      if (!s || e.pointerId !== s.pointerId) return;
-      s.lastX = e.clientX;
-      s.lastY = e.clientY;
-      const dist = Math.hypot(e.clientX - s.startX, e.clientY - s.startY);
-      if (!s.active) {
-        if (s.holdTimer != null) {
+    const onMove = (ev: PointerEvent) => {
+      if (ev.pointerId !== pointerId) return;
+      lastX = ev.clientX;
+      lastY = ev.clientY;
+      if (!active) {
+        const dist = Math.hypot(ev.clientX - startX, ev.clientY - startY);
+        if (holdTimer != null) {
           // Тач: ранній рух — це скрол, скасовуємо long-press.
           if (dist > TOUCH_SLOP) cleanup();
           return;
         }
-        if (dist > MOUSE_SLOP) activate();
-        if (!s.active) return;
+        if (dist <= MOUSE_SLOP) return;
+        activate();
       }
-      if (s.raf) return;
-      s.raf = requestAnimationFrame(() => {
-        const cur = sess.current;
-        if (!cur || !cur.active) return;
-        cur.raf = 0;
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        if (!active || !busy.current) return;
+        setGhostPos(lastX, lastY);
         // Авто-скрол сторінки біля країв екрана; rect-и в page-координатах, тож валідні.
-        if (cur.lastY < EDGE_PX + 60) window.scrollBy(0, -EDGE_STEP);
-        else if (cur.lastY > window.innerHeight - EDGE_PX) window.scrollBy(0, EDGE_STEP);
-        setUi({ payload: cur.payload, x: cur.lastX, y: cur.lastY, target: computeTarget(cur.lastX, cur.lastY) });
+        if (lastY < EDGE_PX + 60) window.scrollBy(0, -EDGE_STEP);
+        else if (lastY > window.innerHeight - EDGE_PX) window.scrollBy(0, EDGE_STEP);
+        const target = computeTarget(lastX, lastY);
+        const key = targetKey(target);
+        if (key !== lastKey) {
+          lastKey = key;
+          setUi((prev) => (prev ? { ...prev, target } : prev));
+        }
       });
     };
 
-    const onUp = (e: PointerEvent) => {
-      const s = sess.current;
-      if (!s || e.pointerId !== s.pointerId) return;
-      if (s.active) {
-        const target = computeTarget(e.clientX, e.clientY);
+    const onUp = (ev: PointerEvent) => {
+      if (ev.pointerId !== pointerId) return;
+      if (active) {
+        const target = computeTarget(ev.clientX, ev.clientY);
         document.addEventListener('click', suppressClick, true);
         setTimeout(() => document.removeEventListener('click', suppressClick, true), 80);
         cleanup();
-        if (target) onDropRef.current(s.payload, target);
+        if (target) onDropRef.current(payload, target);
       } else {
         cleanup(); // не активувався — нехай спрацює звичайний click
       }
     };
 
-    const onCancel = (e: PointerEvent) => {
-      if (sess.current && e.pointerId === sess.current.pointerId) cleanup();
+    const onCancel = (ev: PointerEvent) => {
+      if (ev.pointerId === pointerId) cleanup();
     };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && sess.current?.active) cleanup();
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === 'Escape') cleanup();
     };
 
     document.addEventListener('pointermove', onMove);
     document.addEventListener('pointerup', onUp);
     document.addEventListener('pointercancel', onCancel);
     document.addEventListener('keydown', onKey);
-    document.addEventListener('touchmove', preventTouch, { passive: false });
-    return () => {
-      document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', onUp);
-      document.removeEventListener('pointercancel', onCancel);
-      document.removeEventListener('keydown', onKey);
-      document.removeEventListener('touchmove', preventTouch);
-      cleanup();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [computeTarget]);
 
-  /** Вішається на pointerDown джерела (блок евента або кнопка «+ Евент»). */
-  const start = useCallback((e: React.PointerEvent, payload: DragPayload) => {
-    if (sess.current) return;
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-    const s: Session = {
-      payload,
-      pointerId: e.pointerId,
-      startX: e.clientX,
-      startY: e.clientY,
-      lastX: e.clientX,
-      lastY: e.clientY,
-      active: false,
-      holdTimer: null,
-      rects: [],
-      raf: 0,
-    };
     if (e.pointerType === 'touch') {
-      s.holdTimer = window.setTimeout(() => {
-        if (sess.current === s) {
-          s.holdTimer = null;
-          activateRef.current();
-        }
+      holdTimer = window.setTimeout(() => {
+        holdTimer = null;
+        // Активуємо з поточної позиції пальця (він стояв на місці).
+        startX = lastX;
+        startY = lastY;
+        activate();
       }, HOLD_MS);
     }
-    sess.current = s;
   }, []);
 
-  return { ui, start };
+  return { ui, start, ghostRef };
 }

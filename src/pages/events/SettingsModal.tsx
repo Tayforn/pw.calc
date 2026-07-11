@@ -39,7 +39,7 @@ export default function SettingsModal({ settings, onChange, onReset, onClose }: 
   };
 
   return (
-    <div className="modal-overlay" id="evtSettingsOverlay" onClick={(e) => { if ((e.target as HTMLElement).id === 'evtSettingsOverlay') onClose(); }}>
+    <div className="modal-overlay evt-overlay" id="evtSettingsOverlay" onClick={(e) => { if ((e.target as HTMLElement).id === 'evtSettingsOverlay') onClose(); }}>
       <div className="modal evt-settings" role="dialog" aria-modal="true" aria-labelledby="evtSettingsTitle">
         <div className="modal-head">
           <h3 id="evtSettingsTitle">Налаштування нагадувань</h3>

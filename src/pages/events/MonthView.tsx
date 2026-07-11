@@ -16,9 +16,11 @@ interface Props {
   onDragStart: (e: React.PointerEvent, payload: DragPayload) => void;
   onOpenEvent: (evt: EvtItem, dateKey: string) => void;
   onOpenDay: (d: Date) => void;
+  /** Даблклік по вільному місцю клітинки — створити евент на цій даті. */
+  onCreateAt: (dateKey: string) => void;
 }
 
-export default function MonthView({ anchor, events, dragUi, onDragStart, onOpenEvent, onOpenDay }: Props) {
+export default function MonthView({ anchor, events, dragUi, onDragStart, onOpenEvent, onOpenDay, onCreateAt }: Props) {
   const y = anchor.getFullYear();
   const m = anchor.getMonth();
   const first = new Date(y, m, 1);
@@ -53,6 +55,10 @@ export default function MonthView({ anchor, events, dragUi, onDragStart, onOpenE
                   (key === todayKey ? ' today' : '') +
                   (dropDate === key ? ' drop-hint' : '')
                 }
+                onDoubleClick={(ev) => {
+                  if ((ev.target as HTMLElement).closest('.evt-chip, .evt-more, .evt-mnum')) return;
+                  onCreateAt(key);
+                }}
               >
                 <button type="button" className="evt-mnum" onClick={() => onOpenDay(day)} aria-label={`Відкрити день ${key}`}>
                   {day.getDate()}

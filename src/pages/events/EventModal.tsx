@@ -83,7 +83,7 @@ export default function EventModal({ initial, isNew, onSave, onDelete, onClose }
   };
 
   return (
-    <div className="modal-overlay" id="evtEditOverlay" onClick={(e) => { if ((e.target as HTMLElement).id === 'evtEditOverlay') onClose(); }}>
+    <div className="modal-overlay evt-overlay" id="evtEditOverlay" onClick={(e) => { if ((e.target as HTMLElement).id === 'evtEditOverlay') onClose(); }}>
       <div className="modal evt-modal" role="dialog" aria-modal="true" aria-labelledby="evtEditTitle">
         <div className="modal-head">
           <h3 id="evtEditTitle">{isNew ? 'Новий евент' : 'Редагувати евент'}</h3>
