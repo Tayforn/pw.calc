@@ -4262,3 +4262,342 @@ html[data-theme="light"] .skl-tile.picked::after {
 /* рядок спорідненості в деталці вміння */
 .gc-affline { display: inline-flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; }
 .gc-affline .gc-aff { padding: 1px 8px; font-size: 12px; }
+
+/* =========================================================
+   РОЗКЛАД ЕВЕНТІВ (.evt-*)
+   Кольори категорій евентів — data-кольори, виняток із
+   золотого акценту (як .badge.*). Фон блоків двошаровий:
+   тінт поверх var(--bg-2) → непрозорі і темізуються самі.
+   ========================================================= */
+:root { --evt-hour-h: 48px; } /* тримати в синхроні з HOUR_PX у WeekView.tsx */
+
+/* ── Тулбар ── */
+.evt-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.evt-seg {
+  display: inline-flex;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  padding: 3px;
+  background: var(--bg-1);
+}
+.evt-seg-btn {
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.evt-seg-btn:hover { color: var(--text); }
+.evt-seg-btn.active { background: linear-gradient(180deg, var(--accent), var(--accent-2)); color: #1d1405; }
+.evt-nav { display: inline-flex; gap: 6px; }
+.evt-nav-btn { padding: 7px 12px; font-size: 15px; }
+.evt-today-btn { font-size: 13.5px; }
+.evt-title { font-weight: 700; font-size: 16px; white-space: nowrap; }
+.evt-spacer { flex: 1; }
+.evt-add-btn { touch-action: none; user-select: none; -webkit-user-select: none; }
+.evt-gear { padding: 8px 12px; }
+.evt-card { padding: 16px; }
+
+/* ── Кольори категорій (data-кольори) ── */
+.evt-c-gold   { background-color: var(--bg-2); background-image: linear-gradient(rgba(227, 185, 94, 0.20), rgba(227, 185, 94, 0.20)); border-color: rgba(227, 185, 94, 0.55); color: #ffe0a6; }
+.evt-c-sky    { background-color: var(--bg-2); background-image: linear-gradient(rgba(34, 211, 238, 0.16), rgba(34, 211, 238, 0.16)); border-color: rgba(34, 211, 238, 0.5); color: #b8efff; }
+.evt-c-green  { background-color: var(--bg-2); background-image: linear-gradient(rgba(53, 224, 161, 0.16), rgba(53, 224, 161, 0.16)); border-color: rgba(53, 224, 161, 0.5); color: #9bf3d3; }
+.evt-c-red    { background-color: var(--bg-2); background-image: linear-gradient(rgba(255, 94, 108, 0.18), rgba(255, 94, 108, 0.18)); border-color: rgba(255, 94, 108, 0.5); color: #ffc2c6; }
+.evt-c-violet { background-color: var(--bg-2); background-image: linear-gradient(rgba(180, 140, 255, 0.18), rgba(180, 140, 255, 0.18)); border-color: rgba(180, 140, 255, 0.5); color: #ddc9ff; }
+.evt-c-orange { background-color: var(--bg-2); background-image: linear-gradient(rgba(255, 145, 71, 0.18), rgba(255, 145, 71, 0.18)); border-color: rgba(255, 145, 71, 0.5); color: #ffd0a6; }
+
+/* ── Місяць ── */
+.evt-month-head,
+.evt-month-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.evt-month-row { margin-top: 4px; }
+.evt-month-dow {
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--text-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 4px 0;
+}
+.evt-mcell {
+  min-height: 98px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+}
+.evt-mcell.dim { opacity: 0.45; }
+.evt-mcell.today { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.evt-mcell.drop-hint { border-color: var(--accent); border-style: dashed; background: rgba(227, 185, 94, 0.08); }
+.evt-mnum {
+  align-self: flex-end;
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 7px;
+  border-radius: 7px;
+}
+.evt-mnum:hover { background: rgba(255, 255, 255, 0.07); color: var(--text); }
+.evt-mchips { display: flex; flex-direction: column; gap: 2px; min-height: 0; }
+.evt-chip {
+  display: flex;
+  gap: 4px;
+  align-items: baseline;
+  border: 1px solid;
+  border-radius: 6px;
+  padding: 1px 5px;
+  font-size: 11px;
+  line-height: 1.5;
+  cursor: grab;
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.evt-chip b { font-weight: 700; font-size: 10.5px; font-family: 'JetBrains Mono', ui-monospace, monospace; flex: 0 0 auto; }
+.evt-chip-name { overflow: hidden; text-overflow: ellipsis; }
+.evt-more {
+  border: 0;
+  background: transparent;
+  color: var(--text-mute);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: left;
+  padding: 0 5px;
+}
+.evt-more:hover { color: var(--accent-3); }
+
+/* ── Тиждень / день ── */
+.evt-week-wrap { overflow-x: auto; }
+.evt-week { min-width: 580px; }
+.evt-week-single { min-width: 0; }
+.evt-week-head { display: grid; margin-bottom: 2px; }
+.evt-dayhead { text-align: center; padding: 6px 0; font-size: 13px; color: var(--text-dim); border-bottom: 2px solid transparent; }
+.evt-dayhead b { color: var(--text); font-size: 14px; }
+.evt-dayhead.today { color: var(--accent-3); border-bottom-color: var(--accent); }
+.evt-week-body { display: grid; }
+.evt-gutter { position: relative; font-size: 10.5px; color: var(--text-mute); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.evt-hour { position: absolute; right: 8px; transform: translateY(-50%); }
+.evt-col {
+  position: relative;
+  border-left: 1px solid var(--line);
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--evt-hour-h) - 1px),
+    var(--line) calc(var(--evt-hour-h) - 1px),
+    var(--line) var(--evt-hour-h)
+  );
+}
+.evt-col:last-child { border-right: 1px solid var(--line); }
+
+.evt-block {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  border: 1px solid;
+  border-radius: 8px;
+  padding: 3px 7px;
+  font-size: 11.5px;
+  line-height: 1.35;
+  text-align: left;
+  overflow: hidden;
+  cursor: grab;
+  box-shadow: 0 5px 12px -6px rgba(0, 0, 0, 0.6);
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: filter 0.12s;
+}
+.evt-block:hover { z-index: 45 !important; filter: brightness(1.12); }
+.evt-block-t { font-size: 10px; font-weight: 700; opacity: 0.85; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.evt-block-n { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.evt-block-slim { flex-direction: row; gap: 5px; align-items: baseline; padding-top: 1px; }
+.evt-block-slim .evt-block-t { font-size: 9.5px; }
+.evt-dragging { opacity: 0.35; }
+
+.evt-nowline { position: absolute; left: 0; right: 0; height: 2px; background: var(--bad); z-index: 46; pointer-events: none; }
+.evt-nowline::before { content: ''; position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
+
+.evt-drop-preview {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  border: 1.5px dashed var(--accent);
+  border-radius: 8px;
+  background: rgba(227, 185, 94, 0.1);
+  z-index: 48;
+  pointer-events: none;
+  font-size: 10px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  color: var(--accent-3);
+  padding: 2px 6px;
+}
+
+/* ── Drag ghost ── */
+.evt-drag-ghost {
+  position: fixed;
+  z-index: 12000;
+  pointer-events: none;
+  display: flex;
+  gap: 7px;
+  align-items: baseline;
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--bg-3), var(--bg-2));
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 6px 11px;
+  font-size: 12.5px;
+  box-shadow: var(--shadow);
+}
+.evt-drag-ghost b { color: var(--accent-3); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+html.evt-drag-on, html.evt-drag-on * { cursor: grabbing !important; }
+
+/* ── Модалки: форма евента ── */
+.evt-modal { width: min(600px, 100%); }
+.evt-confirm { width: min(480px, 100%); }
+.evt-settings { width: min(560px, 100%); }
+.evt-confirm-foot { justify-content: flex-end; }
+.evt-confirm-foot .btn:first-child { margin-right: 0; }
+
+.evt-form { display: flex; flex-direction: column; gap: 15px; }
+.evt-form-row { display: flex; gap: 12px; align-items: flex-end; }
+.evt-field { display: flex; flex-direction: column; gap: 7px; min-width: 0; flex: 1; }
+.evt-field > span { font-size: 13px; color: var(--text-dim); font-weight: 500; }
+.evt-field-emoji { flex: 0 0 86px; }
+.evt-field-emoji input { text-align: center; }
+.evt-form input[type='text'],
+.evt-form input[type='time'],
+.evt-form input[type='date'],
+.evt-form input[type='number'],
+.evt-form select,
+.evt-form textarea {
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line-2);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 11px;
+  font-size: 15px;
+  font-family: inherit;
+  width: 100%;
+  min-width: 0;
+  color-scheme: dark;
+  accent-color: var(--accent);
+  transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+}
+.evt-form textarea { resize: vertical; }
+.evt-form input:focus,
+.evt-form select:focus,
+.evt-form textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  background-color: rgba(227, 185, 94, 0.06);
+  box-shadow: 0 0 0 4px rgba(227, 185, 94, 0.15);
+}
+.evt-form select option { background: var(--bg-2); color: var(--text); }
+.evt-form input[type='range'] { width: 100%; accent-color: var(--accent); padding: 0; cursor: pointer; }
+
+.evt-radio { display: inline-flex; gap: 9px; align-items: center; font-size: 14.5px; cursor: pointer; }
+.evt-radio input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; cursor: pointer; }
+.evt-recur { display: flex; gap: 20px; margin-bottom: 4px; }
+
+.evt-swatches { display: flex; gap: 8px; }
+.evt-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  border: 1.5px solid;
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+.evt-swatch:hover { transform: scale(1.1); }
+.evt-swatch.active { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.evt-daychips { display: flex; gap: 6px; flex-wrap: wrap; }
+.evt-daychip {
+  min-width: 44px;
+  padding: 8px 0;
+  border-radius: 9px;
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.evt-daychip:hover { color: var(--text); border-color: var(--accent); }
+.evt-daychip.active { border-color: var(--accent); background: rgba(227, 185, 94, 0.14); color: var(--accent-3); }
+
+.evt-form-remind { align-items: center; }
+.evt-form-remind select { width: auto; flex: 0 0 190px; }
+.evt-adv summary { cursor: pointer; color: var(--text-dim); font-size: 13px; user-select: none; }
+.evt-adv[open] summary { margin-bottom: 10px; }
+.evt-field-order input { max-width: 150px; }
+.evt-form-err { color: var(--bad); font-size: 13px; margin: 0; }
+.evt-btn-danger { color: var(--bad); border-color: rgba(255, 94, 108, 0.4); }
+.evt-btn-danger:hover { border-color: var(--bad); background: rgba(255, 94, 108, 0.1); }
+
+.evt-settings-note { margin: 0; font-size: 13px; }
+.evt-sound-row { align-items: flex-end; }
+.evt-test-btn { flex: 0 0 auto; }
+.evt-field-lead select { max-width: 260px; }
+.evt-hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; }
+
+/* ── Мобільне ── */
+@media (max-width: 760px) {
+  .evt-toolbar { gap: 8px; }
+  .evt-title { order: -1; width: 100%; }
+  .evt-card { padding: 10px; }
+}
+@media (max-width: 560px) {
+  .evt-mcell { min-height: 66px; padding: 3px; border-radius: 8px; }
+  .evt-chip { padding: 1px 4px; }
+  .evt-chip-name { display: none; }
+  .evt-more { font-size: 10px; }
+  .evt-week { min-width: 520px; }
+  .evt-form-row { flex-wrap: wrap; }
+  .evt-field-emoji { flex: 0 0 72px; }
+  .evt-form-remind select { flex: 1 1 100%; }
+}
+
+/* ── Світла тема ── */
+html[data-theme="light"] .evt-c-gold   { background-image: linear-gradient(rgba(176, 127, 35, 0.16), rgba(176, 127, 35, 0.16)); border-color: rgba(176, 127, 35, 0.5); color: #6e4f17; }
+html[data-theme="light"] .evt-c-sky    { background-image: linear-gradient(rgba(20, 120, 140, 0.14), rgba(20, 120, 140, 0.14)); border-color: rgba(20, 120, 140, 0.45); color: #0e5563; }
+html[data-theme="light"] .evt-c-green  { background-image: linear-gradient(rgba(46, 125, 50, 0.14), rgba(46, 125, 50, 0.14)); border-color: rgba(46, 125, 50, 0.45); color: #1d5a26; }
+html[data-theme="light"] .evt-c-red    { background-image: linear-gradient(rgba(173, 53, 46, 0.13), rgba(173, 53, 46, 0.13)); border-color: rgba(173, 53, 46, 0.45); color: #8f231d; }
+html[data-theme="light"] .evt-c-violet { background-image: linear-gradient(rgba(122, 78, 190, 0.14), rgba(122, 78, 190, 0.14)); border-color: rgba(122, 78, 190, 0.45); color: #5a3390; }
+html[data-theme="light"] .evt-c-orange { background-image: linear-gradient(rgba(198, 96, 22, 0.14), rgba(198, 96, 22, 0.14)); border-color: rgba(198, 96, 22, 0.45); color: #8a4310; }
+html[data-theme="light"] .evt-seg { background: rgba(255, 255, 255, 0.35); }
+html[data-theme="light"] .evt-mnum:hover { background: rgba(0, 0, 0, 0.06); }
+html[data-theme="light"] .evt-block { box-shadow: 0 4px 10px -6px rgba(80, 60, 20, 0.45); }
+html[data-theme="light"] .evt-form input[type='text'],
+html[data-theme="light"] .evt-form input[type='time'],
+html[data-theme="light"] .evt-form input[type='date'],
+html[data-theme="light"] .evt-form input[type='number'],
+html[data-theme="light"] .evt-form select,
+html[data-theme="light"] .evt-form textarea {
+  background-color: rgba(255, 255, 255, 0.55);
+  border-color: rgba(107, 74, 28, 0.3);
+  color-scheme: light;
+}
+html[data-theme="light"] .evt-daychip { background: rgba(255, 255, 255, 0.4); }
+html[data-theme="light"] .evt-daychip.active { background: rgba(176, 127, 35, 0.16); color: #6e4f17; }
+html[data-theme="light"] .evt-drop-preview { background: rgba(176, 127, 35, 0.12); }
+html[data-theme="light"] .evt-mcell.drop-hint { background: rgba(176, 127, 35, 0.1); }

@@ -32,6 +32,7 @@ import GeniePage from '../pages/GeniePage';
 import PetsPage from '../pages/PetsPage';
 import RbPage from '../pages/RbPage';
 import AtnPage from '../pages/AtnPage';
+import EventsPage from '../pages/EventsPage';
 import GuidesPage from '../pages/GuidesPage';
 import SettingsPage from '../pages/SettingsPage';
 
@@ -53,6 +54,7 @@ const PAGES: Record<string, ReactNode> = {
   pets: <PetsPage />,
   rb: <RbPage />,
   atn: <AtnPage />,
+  events: <EventsPage />,
   guides: <GuidesPage />,
   settings: <SettingsPage />,
 };
