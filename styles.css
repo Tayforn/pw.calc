@@ -4430,6 +4430,26 @@ html[data-theme="light"] .skl-tile.picked::after {
 .evt-block-slim .evt-block-t { font-size: 9.5px; }
 .evt-dragging { opacity: 0.35; }
 
+/* Смужка згорнутих годин (край доби прибрано з сітки; клік — розгорнути/сховати) */
+.evt-hours-strip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  margin: 3px 0;
+  padding: 4px 10px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-mute);
+  font-size: 11.5px;
+  cursor: pointer;
+  text-align: left;
+}
+.evt-hours-strip b { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 600; }
+.evt-hours-strip:hover { color: var(--accent-3); border-color: var(--accent); }
+.evt-strip-hint { margin-left: auto; font-size: 11px; }
+
 .evt-nowline { position: absolute; left: 0; right: 0; height: 2px; background: var(--bad); z-index: 46; pointer-events: none; }
 .evt-nowline::before { content: ''; position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
 
@@ -4569,6 +4589,10 @@ html.evt-drag-on, html.evt-drag-on * { cursor: grabbing !important; }
 .evt-sound-row { align-items: flex-end; }
 .evt-test-btn { flex: 0 0 auto; }
 .evt-field-lead select { max-width: 260px; }
+.evt-hours-row { align-items: center; flex-wrap: wrap; }
+.evt-hours-row > span { font-size: 13px; color: var(--text-dim); font-weight: 500; flex: 1 1 100%; }
+.evt-field-hour { flex: 0 0 auto; flex-direction: row; align-items: center; }
+.evt-field-hour select { width: 92px; }
 .evt-hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; }
 
 /* ── Мобільне ── */

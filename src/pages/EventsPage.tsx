@@ -183,7 +183,9 @@ export default function EventsPage() {
   useEffect(() => {
     if (view === 'month' || !gridRef.current) return;
     const top = gridRef.current.getBoundingClientRect().top + window.scrollY;
-    window.scrollTo({ top: Math.max(0, top + 9.5 * 60 * pxPerMin - 160), behavior: 'smooth' });
+    // 9:30 у координатах видимого вікна годин (частину доби може бути приховано).
+    const target = Math.max(0, Math.min((settings.dayTo - settings.dayFrom) * 60, (9.5 - settings.dayFrom) * 60));
+    window.scrollTo({ top: Math.max(0, top + target * pxPerMin - 160), behavior: 'smooth' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
@@ -309,7 +311,7 @@ export default function EventsPage() {
         </button>
         <button type="button" className="btn btn-ghost" onClick={() => exportEvents(events)}>Експорт</button>
         <button type="button" className="btn btn-ghost" onClick={() => fileRef.current?.click()}>Імпорт</button>
-        <button type="button" className="btn btn-ghost evt-gear" aria-label="Налаштування нагадувань" onClick={() => setSettingsOpen(true)}>⚙</button>
+        <button type="button" className="btn btn-ghost evt-gear" aria-label="Налаштування" onClick={() => setSettingsOpen(true)}>⚙</button>
         <input
           ref={fileRef}
           type="file"
@@ -345,6 +347,8 @@ export default function EventsPage() {
             events={events}
             dragUi={drag.ui}
             hourPx={hourPx}
+            dayFrom={settings.dayFrom}
+            dayTo={settings.dayTo}
             onZoom={setHourPx}
             onDragStart={drag.start}
             onOpenEvent={(evt, occDate) => setEditing({ evt, isNew: false, occDate })}

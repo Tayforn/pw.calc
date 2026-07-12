@@ -43,6 +43,9 @@ export interface EvtSettings {
   volume: number; // 0..100
   defaultLead: number;
   useNotifApi: boolean;
+  /** Видимі години тижня/дня: показуємо [dayFrom, dayTo), 0..23 та 1..24, dayFrom < dayTo. */
+  dayFrom: number;
+  dayTo: number;
 }
 
 /** Конкретна поява евента в конкретний день. */

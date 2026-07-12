@@ -17,6 +17,8 @@ export const DEFAULT_SETTINGS: EvtSettings = {
   volume: 70,
   defaultLead: 5,
   useNotifApi: false,
+  dayFrom: 0,
+  dayTo: 24,
 };
 
 export function newId(): string {
@@ -77,12 +79,22 @@ export function sanitizeEvent(raw: unknown): EvtItem | null {
 function sanitizeSettings(raw: unknown): EvtSettings {
   if (!raw || typeof raw !== 'object') return { ...DEFAULT_SETTINGS };
   const r = raw as Record<string, unknown>;
+  const hour = (v: unknown, lo: number, hi: number, dflt: number) =>
+    typeof v === 'number' && Number.isInteger(v) && v >= lo && v <= hi ? v : dflt;
+  let dayFrom = hour(r.dayFrom, 0, 23, DEFAULT_SETTINGS.dayFrom);
+  let dayTo = hour(r.dayTo, 1, 24, DEFAULT_SETTINGS.dayTo);
+  if (dayFrom >= dayTo) {
+    dayFrom = DEFAULT_SETTINGS.dayFrom;
+    dayTo = DEFAULT_SETTINGS.dayTo;
+  }
   return {
     soundOn: typeof r.soundOn === 'boolean' ? r.soundOn : DEFAULT_SETTINGS.soundOn,
     preset: r.preset === 'gong' || r.preset === 'beep' ? r.preset : 'bell',
     volume: typeof r.volume === 'number' && Number.isFinite(r.volume) ? Math.max(0, Math.min(100, Math.round(r.volume))) : DEFAULT_SETTINGS.volume,
     defaultLead: LEAD_OPTIONS.includes(r.defaultLead as number) ? (r.defaultLead as number) : DEFAULT_SETTINGS.defaultLead,
     useNotifApi: r.useNotifApi === true,
+    dayFrom,
+    dayTo,
   };
 }
 

@@ -1,5 +1,5 @@
 // =========================================================
-// Розклад Евентів: налаштування звуку/сповіщень + reset розкладу.
+// Розклад Евентів: налаштування звуку/сповіщень, видимих годин + reset розкладу.
 // =========================================================
 
 import { useState } from 'react';
@@ -13,6 +13,8 @@ const PRESET_LABELS: Record<EvtSettings['preset'], string> = {
   gong: 'Гонг',
   beep: 'Сигнал',
 };
+
+const hh = (h: number) => `${String(h).padStart(2, '0')}:00`;
 
 interface Props {
   settings: EvtSettings;
@@ -42,7 +44,7 @@ export default function SettingsModal({ settings, onChange, onReset, onClose }: 
     <div className="modal-overlay evt-overlay" id="evtSettingsOverlay" onClick={(e) => { if ((e.target as HTMLElement).id === 'evtSettingsOverlay') onClose(); }}>
       <div className="modal evt-settings" role="dialog" aria-modal="true" aria-labelledby="evtSettingsTitle">
         <div className="modal-head">
-          <h3 id="evtSettingsTitle">Налаштування нагадувань</h3>
+          <h3 id="evtSettingsTitle">Налаштування</h3>
           <button type="button" className="modal-close" aria-label="Закрити" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body evt-form">
@@ -109,6 +111,42 @@ export default function SettingsModal({ settings, onChange, onReset, onClose }: 
               <button type="button" className="btn btn-ghost" onClick={askNotif}>Дозволити сповіщення</button>
             )}
           </div>
+
+          <hr className="evt-hr" />
+          <div className="evt-form-row evt-hours-row">
+            <span>Видимі години (тиждень/день)</span>
+            <label className="evt-field evt-field-hour">
+              <span>з</span>
+              <select
+                value={settings.dayFrom}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  onChange({ dayFrom: v, dayTo: Math.max(settings.dayTo, v + 1) });
+                }}
+              >
+                {Array.from({ length: 24 }, (_, h) => (
+                  <option key={h} value={h}>{hh(h)}</option>
+                ))}
+              </select>
+            </label>
+            <label className="evt-field evt-field-hour">
+              <span>до</span>
+              <select
+                value={settings.dayTo}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  onChange({ dayTo: v, dayFrom: Math.min(settings.dayFrom, v - 1) });
+                }}
+              >
+                {Array.from({ length: 24 }, (_, i) => (
+                  <option key={i + 1} value={i + 1}>{hh(i + 1)}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <p className="muted evt-settings-note">
+            Приховані години згортаються у смужку над/під сіткою — клік по ній тимчасово розгортає їх.
+          </p>
 
           <hr className="evt-hr" />
           <button type="button" className="btn btn-ghost evt-btn-danger" onClick={onReset}>

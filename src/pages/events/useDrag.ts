@@ -35,6 +35,9 @@ interface TargetRect {
   top: number;
   right: number;
   bottom: number;
+  /** Видиме вікно колонки у хвилинах (частину доби може бути приховано). */
+  fromMin: number;
+  toMin: number;
 }
 
 const MOUSE_SLOP = 6;
@@ -57,6 +60,8 @@ function snapshotRects(): TargetRect[] {
       top: r.top + window.scrollY,
       right: r.right + window.scrollX,
       bottom: r.bottom + window.scrollY,
+      fromMin: Number(el.dataset.evtFrom) || 0,
+      toMin: Number(el.dataset.evtTo) || 1440,
     });
   });
   return rects;
@@ -104,8 +109,8 @@ export function useDrag({ pxPerMin, onDrop }: Options) {
       if (!hit) return null;
       if (!hit.timed) return { date: hit.date, startMin: null };
       const dur = payload.kind === 'move' ? payload.duration : 30;
-      const raw = (py - hit.top) / pxRef.current;
-      const startMin = Math.max(0, Math.min(1440 - dur, Math.round(raw / 5) * 5));
+      const raw = hit.fromMin + (py - hit.top) / pxRef.current;
+      const startMin = Math.max(hit.fromMin, Math.min(1440 - dur, hit.toMin - 5, Math.round(raw / 5) * 5));
       return { date: hit.date, startMin };
     };
 
