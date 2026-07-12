@@ -9,8 +9,8 @@ import { applyDefaultEggPrice, isEggPriceTouched } from './eggPrice';
 // 9 г). Налаштування тимчасові — кожне оновлення сторінки скидає до дефолтів
 // (без localStorage).
 export const DEFAULTS: Settings = {
-  goldPrice: 318400,
-  miragePrice: 40000,
+  goldPrice: 600000,
+  miragePrice: 70000,
   underPrice: 0.9,
   skyPrice: 0.9,
   worldPrice: 0.44,
