@@ -60,16 +60,42 @@ async function getJson<T>(file: string): Promise<T> {
   return (await res.json()) as T;
 }
 
+/** Назви у дампі інколи загорнуті в розмітку кольорів рушія
+ *  (<span class="descent…">, <span class="holydark">) і містять
+ *  сутності на кшталт &#9679; (●) — лишаємо чистий текст. */
+function stripTags(s: string): string {
+  return s
+    .replace(/<[^>]*>/g, '')
+    .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .trim();
+}
+
 export async function loadClasses(): Promise<ClassDef[]> {
-  if (!classes) classes = (await getJson<{ classes: ClassDef[] }>('skills.json')).classes;
+  if (!classes) {
+    classes = (await getJson<{ classes: ClassDef[] }>('skills.json')).classes;
+    for (const c of classes)
+      for (const s of c.skills) {
+        s.name = stripTags(s.name);
+        if (s.sage) s.sage.name = stripTags(s.sage.name);
+        if (s.demon) s.demon.name = stripTags(s.demon.name);
+      }
+  }
   return classes;
 }
 export async function loadGenie(): Promise<GenieSkill[]> {
-  if (!genie) genie = (await getJson<{ skills: GenieSkill[] }>('genie.json')).skills;
+  if (!genie) {
+    genie = (await getJson<{ skills: GenieSkill[] }>('genie.json')).skills;
+    for (const s of genie) s.name = stripTags(s.name);
+  }
   return genie;
 }
 export async function loadPets(): Promise<PetSkill[]> {
-  if (!pets) pets = (await getJson<{ skills: PetSkill[] }>('pets.json')).skills;
+  if (!pets) {
+    pets = (await getJson<{ skills: PetSkill[] }>('pets.json')).skills;
+    for (const s of pets) s.name = stripTags(s.name);
+  }
   return pets;
 }
 
