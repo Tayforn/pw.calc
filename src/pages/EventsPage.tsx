@@ -10,8 +10,8 @@ import type { EvtItem, EvtSettings } from './events/types';
 import { DOW_FULL, MONTH_GEN, MONTH_NOM, addDays, isoDow, minToHM, parseYmd, startOfWeek, ymd } from './events/dates';
 import { DEFAULT_SETTINGS, loadStore, newId, saveStore } from './events/store';
 import { buildDefaultEvents } from './events/defaults';
-import MonthView from './events/MonthView';
-import WeekView, { PX_PER_MIN } from './events/WeekView';
+import MonthView, { MCELL_PX } from './events/MonthView';
+import WeekView, { HOUR_PX } from './events/WeekView';
 import EventModal from './events/EventModal';
 import SettingsModal from './events/SettingsModal';
 import ConfirmModal, { type ConfirmState } from './events/ConfirmModal';
@@ -41,6 +41,10 @@ export default function EventsPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+  // Зум Ctrl+колесом: висота години спільна для тижня/дня, клітинка місяця окремо.
+  const [hourPx, setHourPx] = useState(HOUR_PX);
+  const [mcellPx, setMcellPx] = useState(MCELL_PX);
+  const pxPerMin = hourPx / 60;
 
   // Персист (патерн GeniePage).
   useEffect(() => {
@@ -173,13 +177,13 @@ export default function EventsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openCreate]);
 
-  const drag = useDrag({ pxPerMin: PX_PER_MIN, onDrop });
+  const drag = useDrag({ pxPerMin, onDrop });
 
   // При переході на тиждень/день докручуємо сторінку до денних годин.
   useEffect(() => {
     if (view === 'month' || !gridRef.current) return;
     const top = gridRef.current.getBoundingClientRect().top + window.scrollY;
-    window.scrollTo({ top: Math.max(0, top + 9.5 * 60 * PX_PER_MIN - 160), behavior: 'smooth' });
+    window.scrollTo({ top: Math.max(0, top + 9.5 * 60 * pxPerMin - 160), behavior: 'smooth' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
@@ -275,7 +279,7 @@ export default function EventsPage() {
         <span className="eyebrow">Розклад</span>
         <h2>Розклад Евентів</h2>
         <p className="muted">
-          Календар івентів сервера: редагуй, додавай власні, тягай мишею по днях і годинах, вмикай звукові нагадування.
+          Календар івентів сервера: редагуй, додавай власні, тягай мишею по днях і годинах, масштабуй Ctrl+колесом, вмикай звукові нагадування.
         </p>
       </header>
 
@@ -325,6 +329,8 @@ export default function EventsPage() {
             anchor={anchor}
             events={events}
             dragUi={drag.ui}
+            cellPx={mcellPx}
+            onZoom={setMcellPx}
             onDragStart={drag.start}
             onOpenEvent={(evt, occDate) => setEditing({ evt, isNew: false, occDate })}
             onOpenDay={(d) => {
@@ -338,6 +344,8 @@ export default function EventsPage() {
             days={weekDays}
             events={events}
             dragUi={drag.ui}
+            hourPx={hourPx}
+            onZoom={setHourPx}
             onDragStart={drag.start}
             onOpenEvent={(evt, occDate) => setEditing({ evt, isNew: false, occDate })}
             onCreateAt={openCreate}

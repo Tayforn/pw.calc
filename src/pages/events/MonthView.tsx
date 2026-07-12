@@ -1,18 +1,30 @@
 // =========================================================
-// Розклад Евентів: місячний вигляд. До 3 чіпів на день + «+N ще».
-// Чіпи можна тягати між днями (час зберігається).
+// Розклад Евентів: місячний вигляд. Скільки чіпів влазить у
+// клітинку (базово 3) + «+N ще»; чіпи можна тягати між днями
+// (час зберігається). Ctrl+колесо масштабує висоту клітинок —
+// що вища клітинка, то більше чіпів видно (useWheelZoom).
 // =========================================================
 
 import type { EvtItem } from './types';
 import { DOW_SHORT, addDays, isoDow, minToHM, occurrencesForDay, startOfWeek, ymd } from './dates';
 import type { DragPayload, DragUiState } from './useDrag';
+import { useWheelZoom } from './useWheelZoom';
 
-const MAX_CHIPS = 3;
+/** Базова висота клітинки; синхронна з fallback --evt-mcell-h у styles.css. */
+export const MCELL_PX = 98;
+export const MCELL_MIN = 70;
+export const MCELL_MAX = 320;
+
+/** Скільки чіпів влазить: висота мінус номер дня (~34px), чіп із гепом ~21px. */
+const maxChips = (cellPx: number) => Math.max(1, Math.floor((cellPx - 34) / 21));
 
 interface Props {
   anchor: Date;
   events: EvtItem[];
   dragUi: DragUiState | null;
+  /** Висота клітинки в px (масштаб, Ctrl+колесо). */
+  cellPx: number;
+  onZoom: (cellPx: number) => void;
   onDragStart: (e: React.PointerEvent, payload: DragPayload) => void;
   onOpenEvent: (evt: EvtItem, dateKey: string) => void;
   onOpenDay: (d: Date) => void;
@@ -20,7 +32,7 @@ interface Props {
   onCreateAt: (dateKey: string) => void;
 }
 
-export default function MonthView({ anchor, events, dragUi, onDragStart, onOpenEvent, onOpenDay, onCreateAt }: Props) {
+export default function MonthView({ anchor, events, dragUi, cellPx, onZoom, onDragStart, onOpenEvent, onOpenDay, onCreateAt }: Props) {
   const y = anchor.getFullYear();
   const m = anchor.getMonth();
   const first = new Date(y, m, 1);
@@ -29,9 +41,17 @@ export default function MonthView({ anchor, events, dragUi, onDragStart, onOpenE
   const gridStart = startOfWeek(first);
   const todayKey = ymd(new Date());
   const dropDate = dragUi?.target && dragUi.target.startMin === null ? dragUi.target.date : null;
+  const chips = maxChips(cellPx);
+  const zoomRef = useWheelZoom<HTMLDivElement>({ value: cellPx, min: MCELL_MIN, max: MCELL_MAX, onChange: onZoom });
 
   return (
-    <div className="evt-month" role="grid" aria-label="Місяць">
+    <div
+      className="evt-month"
+      role="grid"
+      aria-label="Місяць"
+      ref={zoomRef}
+      style={{ '--evt-mcell-h': `${cellPx}px` } as React.CSSProperties}
+    >
       <div className="evt-month-head" role="row">
         {DOW_SHORT.map((d) => (
           <div key={d} className="evt-month-dow" role="columnheader">{d}</div>
@@ -43,7 +63,7 @@ export default function MonthView({ anchor, events, dragUi, onDragStart, onOpenE
             const day = addDays(gridStart, w * 7 + i);
             const key = ymd(day);
             const occs = occurrencesForDay(events, day);
-            const extra = occs.length - MAX_CHIPS;
+            const extra = occs.length - chips;
             return (
               <div
                 key={key}
@@ -64,7 +84,7 @@ export default function MonthView({ anchor, events, dragUi, onDragStart, onOpenE
                   {day.getDate()}
                 </button>
                 <div className="evt-mchips">
-                  {occs.slice(0, MAX_CHIPS).map((occ, idx) => (
+                  {occs.slice(0, chips).map((occ, idx) => (
                     <button
                       key={occ.evt.id + idx}
                       type="button"

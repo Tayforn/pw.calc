@@ -4269,7 +4269,7 @@ html[data-theme="light"] .skl-tile.picked::after {
    золотого акценту (як .badge.*). Фон блоків двошаровий:
    тінт поверх var(--bg-2) → непрозорі і темізуються самі.
    ========================================================= */
-:root { --evt-hour-h: 48px; } /* тримати в синхроні з HOUR_PX у WeekView.tsx */
+:root { --evt-hour-h: 48px; } /* fallback = HOUR_PX; фактичне значення WeekView ставить інлайном (зум) */
 
 /* ── Тулбар ── */
 .evt-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -4323,7 +4323,7 @@ html[data-theme="light"] .skl-tile.picked::after {
   padding: 4px 0;
 }
 .evt-mcell {
-  min-height: 98px;
+  min-height: var(--evt-mcell-h, 98px); /* fallback = MCELL_PX; фактичне значення MonthView ставить інлайном (зум) */
   background: var(--bg-2);
   border: 1px solid var(--line);
   border-radius: 10px;
