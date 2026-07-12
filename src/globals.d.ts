@@ -35,7 +35,8 @@ declare global {
       title: string;
       html: string;
       updated?: string;
-      images?: boolean;
+      /** Кількість зображень у гайді (0 = немає). */
+      images?: number;
     }>;
   };
 

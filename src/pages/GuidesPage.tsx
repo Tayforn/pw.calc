@@ -17,7 +17,8 @@ interface Guide {
   title: string;
   html: string;
   updated?: string;
-  images?: boolean;
+  /** Кількість зображень у гайді (0 = немає). */
+  images?: number;
 }
 
 function guidesData(): { guides: Guide[]; categories: GuideCat[] } {
@@ -142,7 +143,7 @@ export default function GuidesPage() {
                           onClick={() => select(g.id)}
                         >
                           {g.title}
-                          {g.images && <span className="guide-cam"> 📷</span>}
+                          {!!g.images && <span className="guide-cam"> 📷</span>}
                         </button>
                       </li>
                     ))}
