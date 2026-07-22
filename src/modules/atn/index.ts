@@ -298,6 +298,19 @@ function atnUpdateKillUI(): void {
 
 let atnMap: any = null;
 let atnWired = false;
+const atnListToggleBtns: HTMLElement[] = [];
+
+function atnSyncListToggleBtn(btn: HTMLElement): void {
+  const hidden = document.body.classList.contains('rb-list-hidden');
+  btn.classList.toggle('is-off', hidden);
+  btn.title = hidden ? 'Показати список' : 'Сховати список';
+  btn.setAttribute('aria-label', btn.title);
+}
+
+function toggleAtnList(): void {
+  document.body.classList.toggle('rb-list-hidden');
+  atnListToggleBtns.forEach(atnSyncListToggleBtn);
+}
 
 // Зум як у РБ («Світ»): 18–21.
 const ATN_ZOOM = { min: 18, max: 21 };
@@ -404,6 +417,27 @@ function buildAtnMap(): any {
     },
   });
   new FsCtrl().addTo(map);
+
+  const ListCtrl = L.Control.extend({
+    options: { position: 'topright' },
+    onAdd(): any {
+      const wrap = L.DomUtil.create('div', 'leaflet-bar rb-list-toggle');
+      const btn = L.DomUtil.create('a', '', wrap);
+      btn.href = '#';
+      btn.role = 'button';
+      btn.innerHTML = '📋';
+      L.DomEvent.disableClickPropagation(wrap);
+      L.DomEvent.on(btn, 'click', (e: any) => {
+        L.DomEvent.preventDefault(e);
+        L.DomEvent.stop(e);
+        toggleAtnList();
+      });
+      atnListToggleBtns.push(btn);
+      atnSyncListToggleBtn(btn);
+      return wrap;
+    },
+  });
+  new ListCtrl().addTo(map);
 
   // Наведення на об'єкт на карті — підсвічуємо його чип у списку (і навпаки).
   const setChipHl = (kind: Kind, idx: number, on: boolean): void => {
@@ -531,6 +565,9 @@ function toggleAtnFullscreen(): void {
   if (!el) return;
   const on = el.classList.toggle('fullscreen');
   document.body.classList.toggle('rb-fs-active', on);
+  // Список згорнутий за замовчуванням при вході у фуллскрін.
+  document.body.classList.toggle('rb-list-hidden', on);
+  atnListToggleBtns.forEach(atnSyncListToggleBtn);
   atnRefresh();
 }
 

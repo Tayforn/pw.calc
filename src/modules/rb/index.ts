@@ -341,6 +341,19 @@ function rbUpdateKillUI(kind: Kind): void {
 const rbMaps: Partial<Record<Kind, any>> = {};
 let rbSub: Kind = 'world';
 let rbWired = false;
+const rbListToggleBtns: HTMLElement[] = [];
+
+function rbSyncListToggleBtn(btn: HTMLElement): void {
+  const hidden = document.body.classList.contains('rb-list-hidden');
+  btn.classList.toggle('is-off', hidden);
+  btn.title = hidden ? 'Показати список босів' : 'Сховати список босів';
+  btn.setAttribute('aria-label', btn.title);
+}
+
+function toggleRbList(): void {
+  document.body.classList.toggle('rb-list-hidden');
+  rbListToggleBtns.forEach(rbSyncListToggleBtn);
+}
 
 const RB_ZOOM = {
   world: { windowed: { min: 18, max: 21 }, fullscreen: { min: 18, max: 21 } },
@@ -478,6 +491,27 @@ function buildRbMap(kind: Kind): any {
     },
   });
   new FsCtrl().addTo(map);
+
+  const ListCtrl = L.Control.extend({
+    options: { position: 'topright' },
+    onAdd(): any {
+      const wrap = L.DomUtil.create('div', 'leaflet-bar rb-list-toggle');
+      const btn = L.DomUtil.create('a', '', wrap);
+      btn.href = '#';
+      btn.role = 'button';
+      btn.innerHTML = '📋';
+      L.DomEvent.disableClickPropagation(wrap);
+      L.DomEvent.on(btn, 'click', (e: any) => {
+        L.DomEvent.preventDefault(e);
+        L.DomEvent.stop(e);
+        toggleRbList();
+      });
+      rbListToggleBtns.push(btn);
+      rbSyncListToggleBtn(btn);
+      return wrap;
+    },
+  });
+  new ListCtrl().addTo(map);
 
   // Наведення на мітку боса на карті — підсвічуємо його чип у списку.
   const rbSetChipHl = (idx: number, on: boolean): void => {
@@ -619,6 +653,9 @@ function toggleRbFullscreen(kind: Kind): void {
   if (!el) return;
   const on = el.classList.toggle('fullscreen');
   document.body.classList.toggle('rb-fs-active', on);
+  // Список босів згорнутий за замовчуванням при вході у фуллскрін.
+  document.body.classList.toggle('rb-list-hidden', on);
+  rbListToggleBtns.forEach(rbSyncListToggleBtn);
   const map = rbMaps[kind];
   if (map) {
     const z = RB_ZOOM[kind][on ? 'fullscreen' : 'windowed'];
