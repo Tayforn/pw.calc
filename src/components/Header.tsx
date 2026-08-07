@@ -48,6 +48,15 @@ export default function Header({ navOpen, onNavToggle }: Props) {
         <a href="https://cyberpw.fun/" target="_blank" rel="noopener" className="partner-logo" title="cyberpw.fun">
           <img src={import.meta.env.BASE_URL + 'assets/logo.webp'} alt="CyberPW" />
         </a>
+        <a
+          href="https://tayforn.github.io/pw-pvp/"
+          target="_blank"
+          rel="noopener"
+          className="partner-logo partner-logo-alt"
+          title="PW PvP — турніри сервера"
+        >
+          <img src={import.meta.env.BASE_URL + 'assets/pwpvp-icon.png'} alt="PW PvP" />
+        </a>
         <div className="header-meta">
           <a
             href={routeUrl('settings')}

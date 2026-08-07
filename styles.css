@@ -279,6 +279,11 @@ html.nav-open .nav-toggle-bars::after  { transform: translateY(-6px) rotate(-45d
 @media (max-width: 520px) {
   .partner-logo { display: none; }
 }
+/* Другий (перехресний) партнер-лого прибираємо ще раніше — тут уже й так
+ * тісно через індикатор голди поруч. */
+@media (max-width: 900px) {
+  .partner-logo-alt { display: none; }
+}
 
 .header-meta { font-size: 13.5px; color: var(--text-dim); }
 .gold-indicator {
