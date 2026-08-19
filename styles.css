@@ -2938,11 +2938,12 @@ html[data-theme="light"] .leaflet-bar.rb-fs a:hover, html[data-theme="light"] .l
 /* =========================================================
    ТАБЛИЦЯ ЛУТУ (розділи ХХ)
    ========================================================= */
-.loot-controls { display: flex; }
-.loot-controls .field { max-width: 360px; width: 100%; }
+.loot-controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
+.loot-controls .field { margin: 0; }
+.loot-controls .field:last-child { flex: 1 1 260px; max-width: 360px; }
+@media (max-width: 560px) { .loot-controls .field { flex: 1 1 100%; max-width: none; } }
 
 .loot-chapter { margin-top: 22px; }
-.loot-chapter:first-of-type { margin-top: 0; }
 .loot-chapter-title {
   margin: 0 0 16px;
   font-size: 19px;
@@ -2994,6 +2995,11 @@ html[data-theme="light"] .leaflet-bar.rb-fs a:hover, html[data-theme="light"] .l
 .loot-mob-sep { color: var(--text-mute); }
 .loot-unavailable { font-size: 13.5px; }
 
+/* Посилання на pwdatabase.net: колір і жирність успадковують від свого
+   елемента (боса/предмета/квесту), підкреслення — лише на ховері. */
+.loot-link { text-decoration: none; }
+.loot-link:hover { text-decoration: underline; color: var(--accent-3); }
+
 .loot-items { display: flex; flex-direction: column; gap: 6px; }
 .loot-item {
   display: flex;
@@ -3018,15 +3024,19 @@ html[data-theme="light"] .leaflet-bar.rb-fs a:hover, html[data-theme="light"] .l
   background-repeat: no-repeat;
   border-radius: 4px;
 }
-.loot-item-name { flex: 1; font-weight: 600; }
+.loot-item-name { flex: 1; font-weight: 600; color: var(--text); }
 .loot-item-lvl {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11.5px;
   color: var(--text-mute);
 }
 .rarity-legendary .loot-item-name { color: #ffe0a6; }
+/* "Особливий" дроп (був gldl — золотий на сторінці-джерелі): своя, темніша
+   позолота, щоб не зливатись з .rarity-legendary (топові унікальні предмети). */
+.rarity-special { border-left-color: var(--accent); }
 
 .loot-quest {
+  display: block;
   font-size: 12.5px;
   color: var(--text-mute);
   padding-top: 2px;

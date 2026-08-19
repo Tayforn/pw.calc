@@ -10,9 +10,14 @@ import { LOOT_CHAPTERS, type LootCell, type LootItem } from '../modules/loot/dat
 const RARITY_LABEL: Record<string, string> = {
   common: 'звичайний',
   rare: 'зі скринь/босів',
-  epic: 'особливий',
+  special: 'особливий',
   legendary: 'унікальний',
 };
+
+/** Картки на pwdatabase.net — те саме джерело, з якого зроблено сторінку. */
+const mobUrl = (id: number) => `https://www.pwdatabase.net/ru/mob/${id}`;
+const itemUrl = (id: number) => `https://www.pwdatabase.net/ru/items/${id}`;
+const questUrl = (id: number) => `https://www.pwdatabase.net/ru/quest/${id}`;
 
 /** Спрайт-лист іконок предметів (32×32 клітинки), той самий, що на сторінці-джерелі. */
 const ICON_SHEET_URL = (import.meta.env.BASE_URL || '/') + 'assets/loot/iconsit6.png';
@@ -45,7 +50,8 @@ function cellMatches(cell: LootCell, q: string): boolean {
 }
 
 function CellView({ cell, tier }: { cell: LootCell; tier: string }) {
-  const hasMobLine = cell.mobs.length > 0;
+  const visibleMobs = cell.mobs.filter((m): m is NonNullable<typeof m> => m !== null);
+  const hasMobLine = visibleMobs.length > 0;
   const empty = !hasMobLine && !cell.chestLabel && !cell.items.length && !cell.quest;
 
   return (
@@ -54,10 +60,12 @@ function CellView({ cell, tier }: { cell: LootCell; tier: string }) {
 
       {hasMobLine && (
         <div className="loot-mobs">
-          {cell.mobs.map((m, i) => (
-            <span key={i}>
+          {visibleMobs.map((m, i) => (
+            <span key={m.id}>
               {i > 0 && <span className="loot-mob-sep"> / </span>}
-              {m ? <span className="loot-mob-name">{m.name}</span> : <span className="muted">Недоступно</span>}
+              <a className="loot-mob-name loot-link" href={mobUrl(m.id)} target="_blank" rel="noopener noreferrer">
+                {m.name}
+              </a>
             </span>
           ))}
         </div>
@@ -74,38 +82,39 @@ function CellView({ cell, tier }: { cell: LootCell; tier: string }) {
               title={RARITY_LABEL[it.rarity] ?? ''}
             >
               <ItemIcons item={it} />
-              <span className="loot-item-name">{it.name}</span>
+              <a className="loot-item-name loot-link" href={itemUrl(it.id)} target="_blank" rel="noopener noreferrer">
+                {it.name}
+              </a>
               <span className="loot-item-lvl">{it.level}</span>
             </div>
           ))}
         </div>
       )}
 
-      {cell.quest && <div className="loot-quest">📜 {cell.quest.name}</div>}
+      {cell.quest && (
+        <a className="loot-quest loot-link" href={questUrl(cell.quest.id)} target="_blank" rel="noopener noreferrer">
+          📜 {cell.quest.name}
+        </a>
+      )}
     </div>
   );
 }
 
+/** Короткий підпис вкладки: "Розділ 1: «Золота маска»" → "Розділ 1". */
+function shortTitle(title: string): string {
+  return title.split(':')[0];
+}
+
 export default function LootPage() {
   const [query, setQuery] = useState('');
+  const [chapterIdx, setChapterIdx] = useState(0);
 
   const q = norm(query.trim());
+  const chapter = LOOT_CHAPTERS[chapterIdx];
 
-  const chapters = useMemo(() => {
-    if (!q) return LOOT_CHAPTERS;
-    return LOOT_CHAPTERS.map((ch) => ({
-      ...ch,
-      rows: ch.rows.filter((row) => row.cells.some((c) => cellMatches(c, q))),
-    })).filter((ch) => ch.rows.length > 0);
-  }, [q]);
-
-  const totalItems = useMemo(
-    () =>
-      LOOT_CHAPTERS.reduce(
-        (sum, ch) => sum + ch.rows.reduce((s, r) => s + r.cells.reduce((s2, c) => s2 + c.items.length, 0), 0),
-        0,
-      ),
-    [],
+  const rows = useMemo(
+    () => chapter.rows.filter((row) => row.cells.some((c) => cellMatches(c, q))),
+    [chapter, q],
   );
 
   return (
@@ -116,11 +125,28 @@ export default function LootPage() {
         <p>
           Дроп босів трьох розділів сюжетної лінії «ХХ» — три рівні складності
           (звичайний / посилений бос) із предметами, що з них випадають. Пошук
-          шукає і серед босів, і серед предметів.
+          шукає і серед босів, і серед предметів у поточному розділі.
         </p>
       </header>
 
       <div className="card calc-card loot-controls">
+        <div className="field">
+          <label>Розділ</label>
+          <div className="segmented" role="radiogroup" aria-label="Розділ">
+            {LOOT_CHAPTERS.map((ch, i) => (
+              <span key={ch.title} style={{ display: 'contents' }}>
+                <input
+                  type="radio"
+                  id={'lootChapter' + i}
+                  name="lootChapter"
+                  checked={chapterIdx === i}
+                  onChange={() => setChapterIdx(i)}
+                />
+                <label htmlFor={'lootChapter' + i}>{shortTitle(ch.title)}</label>
+              </span>
+            ))}
+          </div>
+        </div>
         <div className="field">
           <label htmlFor="lootSearch">Пошук</label>
           <input
@@ -134,52 +160,25 @@ export default function LootPage() {
         </div>
       </div>
 
-      {chapters.length === 0 ? (
-        <p className="muted center">Нічого не знайдено.</p>
-      ) : (
-        chapters.map((ch) => (
-          <div className="card loot-chapter" key={ch.title}>
-            <h3 className="loot-chapter-title">{ch.title}</h3>
-            <div className="loot-grid loot-grid-head">
-              {ch.tiers.map((t) => (
-                <div className="loot-tier" key={t}>{t}</div>
+      <div className="card loot-chapter">
+        <h3 className="loot-chapter-title">{chapter.title}</h3>
+        <div className="loot-grid loot-grid-head">
+          {chapter.tiers.map((t) => (
+            <div className="loot-tier" key={t}>{t}</div>
+          ))}
+        </div>
+        {rows.length === 0 ? (
+          <p className="muted center">Нічого не знайдено.</p>
+        ) : (
+          rows.map((row, ri) => (
+            <div className="loot-grid" key={ri}>
+              {row.cells.map((cell, ci) => (
+                <CellView cell={cell} tier={chapter.tiers[ci]} key={ci} />
               ))}
             </div>
-            {ch.rows.map((row, ri) => (
-              <div className="loot-grid" key={ri}>
-                {row.cells.map((cell, ci) => (
-                  <CellView cell={cell} tier={ch.tiers[ci]} key={ci} />
-                ))}
-              </div>
-            ))}
-          </div>
-        ))
-      )}
-
-      <details className="note">
-        <summary>Джерела та примітки</summary>
-        <p>
-          Структуру таблиці (розділи, рівні складності, зв'язок «бос → предмет»)
-          узято з довідника спільноти Perfect World: форум <b>pwonline.ru</b> та{' '}
-          <b>pwdatabase.net</b>.
-        </p>
-        <p>
-          Назви <b>предметів і босів</b> — офіційний український переклад
-          клієнта гри, звірений напряму за id з бінарної бази гри (той самий
-          id, що й у довіднику спільноти) — це не машинний переклад.
-        </p>
-        <p>
-          Іконки предметів — той самий спрайт-лист, що й на сторінці-джерелі
-          (pwdatabase.net-стилю), не з клієнта гри.
-        </p>
-        <p>
-          Кольором ліворуч від предмета позначено тип дропу: сірий — звичайний
-          дроп боса, фіолетовий — додатковий («особливий») дроп того самого
-          боса, синій — спільна нагорода зі скринь/убитих босів розділу,
-          золотий — унікальний предмет верхнього рівня. Усього в таблиці{' '}
-          {totalItems} предметів.
-        </p>
-      </details>
+          ))
+        )}
+      </div>
     </>
   );
 }
