@@ -362,17 +362,14 @@ export default function LootPage() {
     return map;
   }, []);
 
-  const itemNames = useMemo(() => {
-    const map = new Map<number, string>();
-    for (const ch of LOOT_CHAPTERS) {
-      for (const row of ch.rows) {
-        for (const cell of row.cells) {
-          for (const it of cell.items) map.set(it.id, it.name);
-        }
-      }
+  // Розділи (індекси), де є хоч один підсвічений предмет — для бейджа на вкладці.
+  const chaptersWithHighlight = useMemo(() => {
+    const set = new Set<number>();
+    for (const id of highlightIds) {
+      for (const c of itemChapters.get(id) ?? []) set.add(c);
     }
-    return map;
-  }, []);
+    return set;
+  }, [highlightIds, itemChapters]);
 
   function showResources(recipe: CraftRecipe) {
     const needed = recipe.materials.filter((m) => m.isLootItem).map((m) => m.itemId);
@@ -395,40 +392,41 @@ export default function LootPage() {
         bestChapter = c;
       }
     }
-    const idsInBest = new Set(byChapter.get(bestChapter) ?? []);
-    const idsElsewhere = needed.filter((id) => !idsInBest.has(id));
+    const idsInBest = byChapter.get(bestChapter) ?? [];
+    const otherChapters = [...byChapter.keys()].filter((c) => c !== bestChapter).sort((a, b) => a - b);
 
     setItemPopup(null);
     setBrowseOpen(false);
     setQuery('');
     setChapterIdx(bestChapter);
-    setHighlightIds(idsInBest);
-    scrollTargetRef.current = [...idsInBest][0] ?? null;
+    // Підсвічуємо УСІ потрібні предмети (у всіх розділах одразу), не лише в поточному.
+    setHighlightIds(new Set(needed));
+    scrollTargetRef.current = idsInBest[0] ?? needed[0] ?? null;
     setHighlightNote(
-      idsElsewhere.length
-        ? 'Також потрібні (в інших розділах): ' + idsElsewhere.map((id) => itemNames.get(id) ?? id).join(', ')
+      otherChapters.length
+        ? 'Частина ресурсів — у: ' + otherChapters.map((c) => shortTitle(LOOT_CHAPTERS[c].title)).join(', ') +
+          ' (позначено на вкладках)'
         : null,
     );
   }
 
-  // Скрол до підсвіченого предмета + автоматичне згасання підсвітки.
+  function clearHighlight() {
+    setHighlightIds(new Set());
+    setHighlightNote(null);
+  }
+
+  // Скрол до підсвіченого предмета (один раз, коли з'являється нова підсвітка).
+  const scrolledForRef = useRef<Set<number> | null>(null);
   useEffect(() => {
-    if (highlightIds.size === 0) return;
+    if (highlightIds.size === 0 || scrolledForRef.current === highlightIds) return;
+    scrolledForRef.current = highlightIds;
     const raf = requestAnimationFrame(() => {
       const id = scrollTargetRef.current;
       if (id != null) {
         document.querySelector(`[data-item-id="${id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     });
-    const t = setTimeout(() => {
-      setHighlightIds(new Set());
-      setHighlightNote(null);
-    }, 3000);
-    return () => {
-      cancelAnimationFrame(raf);
-      clearTimeout(t);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => cancelAnimationFrame(raf);
   }, [highlightIds]);
 
   return (
@@ -456,7 +454,10 @@ export default function LootPage() {
                   checked={chapterIdx === i}
                   onChange={() => setChapterIdx(i)}
                 />
-                <label htmlFor={'lootChapter' + i}>{shortTitle(ch.title)}</label>
+                <label htmlFor={'lootChapter' + i}>
+                  {shortTitle(ch.title)}
+                  {chaptersWithHighlight.has(i) && <span className="loot-tab-dot" aria-hidden="true" />}
+                </label>
               </span>
             ))}
           </div>
@@ -485,7 +486,14 @@ export default function LootPage() {
       )}
 
       <div className="card loot-chapter">
-        <h3 className="loot-chapter-title">{chapter.title}</h3>
+        <div className="loot-chapter-head">
+          <h3 className="loot-chapter-title">{chapter.title}</h3>
+          {highlightIds.size > 0 && (
+            <button type="button" className="btn btn-ghost btn-sm" onClick={clearHighlight}>
+              ✕ Прибрати підсвітку
+            </button>
+          )}
+        </div>
         <div className="loot-grid loot-grid-head">
           {chapter.tiers.map((t) => (
             <div className="loot-tier" key={t}>{t}</div>

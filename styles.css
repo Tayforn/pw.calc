@@ -2944,11 +2944,29 @@ html[data-theme="light"] .leaflet-bar.rb-fs a:hover, html[data-theme="light"] .l
 @media (max-width: 560px) { .loot-controls .field { flex: 1 1 100%; max-width: none; } }
 
 .loot-chapter { margin-top: 22px; }
+.loot-chapter-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
 .loot-chapter-title {
-  margin: 0 0 16px;
+  margin: 0;
   font-size: 19px;
   font-weight: 700;
   color: var(--accent-3);
+}
+
+/* Крапка на вкладці розділу — там теж є підсвічені предмети. */
+.loot-tab-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--accent-3);
+  vertical-align: middle;
 }
 
 .loot-grid {
@@ -3174,7 +3192,16 @@ body.modal-open { overflow: hidden; }
 .modal-head h3 { margin: 0; font-size: 18px; }
 .modal-foot { border-top: 1px solid var(--line); flex-wrap: wrap; justify-content: flex-end; }
 .modal-foot .btn:first-child { margin-right: auto; }
-.modal-body { padding: 20px 22px; overflow-y: auto; }
+.modal-body {
+  padding: 20px 22px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
+}
+.modal-body::-webkit-scrollbar { width: 9px; }
+.modal-body::-webkit-scrollbar-track { background: transparent; }
+.modal-body::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 6px; border: 2px solid transparent; background-clip: padding-box; }
+.modal-body::-webkit-scrollbar-thumb:hover { background: var(--accent); background-clip: padding-box; }
 .modal-close {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--line-2);
