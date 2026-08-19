@@ -3760,7 +3760,7 @@ html[data-theme="light"] .btn-primary {
   box-shadow: 0 14px 30px -14px rgba(160, 100, 30, 0.75);
 }
 html[data-theme="light"] .btn-primary:hover { box-shadow: 0 18px 38px -14px rgba(160, 100, 30, 0.6); }
-html[data-theme="light"] .btn-ghost { background: rgba(120, 84, 38, 0.06); color: var(--text); border-color: var(--line-2); }
+html[data-theme="light"] .btn-ghost { background: rgba(120, 84, 38, 0.06); color: var(--accent); border-color: var(--line-2); }
 html[data-theme="light"] .btn-ghost:hover { background: rgba(120, 84, 38, 0.12); border-color: var(--text-dim); }
 
 /* ── Форми ────────────────────────────────────────────────────────── */
