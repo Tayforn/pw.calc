@@ -2936,6 +2936,118 @@ html[data-theme="light"] .leaflet-bar.rb-fs a:hover, html[data-theme="light"] .l
 }
 
 /* =========================================================
+   ТАБЛИЦЯ ЛУТУ (розділи ХХ)
+   ========================================================= */
+.loot-controls { display: flex; }
+.loot-controls .field { max-width: 360px; width: 100%; }
+
+.loot-chapter { margin-top: 22px; }
+.loot-chapter:first-of-type { margin-top: 0; }
+.loot-chapter-title {
+  margin: 0 0 16px;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--accent-3);
+}
+
+.loot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.loot-grid-head {
+  margin-bottom: 14px;
+}
+.loot-tier {
+  padding: 8px 12px;
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.loot-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.02);
+  min-height: 100%;
+}
+.loot-cell-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-mute);
+}
+.loot-mobs { font-size: 13.5px; color: var(--text-dim); line-height: 1.4; }
+.loot-mob-name { color: var(--text); font-weight: 600; }
+.loot-mob-sep { color: var(--text-mute); }
+.loot-unavailable { font-size: 13.5px; }
+
+.loot-items { display: flex; flex-direction: column; gap: 6px; }
+.loot-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-top: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  border-left-width: 3px;
+  border-left-style: solid;
+  font-size: 13px;
+  /* border-left-color навмисно не тут — його задають .rarity-* */
+}
+.loot-icons { display: flex; flex-shrink: 0; }
+.loot-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  background-repeat: no-repeat;
+  border-radius: 4px;
+}
+.loot-item-name { flex: 1; font-weight: 600; }
+.loot-item-lvl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: var(--text-mute);
+}
+.rarity-legendary .loot-item-name { color: #ffe0a6; }
+
+.loot-quest {
+  font-size: 12.5px;
+  color: var(--text-mute);
+  padding-top: 2px;
+  border-top: 1px dashed var(--line);
+}
+
+@media (max-width: 720px) {
+  .loot-grid { grid-template-columns: 1fr; }
+  .loot-grid-head { display: none; }
+  .loot-cell::before {
+    content: attr(data-tier);
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--accent-3);
+  }
+}
+
+/* =========================================================
    МОДАЛКА
    ========================================================= */
 .modal-overlay {

@@ -34,6 +34,7 @@ import RbPage from '../pages/RbPage';
 import AtnPage from '../pages/AtnPage';
 import EventsPage from '../pages/EventsPage';
 import GuidesPage from '../pages/GuidesPage';
+import LootPage from '../pages/LootPage';
 import SettingsPage from '../pages/SettingsPage';
 
 const PAGES: Record<string, ReactNode> = {
@@ -56,6 +57,7 @@ const PAGES: Record<string, ReactNode> = {
   atn: <AtnPage />,
   events: <EventsPage />,
   guides: <GuidesPage />,
+  loot: <LootPage />,
   settings: <SettingsPage />,
 };
 

@@ -59,6 +59,10 @@ const NAV: NavEntry[] = [
     ico: <svg {...S}><path d="M12 5.5C10 4 6.5 4 4 4.5v14c2.5-.5 6-.5 8 1 2-1.5 5.5-1.5 8-1v-14c-2.5-.5-6-.5-8 1z" /><path d="M12 5.5v15" /></svg>,
   },
   {
+    tab: 'loot', label: 'Лут ХХ',
+    ico: <svg {...S}><path d="M6 3h12l3 5-9 13L3 8z" /><path d="M3 8h18M9 3l3 5 3-5M12 8l-2.5 13M12 8l2.5 13" /></svg>,
+  },
+  {
     tab: 'settings', label: 'Налаштування', settings: true,
     ico: <svg {...S}><circle cx="12" cy="12" r="3" /><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2" /></svg>,
   },
